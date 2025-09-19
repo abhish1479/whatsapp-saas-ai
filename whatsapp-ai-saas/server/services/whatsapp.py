@@ -1,37 +1,82 @@
+# server/services/whatsapp.py
 
-import requests
-from settings import settings
+import os, logging, httpx
+from typing import Dict, Any, Optional
+from server.services.metrics import provider_errors_total
 
-class WhatsAppProvider:
-    def send_text(self, to_e164:str, text:str):
-        raise NotImplementedError
-    def register_webhook(self, callback_url:str):
-        return 200, "ok"
+logger = logging.getLogger(__name__)
 
-class Dialog360Provider(WhatsAppProvider):
-    def __init__(self):
-        self.base = settings.DIALOG360_BASE_URL.rstrip('/')
-        self.api_key = settings.DIALOG360_API_KEY
-    def send_text(self, to_e164:str, text:str):
-        url = f"{self.base}/v1/messages"
-        headers = {"D360-API-KEY": self.api_key, "Content-Type":"application/json"}
-        payload = {"to": to_e164, "type":"text", "text":{"body":text}}
-        resp = requests.post(url, headers=headers, json=payload, timeout=20)
-        return (resp.status_code, resp.text)
+WHATSAPP_API_URL = os.getenv("WHATSAPP_API_URL", "https://graph.facebook.com/v19.0")
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-class CloudAPIProvider(WhatsAppProvider):
-    def __init__(self):
-        self.base = settings.WA_CLOUD_BASE_URL.rstrip('/')
-        self.token = settings.WA_CLOUD_TOKEN
-        self.phone_id = settings.WA_CLOUD_PHONE_ID
-    def send_text(self, to_e164:str, text:str):
-        url = f"{self.base}/{self.phone_id}/messages"
-        headers = {"Authorization": f"Bearer {self.token}"}
-        payload = {"messaging_product":"whatsapp","to":to_e164,"type":"text","text":{"body":text}}
-        resp = requests.post(url, headers=headers, json=payload, timeout=20)
-        return (resp.status_code, resp.text)
 
-def get_provider()->WhatsAppProvider:
-    if settings.WA_PROVIDER == "cloud":
-        return CloudAPIProvider()
-    return Dialog360Provider()
+async def send_whatsapp_message(
+    tenant_id: str,
+    to: str,
+    text: str,
+    template_name: Optional[str] = None,
+    locale: str = "en_US",
+) -> Dict[str, Any]:
+    """
+    Send a WhatsApp message via Cloud API (or BSP).
+    - tenant_id: who is sending
+    - to: recipient phone number
+    - text: message body
+    - template_name: if sending a template outside 24h
+    - locale: template locale
+
+    Returns dict: { ok: bool, response: dict | None, error: str | None }
+    """
+
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    # Choose body depending on free-text vs template
+    if template_name:
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "template",
+            "template": {
+                "name": template_name,
+                "language": {"code": locale},
+            },
+        }
+    else:
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "text",
+            "text": {"body": text},
+        }
+
+    url = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.status_code >= 200 and resp.status_code < 300:
+                data = resp.json()
+                logger.info(
+                    f"[WhatsApp] Sent to={to} tenant={tenant_id} template={template_name} ok"
+                )
+                return {"ok": True, "response": data, "error": None}
+            else:
+                provider_errors_total.labels(provider="whatsapp").inc()
+                logger.error(
+                    f"[WhatsApp] Failed tenant={tenant_id} to={to} status={resp.status_code} body={resp.text}"
+                )
+                return {
+                    "ok": False,
+                    "response": None,
+                    "error": f"HTTP {resp.status_code}: {resp.text}",
+                }
+    except Exception as e:
+        provider_errors_total.labels(provider="whatsapp").inc()
+        logger.exception(
+            f"[WhatsApp] Exception sending tenant={tenant_id} to={to}: {e}"
+        )
+        return {"ok": False, "response": None, "error": str(e)}

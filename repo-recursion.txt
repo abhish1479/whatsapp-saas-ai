@@ -1,0 +1,1 @@
+Get-ChildItem -Recurse -File | Select-Object FullName | Out-File -Encoding UTF8 repo_file_list.txt

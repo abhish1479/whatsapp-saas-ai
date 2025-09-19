@@ -1,18 +1,11 @@
-
 from fastapi import APIRouter, Depends
-from deps import get_current
-from database import SessionLocal
-from models import Lead, Message
-from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from ..deps import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-@router.get("/summary")
-def summary(ident=Depends(get_current)):
-    db = SessionLocal()
-    try:
-        leads_total = db.query(Lead).filter(Lead.tenant_id==ident['tid']).count()
-        msgs = db.query(func.count(Message.id)).scalar() or 0
-        return {"leads_total": leads_total, "messages_total": msgs}
-    finally:
-        db.close()
+@router.get("/moderation-logs")
+async def get_moderation_logs(limit: int = 100, db: AsyncSession = Depends(get_db)):
+    rows = await db.execute(text("SELECT * FROM moderation_logs ORDER BY created_at DESC LIMIT :lim"), {"lim": limit})
+    return {"logs": [dict(r) for r in rows.mappings().all()]}

@@ -1,0 +1,24 @@
+weights:
+  inbound_user_text: 0
+  inbound_user_media: 0
+  outbound_agent_text: 1
+  outbound_agent_media: 2
+  outbound_template_text: 1
+  outbound_template_media: 2
+refunds:
+  on_delivery_failure: true
+  on_timeout_seconds: 30
+auto_block:
+  on_zero_balance: true
+  behavior: "HARD_STOP"
+  soft_warn_threshold: 20
+idempotency:
+  key_source: "event_id"
+logging:
+  include_reason_codes: true
+  reason_codes:
+    - message
+    - template_send
+    - media_send
+    - refund_failure
+    - moderation_block

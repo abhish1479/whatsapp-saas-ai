@@ -1,0 +1,42 @@
+﻿
+FullName                                                                                     
+--------                                                                                     
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\repo_file_list.txt                             
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\WhatsApp AI Agent .docx                        
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\leadbot_flutter\pubspec.yaml                   
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\leadbot_flutter\lib\api.dart                   
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\leadbot_flutter\lib\auth_service.dart          
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\leadbot_flutter\lib\main.dart                  
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\leadbot_flutter\lib\screens\dashboard.dart     
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\leadbot_flutter\lib\screens\login.dart         
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\.env.example                  
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\docker-compose.yml            
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\install-setup.ps1             
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\README.md                     
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\frontend\Dockerfile           
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\frontend\index.html           
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\frontend\package.json         
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\frontend\src\main.jsx         
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\database.py            
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\deps.py                
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\Dockerfile             
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\main.py                
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\models.py              
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\requirements.txt       
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\settings.py            
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\analytics.py   
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\auth.py        
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\billing.py     
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\conversation.py
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\leads.py       
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\provisioning.py
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\rag.py         
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\templates.py   
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\wallet.py      
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\routers\webhooks.py    
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\services\credits.py    
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\services\moderation.py 
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\services\rag.py        
+C:\Abhishek\MMF\AI Projects\WhatsApp AI Agent\whatsapp-ai-saas\server\services\whatsapp.py   
+
+

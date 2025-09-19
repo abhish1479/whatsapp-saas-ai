@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  worker:
+    build:
+      context: ./whatsapp-ai-saas
+      dockerfile: server/Dockerfile
+    command: python -m server.workers.webhook_worker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - WEBHOOK_QUEUE=wh_inbound_queue
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - redis
+      - server   # make sure your FastAPI service is named "server" in docker-compose.yml

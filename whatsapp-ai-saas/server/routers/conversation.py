@@ -1,42 +1,24 @@
-
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from deps import get_current
-from services.whatsapp import get_provider
-from services.moderation import is_unsafe
-from services.credits import debit
-from database import SessionLocal
-from models import Conversation, Message
-from sqlalchemy.orm import Session
-from settings import settings
-from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from ..deps import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/conversations", tags=["conversations"])
 
-class SendReq(BaseModel):
-    phone:str
-    message:str
+@router.get("/{conversation_id}")
+async def get_conversation(conversation_id: str, db: AsyncSession = Depends(get_db)):
+    sql = text("SELECT * FROM conversations WHERE id=:id")
+    row = await db.execute(sql, {"id": conversation_id})
+    convo = row.mappings().first()
+    if not convo:
+        raise HTTPException(404, "Conversation not found")
+    msgs = await db.execute(text("SELECT * FROM messages WHERE conversation_id=:id ORDER BY created_at ASC"), {"id": conversation_id})
+    return {"conversation": dict(convo), "messages": [dict(m) for m in msgs.mappings().all()]}
 
-@router.post("/send")
-def send_message(body:SendReq, ident=Depends(get_current)):
-    if is_unsafe(body.message): 
-        raise HTTPException(400, "Message blocked by moderation")
-
-    prov = get_provider()
-    status_code, resp_text = prov.send_text(body.phone, body.message)
-
-    db = SessionLocal()
-    try:
-        try:
-            debit(db, ident['tid'], settings.CREDIT_COST_TEXT, "send_message", ref_id=body.phone)
-        except Exception as e:
-            raise HTTPException(402, f"Credits error: {e}")
-        conv = db.query(Conversation).filter_by(tenant_id=ident['tid'], phone=body.phone).first()
-        if not conv:
-            conv = Conversation(tenant_id=ident['tid'], phone=body.phone, last_msg_at=datetime.utcnow(), state={})
-            db.add(conv); db.flush()
-        msg = Message(conversation_id=conv.id, direction="out", text=body.message, meta={"provider_resp":resp_text}, cost_credits=settings.CREDIT_COST_TEXT)
-        db.add(msg); db.commit()
-        return {"ok": True, "provider_status": status_code}
-    finally:
-        db.close()
+@router.get("/{conversation_id}/summary")
+async def get_summary(conversation_id: str, db: AsyncSession = Depends(get_db)):
+    row = await db.execute(text("SELECT summary FROM conversations WHERE id=:id"), {"id": conversation_id})
+    convo = row.first()
+    if not convo:
+        raise HTTPException(404, "Conversation not found")
+    return {"conversation_id": conversation_id, "summary": convo[0]}

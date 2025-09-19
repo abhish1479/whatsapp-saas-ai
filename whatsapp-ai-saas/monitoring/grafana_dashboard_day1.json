@@ -1,0 +1,76 @@
+{
+  "title": "WhatsApp AI SaaS - Day 1",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Requests / s",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m]))"
+        }
+      ],
+      "id": 1
+    },
+    {
+      "type": "graph",
+      "title": "Latency p95 (ms)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))"
+        }
+      ],
+      "id": 2
+    },
+    {
+      "type": "graph",
+      "title": "Credits Spent / s",
+      "targets": [
+        {
+          "expr": "sum(rate(credits_spent_total[1m]))"
+        }
+      ],
+      "id": 3
+    },
+    {
+      "type": "graph",
+      "title": "Moderation Blocks / s",
+      "targets": [
+        {
+          "expr": "sum(rate(moderation_blocks_total[1m]))"
+        }
+      ],
+      "id": 4
+    },
+    {
+      "type": "graph",
+      "title": "Webhook Queue Depth",
+      "targets": [
+        {
+          "expr": "webhook_queue_depth"
+        }
+      ],
+      "id": 5
+    },
+    {
+      "type": "graph",
+      "title": "Active Conversations",
+      "targets": [
+        {
+          "expr": "conversation_active_total"
+        }
+      ],
+      "id": 6
+    },
+    {
+      "type": "graph",
+      "title": "Template CTR",
+      "targets": [
+        {
+          "expr": "template_replies_total / ignoring(instance) template_sends_total"
+        }
+      ],
+      "id": 7
+    }
+  ],
+  "schemaVersion": 30
+}

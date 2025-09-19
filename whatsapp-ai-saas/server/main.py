@@ -2,8 +2,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, provisioning, leads, conversation, rag, wallet, webhooks, templates, analytics, billing
+from server.middleware.logging import RequestLoggingMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
+from server.services.metrics import inc_credits
+from server.services.metrics import inc_message
+
+
+
 
 app = FastAPI(title="WhatsApp AI Agent SaaS", version="1.0")
+Instrumentator().instrument(app).expose(app)
+
+
+app.add_middleware(RequestLoggingMiddleware)
+
 
 app.add_middleware(
     CORSMiddleware,

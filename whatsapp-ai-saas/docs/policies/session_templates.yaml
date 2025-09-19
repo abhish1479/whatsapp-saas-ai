@@ -1,0 +1,51 @@
+# Session & Template Policy Matrix
+window_hours: 24
+initiators:
+  - name: user_initiated
+    description: "User sends the first message; free-form replies allowed for 24h."
+    consumes_credits:
+      inbound_user: 0
+      outbound_agent_text: 1
+      outbound_agent_media: 2
+  - name: business_initiated
+    description: "Business initiates using approved template outside 24h window."
+    template_required: true
+    consumes_credits:
+      inbound_user: 0
+      outbound_agent_template_text: 1
+      outbound_agent_template_media: 2
+events:
+  lead_welcome:
+    description: "First contact after lead capture/import."
+    templates:
+      en_IN:
+        primary: "lead_welcome_en"
+        fallbacks: ["lead_welcome_generic_en"]
+      hi_IN:
+        primary: "lead_welcome_hi"
+        fallbacks: ["lead_welcome_generic_hi", "lead_welcome_generic_en"]
+  payment_reminder:
+    templates:
+      en_IN:
+        primary: "payment_reminder_en_v2"
+        fallbacks: ["payment_reminder_generic_en"]
+  order_update:
+    templates:
+      en_IN:
+        primary: "order_update_en"
+        fallbacks: ["order_update_generic_en"]
+retry_backoff:
+  send_failures:
+    - { attempt: 1, delay_seconds: 5 }
+    - { attempt: 2, delay_seconds: 30 }
+    - { attempt: 3, delay_seconds: 120 }
+  provider_429:
+    jitter: true
+    base_seconds: 2
+    factor: 2
+    max_seconds: 60
+session_rules:
+  - rule: "If last_user_message_at <= 24h → no template required"
+  - rule: "If last_user_message_at > 24h → require template from events matrix"
+  - rule: "Locale is derived from tenant default or last known user locale"
+  - rule: "On missing template or all fallbacks failing → do not send; log and alert"
