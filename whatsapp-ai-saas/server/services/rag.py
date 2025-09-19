@@ -1,17 +1,26 @@
-# server/services/rag.py
-import os, uuid
-from typing import List, Dict
-from chromadb import Client
-from chromadb.config import Settings
+from __future__ import annotations
+from typing import List, Dict, Any, Optional
+import os
+import uuid
 
-CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma")
-
-client = Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=CHROMA_PATH))
-
+# Placeholder abstraction; wire any vector DB behind this interface.
 class RAGService:
-    def __init__(self, client):
-        self.client = client
+    def __init__(self):
+        self.provider = os.getenv("RAG_PROVIDER", "chroma")  # chroma|pinecone|weaviate
+        # configure clients lazily
 
+    def _ns(self, tenant_id: str) -> str:
+        return f"tenant::{tenant_id}"
+
+    async def search(self, tenant_id: str, query: str, k: int = 6) -> List[Dict[str, Any]]:
+        """Return top-k docs with scores and metadata."""
+        # TODO: hybrid search + rerank
+        return []
+
+    async def delete_namespace(self, tenant_id: str) -> None:
+        # Danger: irreversible. Use for GDPR/DPDP deletes.
+        return
+    
     def _coll_name(self, tenant_id: str):
         return f"tenant::{tenant_id}"
 
@@ -42,4 +51,5 @@ class RAGService:
         merged = " ".join(docs["documents"][0])
         return {"answer": merged[:500], "sources": docs.get("metadatas", [])}
 
-rag = RAGService(client)
+
+rag = RAGService()

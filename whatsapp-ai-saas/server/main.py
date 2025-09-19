@@ -6,6 +6,7 @@ from server.middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from server.services.metrics import inc_credits
 from server.services.metrics import inc_message
+from server.routers import onboarding
 
 
 
@@ -24,7 +25,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.include_router(onboarding.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(provisioning.router, prefix="/provision", tags=["provision"])
 app.include_router(templates.router, prefix="/templates", tags=["templates"])

@@ -19,3 +19,14 @@ docker compose up --build
   - `ngrok http 8000`
   - Set Razorpay webhook to `https://<ngrok-domain>/billing/webhook`
   - Set WhatsApp webhook to `https://<ngrok-domain>/webhooks/wa`
+
+
+
+#API Docs → http://localhost:8000/docs
+
+#Flutter Onboarding UI → http://localhost:8000/app
+
+#Grafana → http://localhost:3000
+ #(user: admin, pass: admin)
+
+#Prometheus → http://localhost:9090

@@ -11,6 +11,8 @@ from server.services.moderation import moderate_message
 from server.services.whatsapp import send_whatsapp_message
 from server.services.rag import rag
 from server.services.llm import generate_reply
+from server.services.conversations import open_conversation, update_conversation_timestamp
+
 
 
 
@@ -61,6 +63,9 @@ async def handle_event(event_id: str, payload: dict):
     outbound_text = "Hello, thanks for reaching out!"  # Replace with LLM/template
 
     async with SessionLocal() as session:
+                
+        conversation_id = await open_conversation(session, tenant_id, payload.get("from"))
+        await update_conversation_timestamp(session, conversation_id)
         # Moderation
         result = await moderate_message(
             tenant_id=tenant_id,

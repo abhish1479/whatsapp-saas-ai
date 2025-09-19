@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+
+# Logs
+*.log
+logs/
+*.pid
+
+# Node / React frontend
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/build/
+
+# Flutter
+flutter_onboarding/.dart_tool/
+flutter_onboarding/.packages
+flutter_onboarding/build/
+flutter_onboarding/ios/Pods/
+flutter_onboarding/android/.gradle/
+flutter_onboarding/pubspec.lock
+
+# Docker
+docker-data/
+pgdata/
+chroma_data/
+
+# VSCode / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

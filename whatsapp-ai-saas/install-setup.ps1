@@ -1,70 +1,50 @@
-# ============================================
-# WhatsApp SaaS Project Setup for Windows 10/11
-# Run this script in PowerShell as Administrator
-# ============================================
+# ===========================
+# WhatsApp SaaS AI Setup Script
+# ===========================
 
-Write-Host "🚀 Starting setup..."
+Write-Host "🚀 Starting WhatsApp SaaS AI Setup..."
 
-# --- Step 1: Install Chocolatey (if missing) ---
-if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-    Write-Host "🍫 Installing Chocolatey..."
-    Set-ExecutionPolicy Bypass -Scope Process -Force
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-} else {
-    Write-Host "✔ Chocolatey already installed."
+# 1. Check Docker
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "❌ Docker not found. Please install Docker Desktop." -ForegroundColor Red
+    exit 1
 }
 
-# Refresh environment
-refreshenv | Out-Null
+# 2. Load env file
+$envFile = ".env"
+if (-not (Test-Path $envFile)) {
+    Write-Host "❌ .env file missing. Please copy from .env.example and fill credentials." -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ .env file loaded"
 
-# --- Step 2: Install Docker Desktop ---
-if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "🐳 Installing Docker Desktop..."
-    choco install docker-desktop -y
+# 3. Start Docker stack
+Write-Host "🐳 Starting Docker containers..."
+docker compose -f docker-compose.yml -f compose.override.yml -f compose.monitoring.yml up --build -d
+
+# 4. Run migrations
+Write-Host "📦 Running DB migrations..."
+# Run migrations
+docker compose exec db psql -U wa_user -d wa_saas -f server/migrations/001_init.sql
+docker compose exec db psql -U wa_user -d wa_saas -f server/migrations/002_create_conversations.sql
+docker compose exec db psql -U wa_user -d wa_saas -f server/migrations/003_onboarding.sql
+
+# 5. Flutter build (web)
+if (Test-Path "flutter_onboarding") {
+    Write-Host "📱 Building Flutter web onboarding..."
+    cd flutter_onboarding
+    flutter pub get
+    flutter build web
+    cd ..
+    Write-Host "✅ Flutter onboarding built at flutter_onboarding/build/web/"
 } else {
-    Write-Host "✔ Docker Desktop already installed."
+    Write-Host "⚠️ flutter_onboarding directory not found, skipping build"
 }
 
-# --- Step 3: Install Node.js (for frontend) ---
-if (!(Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Host "⬢ Installing Node.js..."
-    choco install nodejs-lts -y
-} else {
-    Write-Host "✔ Node.js already installed."
-}
+# 6. Open URLs
+Write-Host "🌐 Opening URLs in browser..."
+Start-Process "http://localhost:8000/docs"
+Start-Process "http://localhost:8000/app"
+Start-Process "http://localhost:3000"
 
-# --- Step 4: Install ngrok (for webhook tunneling) ---
-if (!(Get-Command ngrok -ErrorAction SilentlyContinue)) {
-    Write-Host "🌐 Installing ngrok..."
-    choco install ngrok -y
-} else {
-    Write-Host "✔ ngrok already installed."
-}
-
-# --- Step 5: Install PostgreSQL client tools (optional) ---
-if (!(Get-Command psql -ErrorAction SilentlyContinue)) {
-    Write-Host "🐘 Installing PostgreSQL client..."
-    choco install postgresql -y
-} else {
-    Write-Host "✔ PostgreSQL client already installed."
-}
-
-# --- Step 6: Install VS Code ---
-if (!(Get-Command code -ErrorAction SilentlyContinue)) {
-    Write-Host "📝 Installing Visual Studio Code..."
-    choco install vscode -y
-} else {
-    Write-Host "✔ VS Code already installed."
-}
-
-# --- Step 7: Verify Python ---
-if (!(Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Host "⚠ Python not found. Please install Python 3.11+ manually."
-} else {
-    $pyver = python --version
-    Write-Host "✔ Found $pyver"
-}
-
-Write-Host "🎉 Setup complete!"
-Write-Host "👉 Please restart your machine if Docker Desktop was installed."
+Write-Host "✅ Setup completed! API, Onboarding, and Grafana are live."
