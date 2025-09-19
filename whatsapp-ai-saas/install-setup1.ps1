@@ -56,6 +56,7 @@ Write-Host "Running database migrations..."
 $env:PGPASSWORD="pass"
 psql -h localhost -U user -d whatsapp -f whatsapp-ai-saas/server/migrations/001_create_credit_ledger.sql
 psql -h localhost -U user -d whatsapp -f whatsapp-ai-saas/server/migrations/002_create_conversations.sql
+psql -h localhost -U user -d whatsapp -f whatsapp-ai-saas/server/migrations/003_onboarding.sql
 
 # 7. Build and start stack
 Write-Host "Starting docker compose..."

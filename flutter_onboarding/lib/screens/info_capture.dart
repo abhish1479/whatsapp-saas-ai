@@ -1,0 +1,1 @@
+// Dart code for info_capture.dart (see detailed code in previous message)
