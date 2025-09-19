@@ -1,0 +1,14 @@
+
+fastapi==0.114.2
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.2
+SQLAlchemy==2.0.35
+psycopg2-binary==2.9.9
+redis==5.0.8
+requests==2.32.3
+PyJWT==2.9.0
+passlib[bcrypt]==1.7.4
+chromadb==0.5.11
+tiktoken==0.7.0
+razorpay==1.4.2
