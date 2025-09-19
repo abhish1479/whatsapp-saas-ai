@@ -1,35 +1,45 @@
+# server/services/rag.py
+import os, uuid
+from typing import List, Dict
+from chromadb import Client
+from chromadb.config import Settings
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form
-from pydantic import BaseModel
-from deps import get_current
-from services.rag import ingest_text, query_kb
+CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma")
 
-router = APIRouter()
+client = Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=CHROMA_PATH))
 
-class FAQItem(BaseModel):
-    q:str
-    a:str
+class RAGService:
+    def __init__(self, client):
+        self.client = client
 
-class FAQReq(BaseModel):
-    items:list[FAQItem]
+    def _coll_name(self, tenant_id: str):
+        return f"tenant::{tenant_id}"
 
-@router.post("/faq")
-def add_faq(body:FAQReq, ident=Depends(get_current)):
-    texts = []
-    for it in body.items:
-        texts.append(f"Q: {it.q}\nA: {it.a}")
-    doc_id = ingest_text(ident['tid'], "\n\n".join(texts), {"type":"faq"})
-    return {"doc_id": doc_id}
+    async def add_documents(self, tenant_id: str, docs: List[Dict]):
+        """
+        docs = [{id, text, source_url, version, language}]
+        """
+        coll = self.client.get_or_create_collection(name=self._coll_name(tenant_id))
+        ids = [d.get("id") or str(uuid.uuid4()) for d in docs]
+        texts = [d["text"] for d in docs]
+        metadata = [{"source_url": d.get("source_url"), "version": d.get("version"), "lang": d.get("language")} for d in docs]
+        coll.add(ids=ids, documents=texts, metadatas=metadata)
 
-@router.post("/text")
-async def add_text(text:str = Form(...), ident=Depends(get_current)):
-    doc_id = ingest_text(ident['tid'], text, {"type":"text"})
-    return {"doc_id": doc_id}
+    async def query(self, tenant_id: str, query: str, n: int = 6):
+        coll = self.client.get_or_create_collection(name=self._coll_name(tenant_id))
+        if coll.count() == 0:
+            return []  # empty RAG namespace
+        res = coll.query(query_texts=[query], n_results=n)
+        return res
 
-class QueryReq(BaseModel):
-    q:str
+    async def answer(self, tenant_id: str, query: str):
+        """
+        Simple naive answer generator. In real flow, pass retrieved docs to LLM.
+        """
+        docs = await self.query(tenant_id, query)
+        if not docs or not docs.get("documents"):
+            return {"answer": "I don't have info yet, connecting you to the business owner.", "sources": []}
+        merged = " ".join(docs["documents"][0])
+        return {"answer": merged[:500], "sources": docs.get("metadatas", [])}
 
-@router.post("/query")
-def rag_query(body:QueryReq, ident=Depends(get_current)):
-    res = query_kb(ident['tid'], body.q, top_k=4)
-    return res
+rag = RAGService(client)

@@ -4,11 +4,15 @@ import os, json, asyncio, logging
 import aioredis
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
 
 from server.services.credits import reserve, finalize
 from server.services.metrics import inc_message, inc_credits
 from server.services.moderation import moderate_message
+from server.services.whatsapp import send_whatsapp_message
+from server.services.rag import rag
+from server.services.llm import generate_reply
+
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,14 +42,26 @@ async def handle_event(event_id: str, payload: dict):
         )
         await session.commit()
 
-    # Prometheus: count inbound message
     inc_message(tenant_id, "in")
 
-    # === Outbound reply (placeholder logic) ===
-    outbound_text = "Hello, thanks for reaching out!"  # replace with LLM/template result
+    # === Outbound reply (placeholder) ===
+    recipient = payload.get("from") or "recipient_number_here"
+
+    query_text = payload.get("text", "")
+    rag_res = await rag.query(tenant_id, query_text)
+
+    outbound_text = await generate_reply(
+    tenant_id=tenant_id,
+    query=query_text,
+    docs=rag_res,
+    )
+
+    outbound_text = rag_res["answer"]
+
+    outbound_text = "Hello, thanks for reaching out!"  # Replace with LLM/template
 
     async with SessionLocal() as session:
-        # Moderation before sending
+        # Moderation
         result = await moderate_message(
             tenant_id=tenant_id,
             message=outbound_text,
@@ -55,13 +71,16 @@ async def handle_event(event_id: str, payload: dict):
         )
         if not result["allowed"]:
             logging.warning(f"[Moderation] Blocked outbound message: {result}")
-            return  # HOLD, don't send
+            return
 
-        # TODO: Send outbound via WhatsApp BSP / Cloud API
-        send_ok = True  # replace with API call + response check
+        # Send outbound
+        send_result = await send_whatsapp_message(
+            tenant_id=tenant_id,
+            to=recipient,
+            text=outbound_text,
+        )
 
-        if send_ok:
-            # Reserve + finalize credits for outbound
+        if send_result["ok"]:
             event_out_id = event_id + "-out"
             await reserve(
                 session,
@@ -77,12 +96,14 @@ async def handle_event(event_id: str, payload: dict):
             entry = await finalize(session, tenant_id=tenant_id, event_id=event_out_id)
             await session.commit()
 
-            # Prometheus: count outbound + credits
+            # Prometheus
             inc_message(tenant_id, "out")
             if entry:
                 inc_credits(tenant_id, entry.reason_code, entry.units)
 
-            logging.info(f"[Outbound] Sent reply for tenant={tenant_id}, event={event_id}")
+            logging.info(f"[Outbound] Sent reply tenant={tenant_id}, event={event_id}")
+        else:
+            logging.error(f"[Outbound] Failed tenant={tenant_id}: {send_result['error']}")
 
 
 async def main():
