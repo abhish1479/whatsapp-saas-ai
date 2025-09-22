@@ -5,8 +5,8 @@ from typing import Optional, List, Literal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
-from ..deps import get_db
-from ..services.rag import rag
+from deps import get_db
+from services.rag import rag
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 

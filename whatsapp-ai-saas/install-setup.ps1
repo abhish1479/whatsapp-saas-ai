@@ -11,25 +11,24 @@
 .PARAMETER RepoRoot
   Path to the whatsapp-ai-saas repo folder (this script's folder by default)
 
-.PARAMETER PgHost, PgUser, PgPassword, PgDb
+.PARAMETER PgHost, PgUser, PgPassword, PgDb, PgPort
   Connection params for psql (used for migrations)
 
 .PARAMETER WithMonitoring
   Include Prometheus + Grafana compose file
 
 .EXAMPLE
-  # Run once with monitoring:
   powershell -ExecutionPolicy Bypass -File ".\install-setup.ps1" -WithMonitoring
-
 #>
 
 [CmdletBinding()]
 param(
   [string]$RepoRoot = $PSScriptRoot,
   [string]$PgHost = "localhost",
-  [string]$PgUser = "user",
-  [string]$PgPassword = "pass",
-  [string]$PgDb = "whatsapp",
+  [string]$PgUser = "wa_saas_user",
+  [string]$PgPassword = "smileplz",
+  [string]$PgDb = "whatsappdb",
+  [int]$PgPort = 5433,
   [switch]$WithMonitoring
 )
 
@@ -47,8 +46,8 @@ function Ensure-Command($name, $help) {
 Set-Location -Path $RepoRoot
 
 Write-Section "Environment summary"
-Write-Host "RepoRoot       : $RepoRoot"
-Write-Host "DB (psql)      : $PgUser@$PgHost / $PgDb"
+Write-Host "RepoRoot       : ${RepoRoot}"
+Write-Host "DB (psql)      : ${PgUser}@${PgHost}:${PgPort} / ${PgDb}"
 Write-Host "Monitoring     : $($WithMonitoring.IsPresent)"
 
 # --- 1) Check essentials ---
@@ -93,7 +92,7 @@ $envPath = Join-Path $RepoRoot ".env"
 if (-not (Test-Path $envPath)) {
 @"
 # Server runtime
-DATABASE_URL=postgresql+asyncpg://${PgUser}:${PgPassword}@${PgHost}:5432/${PgDb}
+DATABASE_URL=postgresql+asyncpg://${PgUser}:${PgPassword}@${PgHost}:${PgPort}/${PgDb}
 REDIS_URL=redis://localhost:6379/0
 WEBHOOK_QUEUE=wh_inbound_queue
 WHATSAPP_VERIFY_TOKEN=change-me
@@ -120,12 +119,16 @@ if (-not $psqlOk) {
   $mig3 = Join-Path $RepoRoot "server\migrations\003_onboarding.sql"
 
   $env:PGPASSWORD = $PgPassword
-  & psql -h $PgHost -U $PgUser -d $PgDb -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" | Out-Null
+  & psql -h $PgHost -p $PgPort -U $PgUser -d $PgDb -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" | Out-Null
 
   foreach ($mig in @($mig1, $mig2, $mig3)) {
+    if ($null -eq $mig) {
+      Write-Warning "Migration variable is null"
+      continue
+    }
     if (Test-Path $mig) {
       Write-Host "Running $(Split-Path $mig -Leaf)"
-      & psql -h $PgHost -U $PgUser -d $PgDb -f $mig
+      & psql -h $PgHost -p $PgPort -U $PgUser -d $PgDb -f $mig
     } else {
       Write-Warning "Migration file missing: $mig"
     }

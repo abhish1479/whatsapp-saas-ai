@@ -1,45 +1,28 @@
-# server/services/rag.py
-import os, uuid
-from typing import List, Dict
-from chromadb import Client
-from chromadb.config import Settings
+# server/routers/rag.py
+from fastapi import APIRouter
+from services.rag import rag
 
-CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma")
+router = APIRouter(prefix="/rag", tags=["rag"])
 
-client = Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=CHROMA_PATH))
+@router.post("/add")
+async def add_doc(tenant_id: str, doc_id: str, text: str, source_url: str | None = None, version: str | None = None, language: str | None = "en"):
+    await rag.add_documents(tenant_id, [{
+        "id": doc_id,
+        "text": text,
+        "source_url": source_url,
+        "version": version,
+        "language": language,
+    }])
+    return {"ok": True}
 
-class RAGService:
-    def __init__(self, client):
-        self.client = client
+@router.get("/search")
+async def search(tenant_id: str, q: str, n: int = 6):
+    return {"results": await rag.search(tenant_id, q, k=n)}
 
-    def _coll_name(self, tenant_id: str):
-        return f"tenant::{tenant_id}"
+@router.get("/query")
+async def query_raw(tenant_id: str, q: str, n: int = 6):
+    return await rag.query(tenant_id, q, n=n)
 
-    async def add_documents(self, tenant_id: str, docs: List[Dict]):
-        """
-        docs = [{id, text, source_url, version, language}]
-        """
-        coll = self.client.get_or_create_collection(name=self._coll_name(tenant_id))
-        ids = [d.get("id") or str(uuid.uuid4()) for d in docs]
-        texts = [d["text"] for d in docs]
-        metadata = [{"source_url": d.get("source_url"), "version": d.get("version"), "lang": d.get("language")} for d in docs]
-        coll.add(ids=ids, documents=texts, metadatas=metadata)
-
-    async def query(self, tenant_id: str, query: str, n: int = 6):
-        coll = self.client.get_or_create_collection(name=self._coll_name(tenant_id))
-        if coll.count() == 0:
-            return []  # empty RAG namespace
-        res = coll.query(query_texts=[query], n_results=n)
-        return res
-
-    async def answer(self, tenant_id: str, query: str):
-        """
-        Simple naive answer generator. In real flow, pass retrieved docs to LLM.
-        """
-        docs = await self.query(tenant_id, query)
-        if not docs or not docs.get("documents"):
-            return {"answer": "I don't have info yet, connecting you to the business owner.", "sources": []}
-        merged = " ".join(docs["documents"][0])
-        return {"answer": merged[:500], "sources": docs.get("metadatas", [])}
-
-rag = RAGService(client)
+@router.get("/answer")
+async def answer(tenant_id: str, q: str):
+    return await rag.answer(tenant_id, q)

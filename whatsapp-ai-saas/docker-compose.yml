@@ -1,33 +1,73 @@
+# docker-compose.yml  (no top-level "version:" key)
 
-version: "3.9"
 services:
   db:
     image: postgres:15-alpine
+    container_name: wa_db
     environment:
-      POSTGRES_DB: wa_saas
-      POSTGRES_USER: wa_user
-      POSTGRES_PASSWORD: wa_pass
-    ports: ["5432:5432"]
+      POSTGRES_DB: whatsappdb
+      POSTGRES_USER: wa_saas_user
+      POSTGRES_PASSWORD: smileplz
+    ports:
+      - "5433:5432"   # host:container
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wa_saas_user -d whatsappdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    container_name: wa_redis
+    ports:
+      - "6379:6379"
 
-  api:
-    build: ./server
-    env_file: .env
-    depends_on: [db, redis]
-    ports: ["8000:8000"]
+  server:
+    container_name: wa_server
+    build:
+      context: ./server            # IMPORTANT: point at the folder containing Dockerfile + requirements.txt
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_PATH: /data/chroma
+      WEBHOOK_QUEUE: wh_inbound_queue
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
     volumes:
-      - ./server/chroma_db:/app/chroma_db
+      - ./data/chroma:/data/chroma  # make sure this folder exists on host
 
-  web:
-    build: ./frontend
-    env_file: .env
-    depends_on: [api]
-    ports: ["5173:5173"]
+  worker:
+    container_name: wa_worker
+    build:
+      context: ./server            # reuse the same image as server
+      dockerfile: Dockerfile
+    command: python -m server.workers.webhook_worker
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      WEBHOOK_QUEUE: wh_inbound_queue
+      CHROMA_PATH: /data/chroma
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      server:
+        condition: service_started
+    volumes:
+      - ./data/chroma:/data/chroma
 
 volumes:
   db_data:

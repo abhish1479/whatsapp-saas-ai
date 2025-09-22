@@ -5,13 +5,13 @@ import aioredis
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from server.services.credits import reserve, finalize
-from server.services.metrics import inc_message, inc_credits
-from server.services.moderation import moderate_message
-from server.services.whatsapp import send_whatsapp_message
-from server.services.rag import rag
-from server.services.llm import generate_reply
-from server.services.conversations import open_conversation, update_conversation_timestamp
+from services.credits import reserve, finalize
+from services.metrics import inc_message, inc_credits
+from services.moderation import moderate_message
+from services.whatsapp import send_whatsapp_message
+from services.rag import rag
+from services.llm import generate_reply
+from services.conversations import open_conversation, update_conversation_timestamp
 
 
 
