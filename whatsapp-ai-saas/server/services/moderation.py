@@ -3,7 +3,7 @@
 from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from server.services.metrics import moderation_blocks
+from services.metrics import moderation_blocks
 
 
 async def moderate_message(

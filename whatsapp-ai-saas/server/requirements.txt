@@ -14,7 +14,6 @@ tiktoken==0.7.0
 razorpay==1.4.2
 pydantic[email]
 asyncpg
-aioredis
 httpx
 beautifulsoup4
 prometheus_client
@@ -25,3 +24,5 @@ openai
 anthropic
 google-generativeai
 httpx  # also used by Ollama client
+
+prometheus-fastapi-instrumentator==6.1.0

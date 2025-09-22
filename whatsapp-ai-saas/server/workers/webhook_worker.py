@@ -1,9 +1,9 @@
 # server/workers/webhook_worker.py
 
 import os, json, asyncio, logging
-import aioredis
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+import redis.asyncio as redis
 
 from services.credits import reserve, finalize
 from services.metrics import inc_message, inc_credits
@@ -112,7 +112,7 @@ async def handle_event(event_id: str, payload: dict):
 
 
 async def main():
-    r = await aioredis.from_url(REDIS_URL, decode_responses=True)
+    r =  redis.from_url(REDIS_URL, decode_responses=True)
     try:
         await r.xgroup_create(name=QUEUE_KEY, groupname=GROUP, id="$", mkstream=True)
     except Exception:

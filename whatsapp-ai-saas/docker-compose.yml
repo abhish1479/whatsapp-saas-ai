@@ -25,36 +25,37 @@ services:
       - "6379:6379"
 
   server:
-    container_name: wa_server
-    build:
-      context: ./server            # IMPORTANT: point at the folder containing Dockerfile + requirements.txt
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
-      REDIS_URL: redis://redis:6379/0
-      CHROMA_PATH: /data/chroma
-      WEBHOOK_QUEUE: wh_inbound_queue
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data/chroma:/data/chroma  # make sure this folder exists on host
+      container_name: wa_server
+      build:
+        context: .                   # build from project root
+        dockerfile: server/Dockerfile
+      command: uvicorn main:app --host 0.0.0.0 --port 8000
+      env_file:
+        - .env
+      environment:
+        DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+        REDIS_URL: redis://redis:6379/0
+        CHROMA_PATH: /data/chroma
+        WEBHOOK_QUEUE: wh_inbound_queue
+      depends_on:
+        db:
+          condition: service_healthy
+        redis:
+          condition: service_started
+      ports:
+        - "8000:8000"
+      volumes:
+        - ./data/chroma:/data/chroma
 
   worker:
     container_name: wa_worker
     build:
-      context: ./server            # reuse the same image as server
-      dockerfile: Dockerfile
-    command: python -m server.workers.webhook_worker
+      context: .                   # build from project root
+      dockerfile: server/Dockerfile
+    command: python -m workers.webhook_worker
     env_file:
       - .env
-    environment:
+    environment:         
       DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
       REDIS_URL: redis://redis:6379/0
       WEBHOOK_QUEUE: wh_inbound_queue
@@ -68,6 +69,7 @@ services:
         condition: service_started
     volumes:
       - ./data/chroma:/data/chroma
+
 
 volumes:
   db_data:

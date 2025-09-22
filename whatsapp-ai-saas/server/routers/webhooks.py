@@ -3,7 +3,8 @@
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 import os, json, time
-import aioredis
+import redis.asyncio as redis
+
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -13,7 +14,7 @@ VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "change-me")
 
 
 async def get_redis():
-    return await aioredis.from_url(REDIS_URL, decode_responses=True)
+    return await redis.from_url(REDIS_URL, decode_responses=True)
 
 
 @router.get("/whatsapp")
