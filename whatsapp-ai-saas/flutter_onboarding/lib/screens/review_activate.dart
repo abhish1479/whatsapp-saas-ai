@@ -27,7 +27,7 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text("Review & Activate", style: Theme.of(context).textTheme.headline6),
+        Text("Review & Activate", style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
         const Text("Review your details above. When you’re ready, activate the WhatsApp Agent."),
         const Spacer(),

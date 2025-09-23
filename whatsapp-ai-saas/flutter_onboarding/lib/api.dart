@@ -1,12 +1,11 @@
 // lib/api.dart
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 class Api {
   final String baseUrl;
   final Duration timeout;
-
   Api(this.baseUrl, {this.timeout = const Duration(seconds: 20)});
 
   Uri _u(String path) => Uri.parse('$baseUrl$path');
@@ -37,11 +36,22 @@ class Api {
     throw Exception('POST $path failed: ${res.statusCode} ${res.body}');
   }
 
-  /// CSV upload (web/mobile)
-  Future<Map<String, dynamic>> uploadCsv(String path, {required String filename, required List<int> bytes, Map<String, String>? fields}) async {
+  /// CSV upload using multipart/form-data
+  Future<Map<String, dynamic>> uploadCsv(
+    String path, {
+    required String filename,
+    required List<int> bytes,
+    Map<String, String>? fields,
+  }) async {
     final req = http.MultipartRequest('POST', _u(path));
     if (fields != null) req.fields.addAll(fields);
-    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: MediaTypeCsv));
+    req.files.add(http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: filename,
+      contentType: MediaType('text', 'csv'),
+    ));
+
     final streamed = await req.send().timeout(timeout);
     final res = await http.Response.fromStream(streamed);
     if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -49,10 +59,4 @@ class Api {
     }
     throw Exception('CSV upload failed: ${res.statusCode} ${res.body}');
   }
-}
-
-// tiny helper for content-type
-class MediaTypeCsv implements http.Client {
-  static final _ct = {'content-type': 'text/csv'};
-  @override noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

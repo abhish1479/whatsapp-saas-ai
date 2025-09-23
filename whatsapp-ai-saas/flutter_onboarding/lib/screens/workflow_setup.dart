@@ -25,7 +25,7 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Text("Conversation Workflow", style: Theme.of(context).textTheme.headline6),
+      Text("Conversation Workflow", style: Theme.of(context).textTheme.headlineSmall),
       SwitchListTile(title: const Text("Ask for Customer Name"), value: askName, onChanged:(v)=> setState(()=>askName=v)),
       SwitchListTile(title: const Text("Ask for Location"), value: askLocation, onChanged:(v)=> setState(()=>askLocation=v)),
       SwitchListTile(title: const Text("Offer Payment Link"), value: offerPayment, onChanged:(v)=> setState(()=>offerPayment=v)),

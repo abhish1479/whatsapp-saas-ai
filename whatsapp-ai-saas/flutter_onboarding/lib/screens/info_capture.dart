@@ -8,7 +8,6 @@ class InfoCaptureScreen extends StatefulWidget {
   final String tenantId;
   final VoidCallback onNext;
   final VoidCallback onBack;
-
   const InfoCaptureScreen({
     super.key,
     required this.api,
@@ -22,16 +21,12 @@ class InfoCaptureScreen extends StatefulWidget {
 }
 
 class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
-  // Manual item form
   final _manualForm = GlobalKey<FormState>();
   final _manualName = TextEditingController();
   final _manualPrice = TextEditingController();
   final _manualDesc = TextEditingController();
-
-  // Website ingestion
   final _site = TextEditingController();
 
-  // UI state
   bool _loadingCsv = false;
   bool _savingManual = false;
   bool _ingestingSite = false;
@@ -45,9 +40,9 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     super.dispose();
   }
 
-  void _toast(String msg) {
+  void _toast(String m) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   }
 
   Future<void> _pickCsv() async {
@@ -58,23 +53,16 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
         allowedExtensions: const ['csv'],
         withData: true,
       );
-      if (res == null || res.files.single.bytes == null) {
-        return; // user canceled
-      }
+      if (res == null || res.files.single.bytes == null) return;
       final file = res.files.single;
       final bytes = file.bytes as Uint8List;
 
-      // Prefer the newer helper:
-      // await widget.api.uploadCsv('/onboarding/items/csv',
-      //   filename: file.name, bytes: bytes, fields: {'tenant_id': widget.tenantId});
-
-      // If your current Api has the older signature uploadCsv(path, tenantId, bytes, filename: ...):
-      // (Uncomment the one that matches your Api class)
+      // new uploadCsv signature: named args
       await widget.api.uploadCsv(
         '/onboarding/items/csv',
-        widget.tenantId,
-        bytes,
         filename: file.name,
+        bytes: bytes,
+        fields: {'tenant_id': widget.tenantId},
       );
 
       _toast('CSV uploaded');
@@ -119,20 +107,10 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     }
     try {
       setState(() => _ingestingSite = true);
-      // Prefer JSON (recommended):
-      // await widget.api.postJson('/onboarding/items/website', {
-      //   'tenant_id': widget.tenantId,
-      //   'url': url,
-      //   'respect_robots': true,
-      //   'max_pages': 10,
-      // });
-
-      // If your server expects form-encoded (as in your current Api):
       await widget.api.postForm('/onboarding/items/website', {
         'tenant_id': widget.tenantId,
         'url': url,
       });
-
       _toast('Website queued for analysis');
     } catch (e) {
       _toast('Website ingestion failed: $e');
@@ -144,16 +122,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    Widget sectionTitle(String text, {IconData? icon}) {
-      return Row(
-        children: [
-          if (icon != null) Icon(icon, size: 18, color: theme.colorScheme.primary),
-          if (icon != null) const SizedBox(width: 6),
-          Text(text, style: theme.textTheme.titleMedium),
-        ],
-      );
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -167,22 +135,18 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                 Text('Add Products / Services', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
 
-                // CSV upload
                 Card(
                   child: ListTile(
                     leading: _loadingCsv
-                        ? const SizedBox(
-                            width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.upload_file),
                     title: const Text('Upload CSV'),
                     subtitle: const Text('Bulk upload: name, price, description, image_url'),
                     onTap: _loadingCsv ? null : _pickCsv,
-                    trailing: _loadingCsv ? const SizedBox(width: 24) : null,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // Manual add
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -191,26 +155,19 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          sectionTitle('Add Manually', icon: Icons.add_box),
+                          Text('Add Manually', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _manualName,
-                            decoration: const InputDecoration(
-                              labelText: 'Name',
-                              hintText: 'e.g., Premium Consultation',
-                            ),
-                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(labelText: 'Name', hintText: 'Premium Consultation'),
                             validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            textInputAction: TextInputAction.next,
                           ),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _manualPrice,
-                            decoration: const InputDecoration(
-                              labelText: 'Price',
-                              hintText: 'e.g., 499',
-                            ),
+                            decoration: const InputDecoration(labelText: 'Price', hintText: '499'),
                             keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.next,
                             validator: (v) {
                               final t = (v ?? '').trim();
                               if (t.isEmpty) return 'Required';
@@ -218,14 +175,12 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                               if (n == null || n < 0) return 'Enter a valid number';
                               return null;
                             },
+                            textInputAction: TextInputAction.next,
                           ),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _manualDesc,
-                            decoration: const InputDecoration(
-                              labelText: 'Description',
-                              hintText: 'Short details visible to users',
-                            ),
+                            decoration: const InputDecoration(labelText: 'Description', hintText: 'Short details'),
                             maxLines: 3,
                           ),
                           const SizedBox(height: 12),
@@ -234,8 +189,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                             child: ElevatedButton.icon(
                               onPressed: _savingManual ? null : _addManual,
                               icon: _savingManual
-                                  ? const SizedBox(
-                                      width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                                   : const Icon(Icons.add),
                               label: Text(_savingManual ? 'Saving...' : 'Add'),
                             ),
@@ -247,19 +201,15 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Website ingestion
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      sectionTitle('Paste Website Link', icon: Icons.language),
+                      Text('Paste Website Link', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _site,
-                        decoration: const InputDecoration(
-                          labelText: 'https://...',
-                          hintText: 'Public site with your services/products',
-                        ),
+                        decoration: const InputDecoration(labelText: 'https://...', hintText: 'Public site with your services/products'),
                         keyboardType: TextInputType.url,
                         onSubmitted: (_) => _ingestingSite ? null : _submitSite(),
                       ),
@@ -269,8 +219,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                         child: ElevatedButton.icon(
                           onPressed: _ingestingSite ? null : _submitSite,
                           icon: _ingestingSite
-                              ? const SizedBox(
-                                  width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.playlist_add_check),
                           label: Text(_ingestingSite ? 'Queuing...' : 'Analyze Website'),
                         ),

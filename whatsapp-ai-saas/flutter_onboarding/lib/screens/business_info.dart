@@ -33,7 +33,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text("Business Information", style: Theme.of(context).textTheme.headline6),
+          Text("Business Information", style: Theme.of(context).textTheme.headlineSmall),
           TextFormField(
             controller: _name,
             decoration: const InputDecoration(labelText: "Business Name"),

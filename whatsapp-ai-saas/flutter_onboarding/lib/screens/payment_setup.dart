@@ -27,7 +27,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Text("Payment Setup", style: Theme.of(context).textTheme.headline6),
+      Text("Payment Setup", style: Theme.of(context).textTheme.headlineSmall),
       TextField(controller: _upi, decoration: const InputDecoration(labelText: "UPI ID")),
       TextField(controller: _bank, decoration: const InputDecoration(labelText: "Bank Account Details")),
       TextField(controller: _checkout, decoration: const InputDecoration(labelText: "Website Checkout Link")),
