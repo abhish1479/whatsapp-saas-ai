@@ -1,42 +1,51 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android") // modern Kotlin plugin id
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.abhi.whatsappai.onboarding"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
+    // Use explicit SDKs (works well with Flutter 3.35+ and modern plugins)
+    compileSdk = 34
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.leadbot_client"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId = "com.abhi.whatsappai.onboarding"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
     }
+
+    // Java/Kotlin 17 to satisfy recent Android Gradle Plugin & plugins like file_picker v8+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    // Optional: keep if you rely on NDK (otherwise you can remove)
+    // ndkVersion = "26.1.10909125"
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // For quick testing; replace with your own signing when publishing
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
         }
+        debug { /* defaults */ }
     }
+
+    // (Optional) If you hit META-INF merge issues, uncomment:
+    // packaging {
+    //     resources {
+    //         excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1")
+    //     }
+    // }
 }
 
 flutter {
