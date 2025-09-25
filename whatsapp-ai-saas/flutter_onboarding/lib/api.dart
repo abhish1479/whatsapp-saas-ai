@@ -2,36 +2,61 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Api {
+  String? tenantId;
   final String baseUrl;
   final Duration timeout;
   Api(this.baseUrl, {this.timeout = const Duration(seconds: 20)});
 
   Uri _u(String path) => Uri.parse('$baseUrl$path');
 
+  Future<void> saveTenantId(String id) async {
+    tenantId = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('tenant_id', id);
+  }
+
+  Future<String?> getTenantId() async {
+    if (tenantId != null) return tenantId;
+    final prefs = await SharedPreferences.getInstance();
+    tenantId = prefs.getString('tenant_id');
+    return tenantId;
+  }
+
   Future<Map<String, dynamic>> getJson(String path) async {
     final res = await http.get(_u(path)).timeout(timeout);
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      return res.body.isEmpty ? {} : json.decode(res.body) as Map<String, dynamic>;
+      return res.body.isEmpty
+          ? {}
+          : json.decode(res.body) as Map<String, dynamic>;
     }
     throw Exception('GET $path failed: ${res.statusCode} ${res.body}');
   }
 
-  Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> postJson(
+      String path, Map<String, dynamic> body) async {
     final res = await http
-        .post(_u(path), headers: {'Content-Type': 'application/json'}, body: json.encode(body))
+        .post(_u(path),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(body))
         .timeout(timeout);
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      return res.body.isEmpty ? {} : json.decode(res.body) as Map<String, dynamic>;
+      return res.body.isEmpty
+          ? {}
+          : json.decode(res.body) as Map<String, dynamic>;
     }
     throw Exception('POST $path failed: ${res.statusCode} ${res.body}');
   }
 
-  Future<Map<String, dynamic>> postForm(String path, Map<String, String> body) async {
+  Future<Map<String, dynamic>> postForm(
+      String path, Map<String, String> body) async {
     final res = await http.post(_u(path), body: body).timeout(timeout);
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      return res.body.isEmpty ? {} : json.decode(res.body) as Map<String, dynamic>;
+      return res.body.isEmpty
+          ? {}
+          : json.decode(res.body) as Map<String, dynamic>;
     }
     throw Exception('POST $path failed: ${res.statusCode} ${res.body}');
   }
