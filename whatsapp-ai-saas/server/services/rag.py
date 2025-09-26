@@ -48,7 +48,7 @@ class RAGService:
         raise NotImplementedError(f"RAG provider '{self.provider}' is not implemented yet.")
 
     def _ns(self, tenant_id: str) -> str:
-        return f"tenant::{tenant_id}"
+        return f"tenant-{tenant_id}"
 
     def _coll_name(self, tenant_id: str) -> str:
         return self._ns(tenant_id)
