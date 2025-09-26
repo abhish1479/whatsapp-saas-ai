@@ -1,6 +1,6 @@
 # server/routers/onboarding.py
 import random
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends ,status
 from fastapi.responses import JSONResponse
 from typing import Optional, List, Literal
 from requests import Session
@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
 from deps import get_db
 from services.rag import rag
+from models import BusinessProfile , Item , Payment, User, WebIngestRequest, Workflow
+from data_models.onboarding_response_model import ReviewResponse
+from utils.enums import Onboarding
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
@@ -258,5 +261,85 @@ async def activate_agent(
     if not prof:
         raise HTTPException(400, "Business profile missing")
     db.execute(text("UPDATE business_profiles SET is_active=true, updated_at=now() WHERE tenant_id=:t"), {"t": tenant_id})
+    db.execute(text("UPDATE users SET onboarding_process=:op WHERE tenant_id=:t"), {"op": Onboarding.COMPLETED, "t": tenant_id})
     db.commit()
     return {"ok": True, "activated": True}
+
+
+@router.post("/get_review", response_model=ReviewResponse, status_code=200)
+async def get_review(
+    tenant_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    # Check if business profile exists
+    business_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
+    if not business_profile:
+        return ReviewResponse(
+            tenant_id=tenant_id,
+            onboarding_process=Onboarding.INPROCESS,
+            has_business_profile=False,
+            item_count=0,
+            items=[],
+        )
+
+    # Query related data
+    payment = db.query(Payment).filter(Payment.tenant_id == tenant_id).first()
+    workflow = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
+    items = db.query(Item).filter(Item.tenant_id == tenant_id).all()
+    web_ingest_request = db.query(WebIngestRequest).filter(WebIngestRequest.tenant_id == tenant_id).first()
+
+    # Count items
+    item_count = len(items)
+
+    # Determine boolean flags
+    has_business_type = bool(business_profile.business_type)  # Not None/empty
+    has_items = item_count > 0
+    has_web_ingest = web_ingest_request is not None
+    has_profile_activate = business_profile.is_active  # True if activated
+
+    # Prepare response data
+    return ReviewResponse (
+        tenant_id=tenant_id,
+        onboarding_process = Onboarding.COMPLETED if has_profile_activate else Onboarding.INPROCESS,
+        has_business_profile=bool(business_profile),
+        has_business_type=has_business_type,
+        has_items=has_items,
+        has_web_ingest=has_web_ingest,
+        has_workflow=bool(workflow),
+        has_payment=bool(payment),
+        has_profile_activate=has_profile_activate,
+        item_count=item_count,
+        business_name=business_profile.business_name,
+        owner_phone=business_profile.owner_phone,
+        language=business_profile.language,
+        items=[
+            {
+                "id": str(item.id),
+                "name": item.name,
+                "price": float(item.price),
+                "description": item.description,
+                "image_url": item.image_url,
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+            }
+            for item in items
+        ],
+        web_ingest={
+            "id": str(web_ingest_request.id),
+            "url": web_ingest_request.url,
+            "status": web_ingest_request.status,
+            "created_at": web_ingest_request.created_at.isoformat() if web_ingest_request.created_at else None,
+        } if web_ingest_request else None,
+        workflow={
+            "template": workflow.template,
+            "ask_name": workflow.ask_name,
+            "ask_location": workflow.ask_location,
+            "offer_payment": workflow.offer_payment,
+            "updated_at": workflow.updated_at.isoformat() if workflow.updated_at else None,
+        } if workflow else None,
+        payment={
+            "upi_id": payment.upi_id,
+            "bank_details": payment.bank_details,
+            "checkout_link": payment.checkout_link,
+            "updated_at": payment.updated_at.isoformat() if payment.updated_at else None,
+        } if payment else None,
+    )

@@ -1,8 +1,10 @@
 
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint
+import uuid
+from sqlalchemy import UUID, Column, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
+from utils.enums import Onboarding
 
 class Tenant(Base):
     __tablename__ = "tenants"
@@ -18,6 +20,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="owner")
+    onboarding_process = Column(String, default=Onboarding.INPROCESS) # InProgress|Completed
     created_at = Column(DateTime, server_default=func.now())
 
 class Number(Base):
@@ -84,3 +87,74 @@ class Template(Base):
     category = Column(String, default="MARKETING")
     body = Column(Text, nullable=False)
     status = Column(String, default="draft")
+
+
+
+class BusinessProfile(Base):
+    __tablename__ = "business_profiles"
+
+    tenant_id = Column(String(64), primary_key=True)
+    business_name = Column(Text, nullable=False)
+    owner_phone = Column(Text, nullable=False)
+    language = Column(String(8), nullable=False, default="en")
+    business_type = Column(String(16))
+    is_active = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+# -------------------------------
+# Items
+# -------------------------------
+class Item(Base):
+    __tablename__ = "items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String(64), nullable=False)
+    name = Column(Text, nullable=False)
+    price = Column(Numeric(precision=10, scale=2), nullable=False, default=0)
+    description = Column(Text)
+    image_url = Column(Text)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    # Optional: Index for performance (matches your SQL index)
+    __table_args__ = (Index('idx_items_tenant', 'tenant_id'),)
+
+
+# -------------------------------
+# Workflows
+# -------------------------------
+class Workflow(Base):
+    __tablename__ = "workflows"
+
+    tenant_id = Column(String(64), primary_key=True)
+    template = Column(Text, nullable=False)
+    ask_name = Column(Boolean, nullable=False, default=True)
+    ask_location = Column(Boolean, nullable=False, default=False)
+    offer_payment = Column(Boolean, nullable=False, default=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+# -------------------------------
+# Payments
+# -------------------------------
+class Payment(Base):
+    __tablename__ = "payments"
+
+    tenant_id = Column(String(64), primary_key=True)
+    upi_id = Column(Text)
+    bank_details = Column(Text)
+    checkout_link = Column(Text)
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+# -------------------------------
+# Web Ingest Requests
+# -------------------------------
+class WebIngestRequest(Base):
+    __tablename__ = "web_ingest_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String(64), nullable=False)
+    url = Column(Text, nullable=False)
+    status = Column(String(16), nullable=False, default="queued")
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
