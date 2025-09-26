@@ -7,7 +7,8 @@ String resolveApiBase() {
   const fromDefine = String.fromEnvironment('API_BASE');
   if (fromDefine.isNotEmpty) return fromDefine;
   // sensible defaults for dev
-  return 'http://localhost:8000';
+  // return 'http://localhost:8000';
+  return 'https://0b0d30716cca.ngrok-free.app';
 }
 
 void main() {
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final api = Api(resolveApiBase());
-    const tenantId = 'demo-tenant'; // TODO: replace with real tenant/session
+    const tenantId = 'MobiPvtLtd37753729'; // TODO: replace with real tenant/session
     return MaterialApp(
       title: 'WhatsApp AI Onboarding',
       theme: ThemeData(useMaterial3: true),
