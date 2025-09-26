@@ -62,26 +62,38 @@ class Api {
   }
 
   /// CSV upload using multipart/form-data
-  Future<Map<String, dynamic>> uploadCsv(
-    String path, {
-    required String filename,
-    required List<int> bytes,
-    Map<String, String>? fields,
-  }) async {
-    final req = http.MultipartRequest('POST', _u(path));
-    if (fields != null) req.fields.addAll(fields);
-    req.files.add(http.MultipartFile.fromBytes(
+Future<Map<String, dynamic>> uploadCsv(
+  String path, {
+  required String filename,
+  required List<int> bytes,
+  Map<String, String>? fields,
+}) async {
+  final tid = await getTenantId();
+  final allFields = Map<String, String>.from(fields ?? {});
+  if (tid != null && !allFields.containsKey('tenant_id')) {
+    allFields['tenant_id'] = tid;
+  }
+
+  final req = http.MultipartRequest('POST', _u(path))
+    ..fields.addAll(allFields)
+    ..files.add(http.MultipartFile.fromBytes(
       'file',
       bytes,
       filename: filename,
       contentType: MediaType('text', 'csv'),
     ));
 
-    final streamed = await req.send().timeout(timeout);
-    final res = await http.Response.fromStream(streamed);
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return res.body.isEmpty ? {} : json.decode(res.body) as Map<String, dynamic>;
-    }
-    throw Exception('CSV upload failed: ${res.statusCode} ${res.body}');
+  final streamed = await req.send().timeout(timeout);
+  final res = await http.Response.fromStream(streamed);
+
+  if (res.statusCode >= 200 && res.statusCode < 300) {
+    return res.body.isEmpty
+        ? {}
+        : json.decode(res.body) as Map<String, dynamic>;
   }
+
+  throw Exception(
+    'CSV upload failed: ${res.statusCode} - ${res.reasonPhrase}\n${res.body}',
+  );
+}
 }
