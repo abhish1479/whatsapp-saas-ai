@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import '../api.dart';
+import '../helper/utils/shared_preference.dart';
 
 class ReviewActivateScreen extends StatefulWidget {
   final Api api;
-  final String tenantId;
   final VoidCallback onBack;
-  
+
   const ReviewActivateScreen({
     Key? key,
     required this.api,
-    required this.tenantId,
     required this.onBack,
   }) : super(key: key);
-  
+
   @override
   State<ReviewActivateScreen> createState() => _ReviewActivateScreenState();
 }
@@ -25,7 +24,7 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
   Future<void> _activate() async {
     setState(() => _loading = true);
     try {
-      final res = await widget.api.postForm('/onboarding/activate', {'tenant_id': widget.tenantId});
+      final res = await widget.api.postForm('/onboarding/activate', {'tenant_id': await StoreUserData().getTenantId()});
       setState(() {
         _msg = res['activated'] == true ? "Agent Activated & Test Message Sent!" : "Activation done";
         _isSuccess = true;

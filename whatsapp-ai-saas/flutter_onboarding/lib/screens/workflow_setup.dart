@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import '../api.dart';
+import '../helper/utils/shared_preference.dart';
 
 class WorkflowSetupScreen extends StatefulWidget {
-  final Api api; 
-  final String tenantId; 
-  final VoidCallback onNext; 
+  final Api api;
+  final VoidCallback onNext;
   final VoidCallback onBack;
-  
+
   const WorkflowSetupScreen({
-    required this.api, 
-    required this.tenantId, 
-    required this.onNext, 
+    required this.api,
+    required this.onNext,
     required this.onBack
   });
-  
-  @override 
+
+  @override
   State<WorkflowSetupScreen> createState() => _WorkflowSetupScreenState();
 }
 
@@ -27,7 +26,7 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
     setState(() => _isLoading = true);
     try {
       await widget.api.postForm('/onboarding/workflow', {
-        'tenant_id': widget.tenantId,
+        'tenant_id': await StoreUserData().getTenantId(),
         'template': template,
         'ask_name': askName.toString(),
         'ask_location': askLocation.toString(),

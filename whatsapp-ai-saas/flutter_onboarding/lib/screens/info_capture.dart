@@ -2,17 +2,16 @@ import 'dart:convert';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:leadbot_client/helper/utils/shared_preference.dart';
 import '../api.dart';
 
 class BusinessInfoCaptureScreen extends StatefulWidget {
   final Api api;
-  final String tenantId;
   final VoidCallback onNext;
   final VoidCallback onBack;
   const BusinessInfoCaptureScreen({
     super.key,
     required this.api,
-    required this.tenantId,
     required this.onNext,
     required this.onBack,
   });
@@ -186,7 +185,7 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
     try {
       setState(() => _savingManual = true);
       await widget.api.postForm('/onboarding/items/manual', {
-        'tenant_id': widget.tenantId,
+        'tenant_id': await StoreUserData().getTenantId(),
         'name': _manualName.text.trim(),
         'price': _manualPrice.text.trim(),
         'description': _manualDesc.text.trim(),
@@ -216,7 +215,7 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
     try {
       setState(() => _ingestingSite = true);
       await widget.api.postForm('/onboarding/items/website', {
-        'tenant_id': widget.tenantId,
+        'tenant_id': await StoreUserData().getTenantId(),
         'url': url,
       });
       _toast('Website queued for analysis');
