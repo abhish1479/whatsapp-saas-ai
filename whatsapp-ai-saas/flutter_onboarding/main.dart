@@ -20,11 +20,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final api = Api(resolveApiBase());
-    const tenantId = 'demo-tenant'; // TODO: replace with real tenant/session
     return MaterialApp(
       title: 'WhatsApp AI Onboarding',
       theme: ThemeData(useMaterial3: true),
-      home: OnboardingWizard(api: api, tenantId: tenantId),
+      home: OnboardingWizard(api: api),
     );
   }
 }

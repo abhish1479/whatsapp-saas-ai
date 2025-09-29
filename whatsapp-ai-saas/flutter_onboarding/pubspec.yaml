@@ -22,6 +22,9 @@ dependencies:
   google_fonts: ^6.2.1
   http_parser: ^4.0.2
   csv: ^6.0.0
+  fluttertoast: ^8.2.6
+  connectivity_plus: ^6.1.4
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
@@ -30,3 +33,20 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/animations/
+    - assets/images/
+  fonts:
+    - family: Lato
+      fonts:
+        - asset: assets/font/lato_thin.ttf
+          weight: 100
+        - asset: assets/font/lato_regular.ttf
+          weight: 400
+        - asset: assets/font/lato_medium.ttf
+          weight: 500
+        - asset: assets/font/lato_semibold.ttf
+          weight: 600
+        - asset: assets/font/lato_bold.ttf
+          weight: 700

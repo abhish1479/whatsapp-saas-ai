@@ -1,16 +1,19 @@
+// business_info.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:leadbot_client/helper/utils/app_loger.dart';
 import '../api.dart';
+import '../helper/ui_helper/custom_widget.dart';
+import '../helper/utils/app_utils.dart';
+import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class BusinessInfoScreen extends StatefulWidget {
   final Api api;
-  final String tenantId;
   final VoidCallback onNext;
 
   const BusinessInfoScreen({
     required this.api,
-    required this.tenantId,
     required this.onNext,
     super.key,
   });
@@ -26,6 +29,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
   final _phoneController = TextEditingController();
   final _lang = ValueNotifier<String>('en');
   bool _loading = false;
+  String? _selectedLanguage = 'en';
 
   late final AnimationController _fadeController;
   late final AnimationController _slideController;
@@ -33,22 +37,24 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
   late final Animation<Offset> _slideAnimation;
 
   BusinessInfoTheme get theme =>
-      Theme.of(context).extension<BusinessInfoTheme>() ?? BusinessInfoTheme.light;
+      Theme.of(context).extension<BusinessInfoTheme>() ??
+      BusinessInfoTheme.light;
 
   @override
   void initState() {
     super.initState();
-    _fadeController =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _slideController =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _slideController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
 
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
 
     _fadeController.forward();
     _slideController.forward();
@@ -64,88 +70,11 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     super.dispose();
   }
 
-Future<void> _submit() async {
-  FocusScope.of(context).unfocus();
-
-  if (!_formKey.currentState!.validate()) return;
-
-  setState(() => _loading = true);
-  try {
-    final response = await widget.api.postForm('/onboarding/business', {
-      'business_name': _nameController.text.trim(),
-      'owner_phone': _phoneController.text.trim(),
-      'language': _lang.value,
-    });
-
-    final ok = response['ok'] == true;
-    final message = response['message']?.toString() ?? 'Unexpected response';
-    final tenantId = response['tenant_id']?.toString();
-
-    if (!mounted) return;
-
-    if (tenantId != null) {
-      await widget.api.saveTenantId(tenantId);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(ok ? Icons.check_circle : Icons.warning_amber_rounded,
-                  color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(child: Text(message)),
-            ],
-          ),
-          backgroundColor: ok ? Colors.green[600] : Colors.orange[700],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: theme.borderRadius),
-        ),
-      );
-
-      await Future.delayed(const Duration(milliseconds: 500));
-      widget.onNext();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(child: Text("Failed to save. Please try again.")),
-            ],
-          ),
-          backgroundColor: Colors.red[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: theme.borderRadius),
-        ),
-      );
-    }
-  } catch (e, stack) {
-    debugPrint('Business save error: $e\n$stack');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(child: Text("Something went wrong. Please try again.")),
-            ],
-          ),
-          backgroundColor: Colors.red[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: theme.borderRadius),
-        ),
-      );
-    }
-  } finally {
-    if (mounted) setState(() => _loading = false);
-  }
-}
-
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final mediaQuery = MediaQuery.of(context);
+    final isPortrait = mediaQuery.orientation == Orientation.portrait;
+    final width = mediaQuery.size.width;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -156,31 +85,64 @@ Future<void> _submit() async {
             position: _slideAnimation,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                if (width > 1024) {
-                  return Row(
-                    children: [
-                      Expanded(flex: 3, child: _buildForm(scrollable: true)),
-                      Expanded(flex: 2, child: _buildWhatsAppPreview()),
-                    ],
-                  );
-                } else if (width > 600) {
-                  return Row(
-                    children: [
-                      Expanded(child: _buildForm(scrollable: true)),
-                      Expanded(child: _buildWhatsAppPreview()),
-                    ],
-                  );
-                } else {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: Column(
+                if (kIsWeb) {
+                  // Web: Wide screens - Row layout
+                  if (width > 1024) {
+                    return Row(
                       children: [
-                        _buildForm(scrollable: false),
-                        const SizedBox(height: 16),
-                        _buildWhatsAppPreview(),
+                        Flexible(flex: 3, child: _buildForm(inRow: true)),
+                        // Pass inRow: true
+                        Flexible(
+                            flex: 2, child: _buildWhatsAppPreview(inRow: true)),
                       ],
-                    ),
-                  );
+                    );
+                  }
+                  // Web: Medium screens - Row layout
+                  else if (width > 600) {
+                    return Row(
+                      children: [
+                        Flexible(flex: 3, child: _buildForm(inRow: true)),
+                        // Pass inRow: true
+                        Flexible(
+                            flex: 2, child: _buildWhatsAppPreview(inRow: true)),
+                      ],
+                    );
+                  } else {
+                    // Web: Small screens - Column layout inside SingleChildScrollView
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Column(
+                        children: [
+                          _buildForm(inRow: false),
+                          const SizedBox(height: 16),
+                          _buildWhatsAppPreview(inRow: false),
+                        ],
+                      ),
+                    );
+                  }
+                } else {
+                  // Mobile: Portrait - Column layout inside SingleChildScrollView
+                  if (isPortrait) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Column(
+                        children: [
+                          _buildForm(inRow: false),
+                          const SizedBox(height: 16),
+                          _buildWhatsAppPreview(inRow: false),
+                        ],
+                      ),
+                    );
+                  } else {
+                    // Mobile: Landscape - Row layout
+                    return Row(
+                      children: [
+                        Flexible(flex: 3, child: _buildForm(inRow: true)),
+                        Flexible(
+                            flex: 2, child: _buildWhatsAppPreview(inRow: true)),
+                      ],
+                    );
+                  }
                 }
               },
             ),
@@ -190,7 +152,7 @@ Future<void> _submit() async {
     );
   }
 
-  Widget _buildForm({required bool scrollable}) {
+  Widget _buildForm({required bool inRow}) {
     final formContent = Padding(
       padding: theme.screenPadding,
       child: Column(
@@ -198,46 +160,111 @@ Future<void> _submit() async {
         children: [
           _buildHeader(),
           const SizedBox(height: 20),
-          _buildTextField(
+          CustomWidgets.buildTextField(
+            context: context,
             controller: _nameController,
-            label: "Business Name",
+            label: "Business Name *",
             hint: "Enter your business name",
             icon: Icons.store,
-            validator: (v) => v?.trim().isEmpty == true ? "Required" : null,
-          ),
-          const SizedBox(height: 20),
-          _buildTextField(
-            controller: _phoneController,
-            label: "Owner Phone (WhatsApp)",
-            hint: "Indian 10-digit mobile number, e.g., 9876543210",
-            icon: Icons.phone,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-            validator: (v) {
-              if (v?.trim().isEmpty == true) return "Required";
-              if (v!.trim().length != 10) return "Enter a valid 10-digit phone number";
+            keyboardType: TextInputType.text,
+            maxLength: 50,
+            validator: (value) {
+              if (value != null &&
+                  value.isNotEmpty &&
+                  value.trim().length < 2) {
+                return 'Please enter complete name';
+              }
               return null;
             },
           ),
           const SizedBox(height: 20),
-          _buildLanguageDropdown(),
+
+          CustomWidgets.buildTextField(
+            context: context,
+            controller: _phoneController,
+            label: "Owner Phone (WhatsApp) *",
+            hint: "10 Digit mobile number, e.g., 9876543210",
+            icon: Icons.phone,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            validator: (value) {
+              if (value?.isEmpty == false && value?.trim().length != 10) {
+                return 'Enter a valid 10-digit mobile number';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          CustomWidgets.buildDropdown(
+            context: context,
+            value: _selectedLanguage,
+            label: "Preferred Language",
+            icon: Icons.language,
+            items: const [
+              DropdownMenuItem(
+                value: 'en',
+                child: Row(
+                  children: [
+                    Text('🇺🇸'),
+                    SizedBox(width: 8),
+                    Text('English'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'hi',
+                child: Row(
+                  children: [
+                    Text('🇮🇳'),
+                    SizedBox(width: 8),
+                    Text('Hindi'),
+                  ],
+                ),
+              ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                _selectedLanguage = value;
+              });
+            },
+          ),
           const SizedBox(height: 32),
-          _buildSubmitButton(),
+          // Submit button
+          CustomWidgets.buildGradientButton(
+            context: context,
+            onPressed: _loading ? null : _submit,
+            text: "Save & Continue",
+            isLoading: _loading,
+            icon: Icons.save,
+          ),
         ],
       ),
     );
 
-    return Container(
-      decoration: BoxDecoration(gradient: theme.formGradient),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: scrollable ? SingleChildScrollView(child: formContent) : formContent,
-      ),
+    Widget formWidget = Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: formContent, // Otherwise just return the content directly
     );
+
+    if (inRow) {
+      formWidget = SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        // Allow scrolling always if needed within Row
+        child: formWidget,
+      );
+      return Container(
+        decoration: BoxDecoration(gradient: theme.formGradient),
+        child: formWidget,
+      );
+    }
+    //
+    else {
+      return Container(
+        decoration: BoxDecoration(gradient: theme.formGradient),
+        child: formWidget,
+      );
+    }
   }
 
   Widget _buildHeader() {
@@ -274,156 +301,124 @@ Future<void> _submit() async {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: theme.borderRadius,
-        boxShadow: [theme.cardShadow],
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
-        validator: validator,
-        textInputAction: TextInputAction.next,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          prefixIcon: Icon(icon, color: Colors.blue[600]),
-          border: OutlineInputBorder(
-            borderRadius: theme.borderRadius,
-            borderSide: BorderSide.none,
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+    try {
+      final response = await widget.api.postForm('/onboarding/business', {
+        'business_name': _nameController.text.trim(),
+        'owner_phone': _phoneController.text.trim(),
+        'language': _lang.value,
+      });
+
+      final ok = response['ok'] == true;
+      final message = response['message']?.toString() ?? 'Unexpected response';
+      final tenantId = response['tenant_id']?.toString();
+
+      if (!mounted) return;
+
+      if (tenantId != null) {
+        await StoreUserData().setTenantId(tenantId);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(ok ? Icons.check_circle : Icons.warning_amber_rounded,
+                    color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text(message)),
+              ],
+            ),
+            backgroundColor: ok ? Colors.green[600] : Colors.orange[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: theme.borderRadius),
           ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          labelStyle: TextStyle(color: Colors.grey[700]),
-          hintStyle: TextStyle(color: Colors.grey[500]),
-        ),
-      ),
-    );
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        widget.onNext();
+      } else {
+        AppUtils.errorToast(context, "Failed to save. Please try again.", 3);
+      }
+    } catch (e, stack) {
+      AppLogger.error('Business save error: $e\n$stack');
+      if (mounted) {
+        AppUtils.errorToast(
+            context, "Something went wrong. Please try again.", 3);
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  Widget _buildLanguageDropdown() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: theme.borderRadius,
-        boxShadow: [theme.cardShadow],
-      ),
-      child: DropdownButtonFormField<String>(
-        value: _lang.value,
-        decoration: InputDecoration(
-          labelText: "Preferred Language",
-          prefixIcon: Icon(Icons.language, color: Colors.purple[600]),
-          border: OutlineInputBorder(
-            borderRadius: theme.borderRadius,
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        items: const [
-          DropdownMenuItem(
-            value: 'en',
-            child: Row(children: [Text('🇺🇸'), SizedBox(width: 8), Text('English')]),
-          ),
-          DropdownMenuItem(
-            value: 'hi',
-            child: Row(children: [Text('🇮🇳'), SizedBox(width: 8), Text('Hindi')]),
-          ),
-        ],
-        onChanged: (v) => setState(() => _lang.value = v ?? 'en'),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return SizedBox(
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _loading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: theme.borderRadius),
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.zero,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: theme.buttonGradient,
-            borderRadius: theme.borderRadius,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: _loading
-              ? const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+  Widget _buildWhatsAppPreview({required bool inRow}) {
+    if (inRow) {
+      return AnimatedBuilder(
+        animation: Listenable.merge([_nameController, _phoneController, _lang]),
+        builder: (context, _) => Flexible(
+          // SALMAN: FIXED - Wrap in Flexible for Row
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey[300]!),
+              boxShadow: [theme.cardShadow],
+            ),
+            // SALMAN: FIXED - Use Column without Expanded, wrap content in scrollable
+            child: Column(
+              children: [
+                _buildWhatsAppHeader(),
+                // SALMAN: FIXED - Wrap chat content in Flexible and SingleChildScrollView
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    // SALMAN: FIXED - Allow scrolling always if needed within Row
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: _buildWhatsAppChat(),
                     ),
-                    SizedBox(width: 12),
-                    Text("Saving...",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-                  ],
-                )
-              : const Text(
-                  "Save & Continue",
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ),
+              ],
+            ),
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildWhatsAppPreview() {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_nameController, _phoneController, _lang]),
-      builder: (context, _) => Container(
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[300]!),
-          boxShadow: [theme.cardShadow],
-        ),
-        child: Column(
-          children: [
-            _buildWhatsAppHeader(),
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                color: Colors.grey[50],
-                child: AnimatedSwitcher(
+      );
+    }
+    //
+    else {
+      return AnimatedBuilder(
+        animation: Listenable.merge([_nameController, _phoneController, _lang]),
+        builder: (context, _) => Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey[300]!),
+            boxShadow: [theme.cardShadow],
+          ),
+          // Use a simple Column with padding, no Expanded
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _buildWhatsAppHeader(),
+                AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   child: _buildWhatsAppChat(),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   Widget _buildWhatsAppHeader() {
@@ -431,7 +426,8 @@ Future<void> _submit() async {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.green[600]!, Colors.green[700]!]),
+        gradient:
+            LinearGradient(colors: [Colors.green[600]!, Colors.green[700]!]),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -444,7 +440,10 @@ Future<void> _submit() async {
             backgroundColor: Colors.white,
             child: Text(
               name.isEmpty ? "B" : name[0].toUpperCase(),
-              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
             ),
           ),
           const SizedBox(width: 12),
@@ -454,9 +453,13 @@ Future<void> _submit() async {
               children: [
                 Text(
                   name.isEmpty ? "Your Business" : name,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
                 ),
-                Text("Online", style: TextStyle(color: Colors.green[100], fontSize: 12)),
+                Text("Online",
+                    style: TextStyle(color: Colors.green[100], fontSize: 12)),
               ],
             ),
           ),
@@ -503,20 +506,26 @@ Future<void> _submit() async {
                   _lang.value == 'hi'
                       ? "नमस्ते $displayName! 👋"
                       : "Hello $displayName! 👋",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   _lang.value == 'hi'
                       ? "हम आपसे WhatsApp पर संपर्क करेंगे। 📲"
                       : "We will reach you on WhatsApp 📲",
-                  style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+                  style: const TextStyle(
+                      fontSize: 14, color: Colors.black87, height: 1.4),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text("12:30 PM", style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                    Text("12:30 PM",
+                        style:
+                            TextStyle(color: Colors.grey[500], fontSize: 11)),
                     const SizedBox(width: 4),
                     Icon(Icons.done_all, color: Colors.blue[600], size: 14),
                   ],
@@ -530,10 +539,15 @@ Future<void> _submit() async {
           alignment: Alignment.centerRight,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(12)),
             child: Text(
               phone.isEmpty ? "+91 XXXXXXXXXX" : "+91 $phone",
-              style: TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500),
             ),
           ),
         ),
