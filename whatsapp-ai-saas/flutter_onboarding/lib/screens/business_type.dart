@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:leadbot_client/helper/utils/shared_preference.dart';
 import '../api.dart';
 import '../theme/business_info_theme.dart';
 
@@ -15,7 +16,7 @@ class BusinessTypeScreen extends StatelessWidget {
   });
 
   Future<void> _choose(BuildContext ctx, String type) async {
-    final tid = await api.getTenantId();
+    final tid = await StoreUserData().getTenantId();
     await api.postForm('/onboarding/type', {
       'tenant_id': tid ?? '',
       'business_type': type,
@@ -151,7 +152,7 @@ class BusinessTypeScreen extends StatelessWidget {
                   children: [
                     OutlinedButton.icon(
                       onPressed: onBack,
-                      icon: const Icon(Icons.arrow_back, size: 18),
+                      icon: const Icon(Icons.arrow_back_ios,color: Colors.black, size: 18),
                       label: const Text("Back"),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(

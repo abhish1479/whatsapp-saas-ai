@@ -2,28 +2,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:leadbot_client/helper/utils/shared_preference.dart';
 
 class Api {
-  String? tenantId;
   final String baseUrl;
   final Duration timeout;
   Api(this.baseUrl, {this.timeout = const Duration(seconds: 20)});
 
   Uri _u(String path) => Uri.parse('$baseUrl$path');
-
-  Future<void> saveTenantId(String id) async {
-    tenantId = id;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tenant_id', id);
-  }
-
-  Future<String?> getTenantId() async {
-    if (tenantId != null) return tenantId;
-    final prefs = await SharedPreferences.getInstance();
-    tenantId = prefs.getString('tenant_id');
-    return tenantId;
-  }
 
   Future<Map<String, dynamic>> getJson(String path) async {
     final res = await http.get(_u(path)).timeout(timeout);
@@ -68,7 +54,7 @@ Future<Map<String, dynamic>> uploadCsv(
   required List<int> bytes,
   Map<String, String>? fields,
 }) async {
-  final tid = await getTenantId();
+  final tid = await StoreUserData().getTenantId();
   final allFields = Map<String, String>.from(fields ?? {});
   if (tid != null && !allFields.containsKey('tenant_id')) {
     allFields['tenant_id'] = tid;

@@ -2,17 +2,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api.dart';
+import '../helper/utils/shared_preference.dart';
 
 class WhatsAppAgentScreen extends StatefulWidget {
   final Api api;
-  final String tenantId;
   final VoidCallback onNext;
   final VoidCallback onBack;
 
   const WhatsAppAgentScreen({
     Key? key,
     required this.api,
-    required this.tenantId,
     required this.onNext,
     required this.onBack,
   }) : super(key: key);
@@ -80,7 +79,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     try {
       // Prepare payload
       final payload = {
-        'tenant_id': widget.tenantId,
+        'tenant_id': await StoreUserData().getTenantId(),
         'agent_name': _nameController.text.trim(),
         'status': _statusController.text.trim(),
         'languages': _selectedLanguages,
