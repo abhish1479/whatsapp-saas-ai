@@ -712,18 +712,19 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        TextButton.icon(
-                          onPressed: widget.onBack,
-                          icon: const Icon(Icons.arrow_back_rounded),
-                          label: const Text('Back'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF64748B),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
+                         OutlinedButton.icon(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: const Text("Back"),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    foregroundColor: const Color(0xFF64748B),
+                  ),
+                ),
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(

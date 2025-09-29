@@ -245,21 +245,17 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                     width: 1,
                   ),
                 ),
-                child: TextButton(
-                  onPressed: _isLoading ? null : widget.onBack,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child:  OutlinedButton.icon(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: const Text("Back"),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: Text(
-                    "Back",
-                    style: TextStyle(
-                      color: _isLoading ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                    foregroundColor: const Color(0xFF64748B),
                   ),
                 ),
               ),
