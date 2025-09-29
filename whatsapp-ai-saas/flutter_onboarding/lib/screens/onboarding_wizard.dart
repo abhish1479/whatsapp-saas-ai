@@ -7,8 +7,7 @@ import 'workflow_setup.dart';
 import 'payment_setup.dart';
 import 'review_activate.dart';
 import 'auth_screen.dart';
-import 'subscription_plan.dart';
-
+import 'whatsapp_agent_screen.dart';
 class OnboardingWizard extends StatefulWidget {
   final Api api;
   final String tenantId;
@@ -26,13 +25,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      // SubscriptionScreen(),
-      // AuthScreen(),
+      SignupScreen(onNext: next),
       BusinessInfoScreen(api: widget.api, tenantId: widget.tenantId, onNext: next),
       BusinessTypeScreen(api: widget.api, onNext: next, onBack: back),
       BusinessInfoCaptureScreen(api: widget.api, tenantId: widget.tenantId, onNext: next, onBack: back),
       WorkflowSetupScreen(api: widget.api, tenantId: widget.tenantId, onNext: next, onBack: back),
-      PaymentSetupScreen(api: widget.api, tenantId: widget.tenantId, onNext: next, onBack: back),
+      // PaymentSetupScreen(api: widget.api, tenantId: widget.tenantId, onNext: next, onBack: back),
+      WhatsAppAgentScreen(api: widget.api, tenantId: widget.tenantId, onNext: next, onBack: back),
       ReviewActivateScreen(api: widget.api, tenantId: widget.tenantId, onBack: back),
     ];
     return Scaffold(

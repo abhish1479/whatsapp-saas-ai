@@ -25,8 +25,8 @@ class BusinessTypeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme =
-        Theme.of(context).extension<BusinessInfoTheme>() ?? BusinessInfoTheme.light;
+    final theme = Theme.of(context).extension<BusinessInfoTheme>() ??
+        BusinessInfoTheme.light;
 
     final tiles = [
       _TypeTile(
@@ -75,15 +75,17 @@ class BusinessTypeScreen extends StatelessWidget {
                         color: Colors.blue[100],
                         borderRadius: theme.borderRadius,
                       ),
-                      child: Icon(Icons.category, color: Colors.blue[700], size: 28),
+                      child: Icon(Icons.category,
+                          color: Colors.blue[700], size: 28),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       "Select Business Type",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -110,7 +112,8 @@ class BusinessTypeScreen extends StatelessWidget {
                     }
 
                     return GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 16,
@@ -146,19 +149,19 @@ class BusinessTypeScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: onBack,
+                      icon: const Icon(Icons.arrow_back, size: 18),
+                      label: const Text("Back"),
                       style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: theme.borderRadius,
-                        ),
-                        side: BorderSide(color: Colors.blue[600]!),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
+                            horizontal: 24, vertical: 16),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        foregroundColor: const Color(0xFF64748B),
                       ),
-                      child: const Text("Back"),
                     ),
                   ],
                 ),

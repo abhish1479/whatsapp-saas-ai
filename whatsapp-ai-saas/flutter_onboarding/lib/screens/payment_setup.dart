@@ -6,7 +6,7 @@ class PaymentSetupScreen extends StatefulWidget {
   final String tenantId;
   final VoidCallback onNext;
   final VoidCallback onBack;
-  
+
   const PaymentSetupScreen({
     Key? key,
     required this.api,
@@ -14,7 +14,7 @@ class PaymentSetupScreen extends StatefulWidget {
     required this.onNext,
     required this.onBack,
   }) : super(key: key);
-  
+
   @override
   State<PaymentSetupScreen> createState() => _PaymentSetupScreenState();
 }
@@ -75,21 +75,20 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
               Text(
                 "Payment Setup",
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E293B),
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 "Configure your payment methods to start receiving payments",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF64748B),
-                ),
+                      color: const Color(0xFF64748B),
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -118,7 +117,6 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 20),
-                    
                     _buildPaymentField(
                       controller: _bank,
                       label: "Bank Account Details",
@@ -127,7 +125,6 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 20),
-                    
                     _buildPaymentField(
                       controller: _checkout,
                       label: "Website Checkout Link",
@@ -138,22 +135,22 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   ],
                 ),
               ),
-              
               const SizedBox(height: 32),
-              
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: _isLoading ? null : widget.onBack,
-                    icon: const Icon(Icons.arrow_back_rounded),
+                    onPressed: widget.onBack,
+                    icon: const Icon(Icons.arrow_back, size: 18),
                     label: const Text("Back"),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
                       side: const BorderSide(color: Color(0xFFE2E8F0)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      foregroundColor: const Color(0xFF64748B),
                     ),
                   ),
                   Container(
@@ -171,7 +168,8 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Icon(Icons.save_rounded),
@@ -179,7 +177,8 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -240,7 +239,8 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
       ],
