@@ -3,7 +3,7 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
-import '../api.dart';
+import '../api/api.dart';
 
 class BusinessInfoCaptureScreen extends StatefulWidget {
   final Api api;

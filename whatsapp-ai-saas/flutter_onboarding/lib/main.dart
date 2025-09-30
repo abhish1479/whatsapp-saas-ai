@@ -1,14 +1,14 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import '/api.dart';
-import '/screens/onboarding_wizard.dart';
+import 'package:get/get.dart';
+import 'api/api.dart';
+import 'controller/onboarding_controller.dart';
+import 'screens/onboarding_wizard.dart';
 
 String resolveApiBase() {
   const fromDefine = String.fromEnvironment('API_BASE');
   if (fromDefine.isNotEmpty) return fromDefine;
-  // sensible defaults for dev
-  // return 'http://localhost:8000';
-  return 'https://0b0d30716cca.ngrok-free.app';
+  return 'https://0b0d30716cca.ngrok-free.app'; // ✅ No trailing space
 }
 
 void main() {
@@ -18,13 +18,18 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     final api = Api(resolveApiBase());
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'WhatsApp AI Onboarding',
       theme: ThemeData(useMaterial3: true),
       home: OnboardingWizard(api: api),
+      initialBinding: BindingsBuilder(() {
+        Get.put(api);
+        Get.put(OnboardingController(api)); // ✅ Pass api to controller
+      }),
     );
   }
 }
