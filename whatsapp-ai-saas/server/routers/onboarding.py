@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
 from deps import get_db
 from services.rag import rag
-from models import BusinessProfile , Item , Payment, User, WebIngestRequest, Workflow
-from data_models.onboarding_response_model import ReviewResponse
+from models import AgentConfiguration, BusinessProfile , Item , Payment, Tenant, User, WebIngestRequest, Workflow
+from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
 from utils.enums import Onboarding
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
@@ -343,3 +343,36 @@ async def get_review(
             "updated_at": payment.updated_at.isoformat() if payment.updated_at else None,
         } if payment else None,
     )
+
+
+@router.post("/agent-configurations", response_model=AgentConfigurationResponse)
+def upsert_agent_configuration(
+    config: AgentConfigurationBase,
+    db: Session = Depends(get_db)
+):
+    # Validate tenant exists
+    tenant = db.query(Tenant).filter(Tenant.id == config.tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    # Try to find existing config for this tenant + agent_name
+    existing = db.query(AgentConfiguration).filter(
+        AgentConfiguration.tenant_id == config.tenant_id,
+        AgentConfiguration.agent_name == config.agent_name
+    ).first()
+
+    if existing:
+        # UPDATE
+        for field, value in config.dict(exclude_unset=True).items():
+            setattr(existing, field, value)
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    else:
+        # CREATE
+        new_config = AgentConfiguration(**config.dict())
+        db.add(new_config)
+        db.commit()
+        db.refresh(new_config)
+        return new_config

@@ -1,5 +1,6 @@
+from dataclasses import Field
 from typing import List, Optional
-from openai import BaseModel
+from pydantic import BaseModel
 
 class ReviewResponse(BaseModel):
     tenant_id: str
@@ -19,3 +20,26 @@ class ReviewResponse(BaseModel):
     web_ingest: Optional[dict] = None
     workflow: Optional[dict] = None
     payment: Optional[dict] = None
+
+
+class AgentConfigurationBase(BaseModel):
+    tenant_id: int
+    agent_name: str 
+    status: str
+    preferred_languages: str
+    conversation_tone: str 
+    incoming_voice_message_enabled: bool = True
+    outgoing_voice_message_enabled: bool = True
+    incoming_media_message_enabled: bool = True
+    outgoing_media_message_enabled: bool = True
+    image_analyzer_enabled: bool = False
+
+
+class AgentConfigurationResponse(AgentConfigurationBase):
+    id: int
+    tenant_id: int
+    created_at: Optional[str] = None  # Optional for response
+    updated_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True  # For SQLAlchemy ORM compatibility

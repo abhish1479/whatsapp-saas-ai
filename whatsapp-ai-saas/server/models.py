@@ -21,7 +21,28 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="owner")
     onboarding_process = Column(String, default=Onboarding.INPROCESS) # InProgress|Completed
+    identities = relationship("Identity", back_populates="user", cascade="all, delete-orphan")
     created_at = Column(DateTime, server_default=func.now())
+
+class Identity(Base):
+    __tablename__ = "identities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    provider = Column(String, nullable=False)  # e.g., "google", "email"
+    provider_id = Column(String, nullable=False)  # Google's sub, Twitter's id
+    email = Column(String, nullable=True)
+    access_token = Column(String, nullable=True)
+    refresh_token = Column(String, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    extra_data = Column(JSON, nullable=True)  # Store full profile
+
+    user = relationship("User", back_populates="identities")
+
+    __table_args__ = (
+        UniqueConstraint('provider', 'provider_id', name='uq_provider_provider_id'),
+        UniqueConstraint('user_id', 'email', name='uq_user_email_if_provided'),
+    )
 
 class Number(Base):
     __tablename__ = "numbers"
@@ -158,3 +179,24 @@ class WebIngestRequest(Base):
     url = Column(Text, nullable=False)
     status = Column(String(16), nullable=False, default="queued")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+class AgentConfiguration(Base):
+    __tablename__ = "agent_configurations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    agent_name = Column(String(100), nullable=False)  # e.g., "SupportBot", "SalesAgent"
+    status = Column(String(20), default="active", nullable=False)  # active, inactive, paused
+    preferred_languages = Column(Text, nullable=False)  # comma-separated: "en,es,fr" — stored as string for simplicity
+    conversation_tone = Column(String(50), default="professional")  # professional, casual, friendly, formal
+    incoming_voice_message_enabled = Column(Boolean, default=True)  # allow incoming voice messages
+    outgoing_voice_message_enabled = Column(Boolean, default=True)  # allow outgoing voice messages
+    incoming_media_message_enabled = Column(Boolean, default=True)  # allow images, docs, etc.
+    outgoing_media_message_enabled = Column(Boolean, default=True)
+    image_analyzer_enabled = Column(Boolean, default=False)  # enable AI image analysis (OCR, object detection)
+
+    tenant = relationship("Tenant")
+
+    __table_args__ = (
+        Index('idx_tenant_agent', 'tenant_id', 'agent_name', unique=True),
+    )

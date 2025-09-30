@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, provisioning, leads, conversation, rag, wallet, webhooks, templates, analytics, billing
+from routers import auth, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing
 from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
@@ -27,6 +27,7 @@ app.add_middleware(
 )
 app.include_router(onboarding.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(social_auth.router, tags=["social_auth"])
 app.include_router(provisioning.router, prefix="/provision", tags=["provision"])
 app.include_router(templates.router, prefix="/templates", tags=["templates"])
 app.include_router(leads.router, prefix="/leads", tags=["leads"])
