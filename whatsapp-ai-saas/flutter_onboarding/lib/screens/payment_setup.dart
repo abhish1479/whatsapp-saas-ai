@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../api.dart';
+import '../api/api.dart';
 
 class PaymentSetupScreen extends StatefulWidget {
   final Api api;

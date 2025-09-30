@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
-import '../api.dart';
+import '../api/api.dart';
 import '../theme/business_info_theme.dart';
 
 class BusinessTypeScreen extends StatelessWidget {

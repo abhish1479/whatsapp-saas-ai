@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../api.dart';
+import '../api/api.dart';
 import 'business_info.dart';
 import 'business_type.dart';
 import 'info_capture.dart';
@@ -37,7 +37,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       appBar: AppBar(title: const Text("Onboarding")),
       body: Column(
         children: [
-          LinearProgressIndicator(value: (_step + 1) / steps.length),
+          LinearProgressIndicator(value: (_step + 1) / steps.length , color: Colors.blue[700],),
           Expanded(child: steps[_step]),
         ],
       ),

@@ -1,12 +1,14 @@
-// business_info.dart//
+// lib/screens/business_info.dart
 import 'package:flutter/material.dart';
 import 'package:leadbot_client/helper/utils/app_loger.dart';
-import '../api.dart';
+import '../api/api.dart';
+import '../controller/onboarding_controller.dart';
 import '../helper/ui_helper/custom_widget.dart';
 import '../helper/utils/app_utils.dart';
 import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:get/get.dart';
 
 class BusinessInfoScreen extends StatefulWidget {
   final Api api;
@@ -30,15 +32,21 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
   final _lang = ValueNotifier<String>('en');
   bool _loading = false;
   String? _selectedLanguage = 'en';
+  String tenantId = "";
+
+  // ✅ NEW: पहले से सेव डेटा की कॉपी (बदलाव चेक करने के लिए)
+  String _originalName = '';
+  String _originalPhone = '';
+  String _originalLanguage = 'en';
 
   late final AnimationController _fadeController;
   late final AnimationController _slideController;
-  late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _fadeAnimation;
 
   BusinessInfoTheme get theme =>
       Theme.of(context).extension<BusinessInfoTheme>() ??
-      BusinessInfoTheme.light;
+          BusinessInfoTheme.light;
 
   @override
   void initState() {
@@ -58,6 +66,32 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
     _fadeController.forward();
     _slideController.forward();
+
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    tenantId = await StoreUserData().getTenantId();
+
+
+    if (tenantId.isNotEmpty) {
+      // ✅ NEW: GetX कंट्रोलर से डेटा लोड करें
+      final controller = Get.find<OnboardingController>();
+      await controller.fetchOnboardingData(tenantId);
+
+      final data = controller.data;
+      if (data != null && data.hasBusinessProfile) {
+        // ✅ NEW: फील्ड्स में डेटा सेट करें
+        _nameController.text = data.businessName;
+        _phoneController.text = data.ownerPhone;
+        _selectedLanguage = data.language;
+
+        // ✅ NEW: ओल्ड वैल्यूज सेव करें (बदलाव चेक के लिए)
+        _originalName = data.businessName;
+        _originalPhone = data.ownerPhone;
+        _originalLanguage = data.language;
+      }
+    }
   }
 
   @override
@@ -86,29 +120,21 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 if (kIsWeb) {
-                  // Web: Wide screens - Row layout
                   if (width > 1024) {
                     return Row(
                       children: [
                         Flexible(flex: 3, child: _buildForm(inRow: true)),
-                        // Pass inRow: true
-                        Flexible(
-                            flex: 2, child: _buildWhatsAppPreview(inRow: true)),
+                        Flexible(flex: 2, child: _buildWhatsAppPreview(inRow: true)),
                       ],
                     );
-                  }
-                  // Web: Medium screens - Row layout
-                  else if (width > 600) {
+                  } else if (width > 600) {
                     return Row(
                       children: [
                         Flexible(flex: 3, child: _buildForm(inRow: true)),
-                        // Pass inRow: true
-                        Flexible(
-                            flex: 2, child: _buildWhatsAppPreview(inRow: true)),
+                        Flexible(flex: 2, child: _buildWhatsAppPreview(inRow: true)),
                       ],
                     );
                   } else {
-                    // Web: Small screens - Column layout inside SingleChildScrollView
                     return SingleChildScrollView(
                       padding: const EdgeInsets.only(bottom: 24),
                       child: Column(
@@ -121,7 +147,6 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
                     );
                   }
                 } else {
-                  // Mobile: Portrait - Column layout inside SingleChildScrollView
                   if (isPortrait) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.only(bottom: 24),
@@ -134,12 +159,10 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
                       ),
                     );
                   } else {
-                    // Mobile: Landscape - Row layout
                     return Row(
                       children: [
                         Flexible(flex: 3, child: _buildForm(inRow: true)),
-                        Flexible(
-                            flex: 2, child: _buildWhatsAppPreview(inRow: true)),
+                        Flexible(flex: 2, child: _buildWhatsAppPreview(inRow: true)),
                       ],
                     );
                   }
@@ -229,7 +252,6 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             },
           ),
           const SizedBox(height: 32),
-          // Submit button
           CustomWidgets.buildGradientButton(
             context: context,
             onPressed: _loading ? null : _submit,
@@ -244,22 +266,19 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     Widget formWidget = Form(
       key: _formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      child: formContent, // Otherwise just return the content directly
+      child: formContent,
     );
 
     if (inRow) {
       formWidget = SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        // Allow scrolling always if needed within Row
         child: formWidget,
       );
       return Container(
         decoration: BoxDecoration(gradient: theme.formGradient),
         child: formWidget,
       );
-    }
-    //
-    else {
+    } else {
       return Container(
         decoration: BoxDecoration(gradient: theme.formGradient),
         child: formWidget,
@@ -285,43 +304,71 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
           child: Text(
             "Business Information",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           "Tell us about your business to get started",
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
-              ),
+            color: Colors.grey[600],
+          ),
         ),
       ],
     );
   }
 
+  // ✅ UPDATED: _submit में बदलाव चेक लॉजिक ऐड किया गया
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) return;
 
+    final currentName = _nameController.text.trim();
+    final currentPhone = _phoneController.text.trim();
+    final currentLang = _selectedLanguage ?? 'en';
+
+    // ✅ NEW: चेक करें कि क्या कोई फील्ड बदला गया है
+    final hasChanged =
+        currentName != _originalName ||
+            currentPhone != _originalPhone ||
+            currentLang != _originalLanguage;
+
+    if (!hasChanged) {
+      // ✅ NEW: डेटा नहीं बदला → सीधे अगले स्क्रीन पर जाएं
+      widget.onNext();
+      return;
+    }
+
+    // ✅ NEW: डेटा बदला है → API कॉल करें
     setState(() => _loading = true);
     try {
       final response = await widget.api.postForm('/onboarding/business', {
-        'business_name': _nameController.text.trim(),
-        'owner_phone': _phoneController.text.trim(),
-        'language': _lang.value,
+        'business_name': currentName,
+        'owner_phone': currentPhone,
+        'language': currentLang,
       });
 
       final ok = response['ok'] == true;
       final message = response['message']?.toString() ?? 'Unexpected response';
-      final tenantId = response['tenant_id']?.toString();
+      final newTenantId = response['tenant_id']?.toString();
 
       if (!mounted) return;
 
-      if (tenantId != null) {
-        await StoreUserData().setTenantId(tenantId);
+      if (newTenantId != null) {
+        await StoreUserData().setTenantId(newTenantId);
+        tenantId = newTenantId;
+
+        // ✅ NEW: GetX कंट्रोलर को अपडेट करें
+        final controller = Get.find<OnboardingController>();
+        await controller.refreshData(tenantId);
+
+        // ✅ NEW: नए डेटा को "ओल्ड" मान लें
+        _originalName = currentName;
+        _originalPhone = currentPhone;
+        _originalLanguage = currentLang;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -360,7 +407,6 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
       return AnimatedBuilder(
         animation: Listenable.merge([_nameController, _phoneController, _lang]),
         builder: (context, _) => Flexible(
-          // SALMAN: FIXED - Wrap in Flexible for Row
           child: Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -369,16 +415,13 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
               border: Border.all(color: Colors.grey[300]!),
               boxShadow: [theme.cardShadow],
             ),
-            // SALMAN: FIXED - Use Column without Expanded, wrap content in scrollable
             child: Column(
               children: [
                 _buildWhatsAppHeader(),
-                // SALMAN: FIXED - Wrap chat content in Flexible and SingleChildScrollView
                 Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     physics: const AlwaysScrollableScrollPhysics(),
-                    // SALMAN: FIXED - Allow scrolling always if needed within Row
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       child: _buildWhatsAppChat(),
@@ -390,9 +433,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
           ),
         ),
       );
-    }
-    //
-    else {
+    } else {
       return AnimatedBuilder(
         animation: Listenable.merge([_nameController, _phoneController, _lang]),
         builder: (context, _) => Container(
@@ -403,7 +444,6 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             border: Border.all(color: Colors.grey[300]!),
             boxShadow: [theme.cardShadow],
           ),
-          // Use a simple Column with padding, no Expanded
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -427,7 +467,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         gradient:
-            LinearGradient(colors: [Colors.green[600]!, Colors.green[700]!]),
+        LinearGradient(colors: [Colors.green[600]!, Colors.green[700]!]),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -525,7 +565,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
                   children: [
                     Text("12:30 PM",
                         style:
-                            TextStyle(color: Colors.grey[500], fontSize: 11)),
+                        TextStyle(color: Colors.grey[500], fontSize: 11)),
                     const SizedBox(width: 4),
                     Icon(Icons.done_all, color: Colors.blue[600], size: 14),
                   ],
