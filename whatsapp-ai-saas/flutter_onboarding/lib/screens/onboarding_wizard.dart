@@ -8,6 +8,7 @@ import 'payment_setup.dart';
 import 'review_activate.dart';
 import 'auth_screen.dart';
 import 'whatsapp_agent_screen.dart';
+
 class OnboardingWizard extends StatefulWidget {
   final Api api;
   OnboardingWizard({required this.api});
@@ -24,7 +25,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      // SignupScreen(onNext: next),
+      SignupScreen(onNext: next),
       BusinessInfoScreen(api: widget.api,  onNext: next),
       BusinessTypeScreen(api: widget.api, onNext: next, onBack: back),
       BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
