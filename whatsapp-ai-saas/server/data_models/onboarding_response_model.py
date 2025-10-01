@@ -3,28 +3,34 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 class ReviewResponse(BaseModel):
-    tenant_id: str
+    tenant_id: int
     onboarding_process: str
     has_business_profile: bool
     has_business_type: Optional[bool]=False
     has_items: Optional[bool]=False
     has_web_ingest: Optional[bool]=False
     has_workflow: Optional[bool]=False
+    has_kyc: Optional[bool]=False
     has_payment: Optional[bool]=False
+    has_agent_configuration: Optional[bool]=False
     item_count: int
     has_profile_activate: Optional[bool]=False
     business_name: Optional[str] = None
     owner_phone: Optional[str] = None
     language: Optional[str] = None
+    business_type: Optional[str] = None
     items: List[dict] = []
     web_ingest: Optional[dict] = None
     workflow: Optional[dict] = None
+    kyc: Optional[dict] = None
     payment: Optional[dict] = None
+    agent_configuration: Optional[dict] = None
 
 
 class AgentConfigurationBase(BaseModel):
     tenant_id: int
     agent_name: str 
+    agent_image: str 
     status: str
     preferred_languages: str
     conversation_tone: str 

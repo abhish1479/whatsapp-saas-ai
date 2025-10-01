@@ -68,7 +68,7 @@ class Lead(Base):
 class Conversation(Base):
     __tablename__ = "conversations"
     id = Column(Integer, primary_key=True)
-    tenant_id = Column(Integer, nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     phone = Column(String, index=True)
     last_msg_at = Column(DateTime)
     state = Column(JSON, default={})
@@ -93,7 +93,7 @@ class Wallet(Base):
 class WalletTx(Base):
     __tablename__ = "wallet_tx"
     id = Column(Integer, primary_key=True)
-    tenant_id = Column(Integer, nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     delta = Column(Integer, nullable=False)
     reason = Column(String, nullable=False)
     ref_id = Column(String)
@@ -102,7 +102,7 @@ class WalletTx(Base):
 class Template(Base):
     __tablename__ = "templates"
     id = Column(Integer, primary_key=True)
-    tenant_id = Column(Integer, nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     name = Column(String, nullable=False)
     language = Column(String, default="en")
     category = Column(String, default="MARKETING")
@@ -114,7 +114,7 @@ class Template(Base):
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
 
-    tenant_id = Column(String(64), primary_key=True)
+    tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete="CASCADE"),primary_key=True, unique=True  )
     business_name = Column(Text, nullable=False)
     owner_phone = Column(Text, nullable=False)
     language = Column(String(8), nullable=False, default="en")
@@ -130,7 +130,7 @@ class Item(Base):
     __tablename__ = "items"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(String(64), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     name = Column(Text, nullable=False)
     price = Column(Numeric(precision=10, scale=2), nullable=False, default=0)
     description = Column(Text)
@@ -147,7 +147,7 @@ class Item(Base):
 class Workflow(Base):
     __tablename__ = "workflows"
 
-    tenant_id = Column(String(64), primary_key=True)
+    tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete="CASCADE"),primary_key=True, unique=True  )
     template = Column(Text, nullable=False)
     ask_name = Column(Boolean, nullable=False, default=True)
     ask_location = Column(Boolean, nullable=False, default=False)
@@ -161,7 +161,7 @@ class Workflow(Base):
 class Payment(Base):
     __tablename__ = "payments"
 
-    tenant_id = Column(String(64), primary_key=True)
+    tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete="CASCADE"),primary_key=True, unique=True  )
     upi_id = Column(Text)
     bank_details = Column(Text)
     checkout_link = Column(Text)
@@ -175,8 +175,7 @@ class WebIngestRequest(Base):
     __tablename__ = "web_ingest_requests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(String(64), nullable=False)
-    url = Column(Text, nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     status = Column(String(16), nullable=False, default="queued")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
@@ -186,6 +185,7 @@ class AgentConfiguration(Base):
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     agent_name = Column(String(100), nullable=False)  # e.g., "SupportBot", "SalesAgent"
+    agent_image = Column(String(250), nullable=True)  # URL to avatar image
     status = Column(String(20), default="active", nullable=False)  # active, inactive, paused
     preferred_languages = Column(Text, nullable=False)  # comma-separated: "en,es,fr" — stored as string for simplicity
     conversation_tone = Column(String(50), default="professional")  # professional, casual, friendly, formal
@@ -199,4 +199,30 @@ class AgentConfiguration(Base):
 
     __table_args__ = (
         Index('idx_tenant_agent', 'tenant_id', 'agent_name', unique=True),
+    )
+
+
+class Kyc(Base):
+    __tablename__ = "kyc"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    aadhaar_number = Column(String(12), unique=True, nullable=False)  # 12-digit numeric
+    pan_number = Column(String(10), unique=True, nullable=False)      # 10-char alphanumeric
+    status = Column(String(20), default="pending", nullable=False)    # pending, verified, rejected
+    document_image_url = Column(String(512))                          # optional: selfie + doc photo URL
+    verified_at = Column(DateTime, nullable=True)
+    rejected_reason = Column(String(512), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User")
+    tenant = relationship("Tenant")
+
+    __table_args__ = (
+        # Ensure no duplicate Aadhaar or PAN across tenants
+        UniqueConstraint('aadhaar_number', name='uq_kyc_aadhaar'),
+        UniqueConstraint('pan_number', name='uq_kyc_pan'),
     )
