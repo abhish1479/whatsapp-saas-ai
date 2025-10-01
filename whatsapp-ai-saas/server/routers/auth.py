@@ -4,9 +4,9 @@ from pydantic import BaseModel, EmailStr
 from database import SessionLocal, Base, engine
 from models import Tenant, User, Wallet
 from passlib.hash import bcrypt
+import hashlib
 from deps import create_token
 
-Base.metadata.create_all(bind=engine)
 router = APIRouter()
 
 class Signup(BaseModel):
@@ -22,7 +22,7 @@ def signup(body:Signup):
             raise HTTPException(400,"Email in use")
         tenant = Tenant(name=body.business_name)
         db.add(tenant); db.flush()
-        user = User(tenant_id=tenant.id, email=body.email, password_hash=bcrypt.hash(body.password))
+        user = User(tenant_id=tenant.id, email=body.email, password_hash=body.password)
         db.add(user); db.flush()
         db.add(Wallet(tenant_id=tenant.id, credits_balance=500))
         db.commit()

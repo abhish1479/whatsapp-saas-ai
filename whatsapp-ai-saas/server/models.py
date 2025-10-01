@@ -9,7 +9,7 @@ from utils.enums import Onboarding
 class Tenant(Base):
     __tablename__ = "tenants"
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
     plan = Column(String, default="starter")
     created_at = Column(DateTime, server_default=func.now())
 

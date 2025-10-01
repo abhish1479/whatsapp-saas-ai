@@ -27,5 +27,6 @@ httpx  # also used by Ollama client
 
 prometheus-fastapi-instrumentator==6.1.0
 python-jose[cryptography]
-
+google-auth
+google_auth_oauthlib
 debugpy
