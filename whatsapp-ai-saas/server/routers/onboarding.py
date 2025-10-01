@@ -9,67 +9,50 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
 from deps import get_db
 from services.rag import rag
-from models import BusinessProfile , Item , Payment, User, WebIngestRequest, Workflow
-from data_models.onboarding_response_model import ReviewResponse
+from models import AgentConfiguration, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
+from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
 from utils.enums import Onboarding
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
 # ---------- STEP 1: Business Profile ----------
 @router.post("/business")
-async def upsert_business_profile(
+def upsert_business_profile(
     business_name: str = Form(...),
     owner_phone: str = Form(...),
+    tenant_id: int = Form(...),
     language: str = Form("en"),
     db: Session = Depends(get_db),
 ):
-    # Step 1: Check if owner_phone already exists
-    result =  db.execute(
-        text("SELECT tenant_id FROM business_profiles WHERE owner_phone = :phone"),
-        {"phone": owner_phone}
-    )
-    existing = result.fetchone()
+    # Step 1: Check if owner_phone already exists using ORM
+    existing_profile = db.query(BusinessProfile).filter(
+        BusinessProfile.tenant_id == tenant_id
+    ).first()
 
-    if existing:
+    if existing_profile:
+        existing_profile.business_name=business_name,
+        existing_profile.language=language
+        db.commit()
         return {
-            "ok": False,
-            "message": "Business profile with this phone number already exists",
-            "tenant_id": existing.tenant_id
+            "ok": True,
+            "message": "Business profile updated successfully",
+            "tenant_id": existing_profile.tenant_id
         }
-    print("No existing profile, creating new one."+str(existing))
-    # Step 2: Generate tenant_id = business_name + 8-digit random number
-    clean_name = "".join(c if c.isalnum() else "" for c in business_name)[:20]
-    if not clean_name:
-        clean_name = "business"
-    random_digits = random.randint(10000000, 99999999)
-    tenant_id = f"{clean_name}{random_digits}"
 
-    # # Optional: Retry logic in case tenant_id collision (unlikely but possible)
-    # for _ in range(3):
-    #     check_tenant = db.execute(
-    #         text("SELECT 1 FROM business_profiles WHERE tenant_id = :tid"),
-    #         {"tid": tenant_id}
-    #     )
-    #     if not check_tenant.fetchone():
-    #         break
-    #     random_digits = random.randint(10000000, 99999999)
-    #     tenant_id = f"{clean_name}{random_digits}"
-    # else:
-    #     raise HTTPException(status_code=500, detail="Could not generate unique tenant_id after retries")
+    # Step 2: Create new Tenant
+    # tenant = Tenant(name=business_name)
+    # db.add(tenant)
+    # db.flush()  # Gets tenant.id without committing
 
-    # Step 3: Insert new record
-    db.execute(
-        text("""
-            INSERT INTO business_profiles (tenant_id, business_name, owner_phone, language)
-            VALUES (:t, :n, :p, :l)
-        """),
-        {
-            "t": tenant_id,
-            "n": business_name,
-            "p": owner_phone,
-            "l": language
-        }
+    # Step 3: Create BusinessProfile using ORM — is_active defaults to False automatically!
+    business_profile = BusinessProfile(
+        tenant_id=tenant_id,
+        business_name=business_name,
+        owner_phone=owner_phone,
+        language=language
+        # 👇 is_active is automatically set to False by model default — no need to specify!
     )
+    db.add(business_profile)
     db.commit()
 
     return {
@@ -82,7 +65,7 @@ async def upsert_business_profile(
 # ---------- STEP 2: Business Type ----------
 @router.post("/type")
 async def set_business_type(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     business_type: Literal["products","services","professional","other"] = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -108,7 +91,7 @@ async def set_business_type(
 # ---------- STEP 3a: Items via CSV (products/services) ----------
 @router.post("/items/csv")
 async def upload_items_csv(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
@@ -161,7 +144,7 @@ async def upload_items_csv(
 # ---------- STEP 3b: Single Item (manual) ----------
 @router.post("/items/manual")
 async def add_item(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     name: str = Form(...),
     price: Optional[float] = Form(0.0),
     description: Optional[str] = Form(""),
@@ -179,7 +162,7 @@ async def add_item(
 # ---------- STEP 3c: Website link (auto-ingest) ----------
 @router.post("/items/website")
 async def add_website(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     url: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -205,7 +188,7 @@ async def add_website(
 # ---------- STEP 4: Workflow Setup ----------
 @router.post("/workflow")
 async def set_workflow(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     template: str = Form(...),
     ask_name: bool = Form(True),
     ask_location: bool = Form(False),
@@ -235,7 +218,7 @@ async def set_workflow(
 # ---------- STEP 5: Payments ----------
 @router.post("/payments")
 async def set_payments(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     upi_id: Optional[str] = Form(None),
     bank_details: Optional[str] = Form(None),
     checkout_link: Optional[str] = Form(None),
@@ -253,7 +236,7 @@ async def set_payments(
 # ---------- STEP 6: Review & Activate ----------
 @router.post("/activate")
 async def activate_agent(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     db: Session = Depends(get_db),
 ):
     # Minimal validation: check business profile + one of items/workflow exists
@@ -268,7 +251,7 @@ async def activate_agent(
 
 @router.post("/get_review", response_model=ReviewResponse, status_code=200)
 async def get_review(
-    tenant_id: str = Form(...),
+    tenant_id: int = Form(...),
     db: Session = Depends(get_db),
 ):
     # Check if business profile exists
@@ -283,11 +266,12 @@ async def get_review(
         )
 
     # Query related data
+    kyc = db.query(Kyc).filter(Kyc.tenant_id == tenant_id).first()
     payment = db.query(Payment).filter(Payment.tenant_id == tenant_id).first()
     workflow = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
     items = db.query(Item).filter(Item.tenant_id == tenant_id).all()
     web_ingest_request = db.query(WebIngestRequest).filter(WebIngestRequest.tenant_id == tenant_id).first()
-
+    agent_configuration = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
     # Count items
     item_count = len(items)
 
@@ -295,6 +279,7 @@ async def get_review(
     has_business_type = bool(business_profile.business_type)  # Not None/empty
     has_items = item_count > 0
     has_web_ingest = web_ingest_request is not None
+    has_agent_configuration = agent_configuration is not None
     has_profile_activate = business_profile.is_active  # True if activated
 
     # Prepare response data
@@ -306,12 +291,15 @@ async def get_review(
         has_items=has_items,
         has_web_ingest=has_web_ingest,
         has_workflow=bool(workflow),
+        has_agent_configuration=has_agent_configuration,
+        has_kyc=bool(kyc),
         has_payment=bool(payment),
         has_profile_activate=has_profile_activate,
         item_count=item_count,
         business_name=business_profile.business_name,
         owner_phone=business_profile.owner_phone,
         language=business_profile.language,
+        business_type=business_profile.business_type,
         items=[
             {
                 "id": str(item.id),
@@ -342,4 +330,61 @@ async def get_review(
             "checkout_link": payment.checkout_link,
             "updated_at": payment.updated_at.isoformat() if payment.updated_at else None,
         } if payment else None,
+        kyc={
+            "id": kyc.id,
+            "status": kyc.status,
+            "aadhaar_number": kyc.aadhaar_number,
+            "pan_number": kyc.pan_number,
+            "document_image_url": kyc.document_image_url,
+            "verified_at": kyc.verified_at.isoformat() if kyc.verified_at else None,
+            "created_at": kyc.created_at.isoformat() if kyc.created_at else None,
+            "updated_at": kyc.updated_at.isoformat() if kyc.updated_at else None,
+        } if kyc else None,
+        agent_configuration={
+            "agent_name": agent_configuration.agent_name,
+            "agent_image": agent_configuration.agent_image,
+            "status": agent_configuration.status,
+            "preferred_languages": agent_configuration.preferred_languages,
+            "conversation_tone": agent_configuration.conversation_tone,
+            "incoming_voice_message_enabled": agent_configuration.incoming_voice_message_enabled,
+            "outgoing_voice_message_enabled": agent_configuration.outgoing_voice_message_enabled,
+            "incoming_media_message_enabled": agent_configuration.incoming_media_message_enabled,
+            "outgoing_media_message_enabled": agent_configuration.outgoing_media_message_enabled,
+            "image_analyzer_enabled": agent_configuration.image_analyzer_enabled,
+            "created_at": agent_configuration.created_at.isoformat() if agent_configuration.created_at else None,
+            "updated_at": agent_configuration.updated_at.isoformat() if agent_configuration.updated_at else None,
+        } if agent_configuration else None,
     )
+
+
+@router.post("/agent-configurations", response_model=AgentConfigurationResponse)
+def upsert_agent_configuration(
+    config: AgentConfigurationBase,
+    db: Session = Depends(get_db)
+):
+    # Validate tenant exists
+    tenant = db.query(Tenant).filter(Tenant.id == config.tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    # Try to find existing config for this tenant + agent_name
+    existing = db.query(AgentConfiguration).filter(
+        AgentConfiguration.tenant_id == config.tenant_id,
+        AgentConfiguration.agent_name == config.agent_name
+    ).first()
+
+    if existing:
+        # UPDATE
+        for field, value in config.dict(exclude_unset=True).items():
+            setattr(existing, field, value)
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    else:
+        # CREATE
+        new_config = AgentConfiguration(**config.dict())
+        db.add(new_config)
+        db.commit()
+        db.refresh(new_config)
+        return new_config

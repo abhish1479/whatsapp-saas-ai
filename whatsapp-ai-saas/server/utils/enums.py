@@ -1,6 +1,12 @@
-from enum import StrEnum, unique
+from enum import Enum
 
-@unique
-class Onboarding(StrEnum):
+
+class Onboarding(str, Enum):
     INPROCESS = "InProcess"
     COMPLETED = "Completed"
+
+
+class SocialProvider(str, Enum):
+    GOOGLE = "google"
+    FACEBOOK = "facebook"
+    LINKEDIN = "linkedin"
