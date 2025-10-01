@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:leadbot_client/helper/utils/shared_preference.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -32,27 +34,37 @@ class _SignupScreenState extends State<SignupScreen>
   String? _selectedPlan;
 
   // Social login instances
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    // 👇 REPLACE WITH YOUR GOOGLE WEB CLIENT ID (for iOS/Web)
-    // clientId: 'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com',
-  );
+  late GoogleSignIn _googleSignIn;
 
   // 🔑 API endpoint (replace with your real backend URL)
-  static const String _authEndpoint = "https://yourapi.com/auth";
+  static const String _authEndpoint = "https://0b0d30716cca.ngrok-free.app/social_auth/login";
 
   @override
   void initState() {
     super.initState();
 
+    String? clientId;
+    if (kIsWeb) {
+      clientId = "734195415255-lj07mf33edgkgec9j4e3od0acj635nvb.apps.googleusercontent.com";
+    }
+
+    _googleSignIn = GoogleSignIn(
+      clientId: clientId,
+      scopes: [
+        'email',
+        'profile',
+      ],
+    );
+
     _videoController = VideoPlayerController.network(
       'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     )..initialize().then((_) {
-        if (mounted) {
-          setState(() {});
-          _videoController.play();
-          _videoController.setLooping(true);
-        }
-      });
+      if (mounted) {
+        setState(() {});
+        _videoController.play();
+        _videoController.setLooping(true);
+      }
+    });
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -114,65 +126,135 @@ class _SignupScreenState extends State<SignupScreen>
       _isLoading = true;
     });
 
-    String? email;
-
     try {
-      if (provider == "Google") {
+      if (provider == "google") {
         final account = await _googleSignIn.signIn();
         if (account == null) {
           await _googleSignIn.signOut(); // Clean up
           if (mounted) setState(() => _isLoading = false);
           return;
         }
-        email = account.email;
-      } else if (provider == "Facebook") {
-        final LoginResult result =
-            await FacebookAuth.instance.login(permissions: ['email']);
+
+        // 🔥 Get the ID Token (CRITICAL for backend verification)
+        final auth = await account.authentication;
+        final idToken = auth.idToken;
+
+        if (idToken == null) {
+          throw Exception("No ID token received from Google");
+        }
+
+        // 📤 Send ID token to your backend (not just email)
+        final response = await http.post(
+          Uri.parse(_authEndpoint),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "id_token": idToken,        // ← Send this to backend
+            "provider": provider,
+            "is_login": _isLogin,
+            "plan": _isLogin ? null : _selectedPlan,
+          }),
+        );
+
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+
+          final tenantId  = data.get("tenant_id");
+          final userStatus  = data.get("onboarding_process");
+          final access_token  = data.get("access_token");
+          // Access nested "user" object
+          final Map<String, dynamic> user = data["user"];
+          final int userId = user["id"];
+          final String email = user["email"];
+          final String name = user["name"];
+          final String provider = user["provider"];
+          final String providerId = user["provider_id"];
+          final String role = user["role"];
+
+          StoreUserData().setTenantId(tenantId.toString());
+          StoreUserData().setUserStatus(userStatus);
+          StoreUserData().setToken(access_token);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isLogin ? "Login Successfully!" : "Please complete onboarding process."),
+              backgroundColor: Colors.green,
+            ),
+          );
+          if(userStatus.toString().compareTo('Completed')==0){
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Login Success..HomeScreen is under development"),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }else {
+            widget.onNext(); // proceed to next step/screen
+          }
+        } else {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData["error"] ?? "Auth failed: ${response.statusCode}";
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+      else if (provider == "facebook") {
+        final LoginResult result = await FacebookAuth.instance.login(permissions: ['email']);
         if (result.status == LoginStatus.success) {
           final userData = await FacebookAuth.instance.getUserData();
-          // Fallback if email not provided
-          email = userData["email"] ?? "${userData["id"]}@facebook.com";
+          final email = userData["email"] ?? "${userData["id"]}@facebook.com";
+
+          // Send to your backend
+          final response = await http.post(
+            Uri.parse(_authEndpoint),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "email": email,
+              "provider": provider,
+              "is_login": _isLogin,
+              "plan": _isLogin ? null : _selectedPlan,
+            }),
+          );
+
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(data["message"] ?? "Success!"),
+                backgroundColor: Colors.green,
+              ),
+            );
+            widget.onNext(); // proceed to next step/screen
+          } else {
+            final errorData = jsonDecode(response.body);
+            final errorMessage = errorData["error"] ?? "Auth failed: ${response.statusCode}";
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         } else {
           throw Exception("Facebook login failed: ${result.message}");
         }
       } else {
         throw Exception("Unsupported provider: $provider");
-      }
-
-      // Send to your backend
-      final response = await http.post(
-        Uri.parse(_authEndpoint),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": email,
-          "provider": provider,
-          "isLogin": _isLogin,
-          "plan": _isLogin ? null : _selectedPlan,
-        }),
-      );
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data["message"] ?? "Success!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        widget.onNext(); // proceed to next step/screen
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Auth failed: ${response.statusCode}"),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -227,26 +309,26 @@ class _SignupScreenState extends State<SignupScreen>
         borderRadius: BorderRadius.circular(20),
         child: _videoController.value.isInitialized
             ? AspectRatio(
-                aspectRatio: _videoController.value.aspectRatio,
-                child: VideoPlayer(_videoController),
-              )
+          aspectRatio: _videoController.value.aspectRatio,
+          child: VideoPlayer(_videoController),
+        )
             : Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF1E293B),
-                      const Color(0xFF334155),
-                    ],
-                  ),
-                ),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-                  ),
-                ),
-              ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1E293B),
+                const Color(0xFF334155),
+              ],
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -499,14 +581,14 @@ class _SignupScreenState extends State<SignupScreen>
             'Google',
             Icons.g_mobiledata,
             const Color(0xFFDB4437),
-            () => _handleSocialAuth('Google'),
+                () => _handleSocialAuth('google'),
           ),
           const SizedBox(height: 16),
           _buildSocialButton(
             'Facebook',
             Icons.facebook,
             const Color(0xFF4267B2),
-            () => _handleSocialAuth('Facebook'),
+                () => _handleSocialAuth('facebook'),
           ),
 
           const SizedBox(height: 32),
@@ -595,7 +677,7 @@ class _SignupScreenState extends State<SignupScreen>
               if (isPopular)
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
@@ -635,36 +717,36 @@ class _SignupScreenState extends State<SignupScreen>
           ...features
               .map(
                 (feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          feature,
-                          style: const TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                   ),
-                ),
-              )
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      feature,
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
               .toList(),
           const SizedBox(height: 24),
           SizedBox(
@@ -681,40 +763,40 @@ class _SignupScreenState extends State<SignupScreen>
               ),
               child: isPopular
                   ? Ink(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Container(
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Select Plan',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                            color: const Color(0xFF3B82F6), width: 2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Select Plan',
-                        style: TextStyle(
-                          color: Color(0xFF3B82F6),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Container(
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Select Plan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
+                ),
+              )
+                  : Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: const Color(0xFF3B82F6), width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'Select Plan',
+                  style: TextStyle(
+                    color: Color(0xFF3B82F6),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -761,8 +843,8 @@ class _SignupScreenState extends State<SignupScreen>
                             child: _showSocialLogin
                                 ? _buildSocialLoginOptions()
                                 : _showPackSelection
-                                    ? _buildPackSelection()
-                                    : _buildInitialOptions(),
+                                ? _buildPackSelection()
+                                : _buildInitialOptions(),
                           ),
                         ),
                       ],

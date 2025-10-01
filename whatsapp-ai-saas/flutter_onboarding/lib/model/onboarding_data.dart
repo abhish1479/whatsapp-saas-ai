@@ -13,6 +13,7 @@ class OnboardingData {
   final String businessName;
   final String ownerPhone;
   final String language;
+  final String businessType;
   final List<Item> items;
   final WebIngest? webIngest;
   final Workflow? workflow;
@@ -32,6 +33,7 @@ class OnboardingData {
     required this.businessName,
     required this.ownerPhone,
     required this.language,
+    required this.businessType,
     required this.items,
     this.webIngest,
     this.workflow,
@@ -59,6 +61,7 @@ class OnboardingData {
       businessName: json['business_name'] ?? '',
       ownerPhone: json['owner_phone'] ?? '',
       language: json['language'] ?? 'en',
+      businessType: json['business_type'] ?? '',
       items: itemsList,
       webIngest: json['web_ingest'] != null
           ? WebIngest.fromJson(json['web_ingest'] as Map<String, dynamic>)
