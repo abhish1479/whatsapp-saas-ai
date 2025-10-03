@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'api/api.dart';
+import 'screens/auth_screen.dart';
+// import 'package:your_app/main_app_scaffold.dart';
 import 'controller/onboarding_controller.dart';
 import 'screens/onboarding_wizard.dart';
 
