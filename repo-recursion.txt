@@ -1,1 +1,41 @@
 Get-ChildItem -Recurse -File | Select-Object FullName | Out-File -Encoding UTF8 repo_file_list.txt
+
+
+
+#File to get github latest files
+
+ % #!/bin/bash
+# Repo details
+OWNER="abhish1479"
+REPO="whatsapp-saas-ai"
+BRANCH="main"
+
+# GitHub API endpoint to get repo tree recursively
+API_URL="https://api.github.com/repos/$OWNER/$REPO/git/trees/$BRANCH?recursive=1"
+
+# Base raw URL
+BASE_RAW="https://raw.githubusercontent.com/$OWNER/$REPO/$BRANCH"
+
+# Fetch file list and generate raw URLs
+curl -s "$API_URL" | jq -r '.tree[] | select(.type=="blob") | .path' | while read -r FILE; do
+  ENCODED_FILE=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE")
+  echo "$BASE_RAW/$ENCODED_FILE"
+done
+#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Repo details
+OWNER="abhish1479"
+REPO="whatsapp-saas-ai"
+BRANCH="main"
+
+# GitHub API endpoint to get repo tree recursively
+API_URL="https://api.github.com/repos/$OWNER/$REPO/git/trees/$BRANCH?recursive=1"
+
+# Base raw URL
+BASE_RAW="https://raw.githubusercontent.com/$OWNER/$REPO/$BRANCH"
+
+# Fetch file list and generate raw URLs
+curl -s "$API_URL" | jq -r '.tree[] | select(.type=="blob") | .path' | while read -r FILE; do
+  ENCODED_FILE=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE")
+  echo "$BASE_RAW/$ENCODED_FILE"
+done
