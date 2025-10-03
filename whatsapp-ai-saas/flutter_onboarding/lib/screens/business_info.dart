@@ -1,4 +1,3 @@
-// lib/screens/business_info.dart
 import 'package:flutter/material.dart';
 import 'package:leadbot_client/helper/utils/app_loger.dart';
 import '../api/api.dart';
@@ -9,7 +8,7 @@ import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
-
+//Business
 class BusinessInfoScreen extends StatefulWidget {
   final Api api;
   final VoidCallback onNext;
