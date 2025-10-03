@@ -8,7 +8,7 @@ import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
-
+//Business
 class BusinessInfoScreen extends StatefulWidget {
   final Api api;
   final VoidCallback onNext;
