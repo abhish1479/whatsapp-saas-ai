@@ -32,7 +32,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
   final _lang = ValueNotifier<String>('en');
   bool _loading = false;
   String? _selectedLanguage = 'en';
-  String tenantId = "";
+  int tenantId = -1;
 
   // ✅ NEW: पहले से सेव डेटा की कॉपी (बदलाव चेक करने के लिए)
   String _originalName = '';
@@ -74,7 +74,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     tenantId = await StoreUserData().getTenantId();
 
 
-    if (tenantId.isNotEmpty) {
+    if (tenantId!= -1) {
       // ✅ NEW: GetX कंट्रोलर से डेटा लोड करें
       final controller = Get.find<OnboardingController>();
       await controller.fetchOnboardingData(tenantId);
@@ -322,6 +322,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
   // ✅ UPDATED: _submit में बदलाव चेक लॉजिक ऐड किया गया
   Future<void> _submit() async {
+    widget.onNext();
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) return;
@@ -353,13 +354,11 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
       final ok = response['ok'] == true;
       final message = response['message']?.toString() ?? 'Unexpected response';
-      final newTenantId = response['tenant_id']?.toString();
+      final tenantId = response['tenant_id']?? -1;
 
       if (!mounted) return;
 
-      if (newTenantId != null) {
-        await StoreUserData().setTenantId(newTenantId);
-        tenantId = newTenantId;
+      if (tenantId != -1) {
 
         // ✅ NEW: GetX कंट्रोलर को अपडेट करें
         final controller = Get.find<OnboardingController>();

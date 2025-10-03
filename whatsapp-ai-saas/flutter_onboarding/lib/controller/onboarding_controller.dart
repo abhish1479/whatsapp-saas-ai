@@ -13,7 +13,7 @@ class OnboardingController extends GetxController {
 
   OnboardingData? get data => _data;
 
-  Future<void> fetchOnboardingData(String tenantId) async {
+  Future<void> fetchOnboardingData(int tenantId) async {
     if (_data != null) return;
 
     isLoading(true);
@@ -39,7 +39,7 @@ class OnboardingController extends GetxController {
     }
   }
 
-  Future<void> refreshData(String tenantId) async {
+  Future<void> refreshData(int tenantId) async {
     _data = null;
     await fetchOnboardingData(tenantId);
   }
