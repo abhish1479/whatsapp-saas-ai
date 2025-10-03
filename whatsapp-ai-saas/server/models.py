@@ -1,6 +1,6 @@
 
 import uuid
-from sqlalchemy import UUID, Column, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint
+from sqlalchemy import UUID, Column, Float, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -226,3 +226,28 @@ class Kyc(Base):
         UniqueConstraint('aadhaar_number', name='uq_kyc_aadhaar'),
         UniqueConstraint('pan_number', name='uq_kyc_pan'),
     )
+
+
+class SubscriptionPlan(Base):
+    __tablename__ = "subscription_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False, unique=True)
+    
+    # ✅ Actual total price user pays for the full duration
+    price = Column(Float, nullable=False)  # e.g., 999, 19999, 39999
+
+    # ✅ Normalized price per month (for easy comparison)
+    price_per_month = Column(Float, nullable=False)  # e.g., 999, 1666.58, 1999.92
+
+    credits = Column(Integer, nullable=False)
+    duration_days = Column(Integer, nullable=False)  # e.g., 30, 365, 180
+    billing_cycle = Column(String(20), nullable=True)  # e.g., "month", "year", "half-year"
+
+    features = Column(Text, nullable=False)          # JSON string
+    is_popular = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<SubscriptionPlan(name='{self.name}', price={self.price}, duration={self.duration_days}d)>"

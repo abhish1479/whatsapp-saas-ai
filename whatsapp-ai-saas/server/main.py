@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, kyc, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing
+from routers import auth, kyc, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing, subscriptions_plans
 from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
@@ -42,6 +42,7 @@ app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 app.include_router(billing.router, prefix="/billing", tags=["billing"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(kyc.router)
+app.include_router(subscriptions_plans.router)
 
 @app.get("/healthz")
 def healthz():
