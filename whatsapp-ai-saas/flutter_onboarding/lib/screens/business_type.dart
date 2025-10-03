@@ -26,7 +26,7 @@ class BusinessTypeScreen extends StatelessWidget {
 
   Future<void> _loadCurrentSelection() async {
     final tid = await StoreUserData().getTenantId();
-    if (tid.isEmpty) {
+    if (tid!=-1) {
       _isLoading(false);
       return;
     }
@@ -52,7 +52,7 @@ class BusinessTypeScreen extends StatelessWidget {
     _selectedType(type);
 
     final tid = await StoreUserData().getTenantId();
-    if (tid.isEmpty) {
+    if (tid!=-1) {
       onNext();
       return;
     }

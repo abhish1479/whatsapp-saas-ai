@@ -30,15 +30,15 @@ class StoreUserData {
   }
 
   // Store a string value in shared preferences
-  Future<void> setTenantId(String value) async {
+  Future<void> setTenantId(int value) async {
     final SharedPreferences prefs = await _prefs;
-    prefs.setString('TenantId', value);
+    prefs.setInt('TenantId', value);
   }
 
   // Retrieve a string value from shared preferences
-  Future<String> getTenantId() async {
+  Future<int> getTenantId() async {
     final SharedPreferences prefs = await _prefs;
-    return prefs.getString('TenantId') ?? '';
+    return prefs.getInt('TenantId') ?? -1;
   }
 
   // Store a string value in shared preferences

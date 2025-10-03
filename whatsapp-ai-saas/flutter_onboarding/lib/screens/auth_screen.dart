@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
+import '../model/auth.dart';
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key, required this.onNext}) : super(key: key);
 
@@ -163,38 +165,43 @@ class _SignupScreenState extends State<SignupScreen>
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
+          final authResponse = AuthResponse.fromJson(data);
 
-          final tenantId  = data.get("tenant_id");
-          final userStatus  = data.get("onboarding_process");
-          final access_token  = data.get("access_token");
-          // Access nested "user" object
-          final Map<String, dynamic> user = data["user"];
-          final int userId = user["id"];
-          final String email = user["email"];
-          final String name = user["name"];
-          final String provider = user["provider"];
-          final String providerId = user["provider_id"];
-          final String role = user["role"];
+          // ✅ Access the parsed data
+          final String accessToken = authResponse.accessToken;
+          final int tenantId = authResponse.tenantId;
+          final String onboardingProcess = authResponse.onboardingProcess;
+          final User user = authResponse.user;
 
-          StoreUserData().setTenantId(tenantId.toString());
-          StoreUserData().setUserStatus(userStatus);
-          StoreUserData().setToken(access_token);
+          // Store the data
+          StoreUserData().setTenantId(tenantId);
+          StoreUserData().setUserStatus(onboardingProcess);
+          StoreUserData().setToken(accessToken);
+
+          // Show appropriate message
+          String message = _isLogin
+              ? "Login Successfully!"
+              : "Welcome ${user.name}! Please complete onboarding process.";
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_isLogin ? "Login Successfully!" : "Please complete onboarding process."),
+              content: Text(message),
               backgroundColor: Colors.green,
             ),
           );
-          if(userStatus.toString().compareTo('Completed')==0){
+
+          // Navigate based on onboarding status
+          if (onboardingProcess.toLowerCase() == 'completed') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text("Login Success..HomeScreen is under development"),
-                backgroundColor: Colors.red,
+                content: Text("Login Success! HomeScreen is under development"),
+                backgroundColor: Colors.blue,
               ),
             );
-          }else {
-            widget.onNext(); // proceed to next step/screen
+            // Navigate to home screen or dashboard
+            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+          } else {
+            widget.onNext(); // proceed to onboarding screen
           }
         } else {
           final errorData = jsonDecode(response.body);
