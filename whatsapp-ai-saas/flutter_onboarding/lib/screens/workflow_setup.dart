@@ -23,6 +23,7 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
   bool _isLoading = false;
 
   Future<void> _save() async {
+    widget.onNext();
     setState(() => _isLoading = true);
     try {
       await widget.api.postForm('/onboarding/workflow', {

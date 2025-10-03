@@ -322,6 +322,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
   // ✅ UPDATED: _submit में बदलाव चेक लॉजिक ऐड किया गया
   Future<void> _submit() async {
+    widget.onNext();
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) return;
