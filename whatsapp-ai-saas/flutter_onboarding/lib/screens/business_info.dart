@@ -8,7 +8,7 @@ import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
-//Business
+
 class BusinessInfoScreen extends StatefulWidget {
   final Api api;
   final VoidCallback onNext;
@@ -20,75 +20,74 @@ class BusinessInfoScreen extends StatefulWidget {
   });
 
   @override
-  State<BusinessInfoScreen> createState() => _BusinessInfoScreenState();
+  State createState() => _BusinessInfoScreenState();
 }
 
 class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+
+  // controllers
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _personalController = TextEditingController();           // NEW
+  final _phoneController = TextEditingController();              // Business WhatsApp Number
+
+  // language value used by preview (UI dropdown removed as requested)
   final _lang = ValueNotifier<String>('en');
+
   bool _loading = false;
-  String? _selectedLanguage = 'en';
   int tenantId = -1;
 
-  // ✅ NEW: पहले से सेव डेटा की कॉपी (बदलाव चेक करने के लिए)
+  // originals for change detection
   String _originalName = '';
+  String _originalPersonal = '';                                 // NEW
   String _originalPhone = '';
-  String _originalLanguage = 'en';
 
   late final AnimationController _fadeController;
   late final AnimationController _slideController;
-  late final Animation<Offset> _slideAnimation;
   late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   BusinessInfoTheme get theme =>
-      Theme.of(context).extension<BusinessInfoTheme>() ??
-          BusinessInfoTheme.light;
+      Theme.of(context).extension<BusinessInfoTheme>() ?? BusinessInfoTheme.light;
 
   @override
   void initState() {
     super.initState();
     _fadeController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
     _slideController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
-
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.3),
       end: Offset.zero,
-    ).animate(
-        CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
 
     _fadeController.forward();
     _slideController.forward();
-
     _initData();
   }
 
-  Future<void> _initData() async {
+  Future _initData() async {
     tenantId = await StoreUserData().getTenantId();
-
-
-    if (tenantId!= -1) {
-      // ✅ NEW: GetX कंट्रोलर से डेटा लोड करें
+    if (tenantId != -1) {
       final controller = Get.find<OnboardingController>();
       await controller.fetchOnboardingData(tenantId);
-
       final data = controller.data;
-      if (data != null && data.hasBusinessProfile) {
-        // ✅ NEW: फील्ड्स में डेटा सेट करें
-        _nameController.text = data.businessName;
-        _phoneController.text = data.ownerPhone;
-        _selectedLanguage = data.language;
 
-        // ✅ NEW: ओल्ड वैल्यूज सेव करें (बदलाव चेक के लिए)
+      if (data != null && data.hasBusinessProfile) {
+        _nameController.text = data.businessName;
+        _phoneController.text = data.businessWhatsapp;            // CHANGED (was ownerPhone)
+        _personalController.text = data.personalNumber;           // NEW
         _originalName = data.businessName;
-        _originalPhone = data.ownerPhone;
-        _originalLanguage = data.language;
+        _originalPhone = data.businessWhatsapp;                   // CHANGED
+        _originalPersonal = data.personalNumber;                  // NEW
       }
     }
   }
@@ -96,6 +95,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
   @override
   void dispose() {
     _nameController.dispose();
+    _personalController.dispose();
     _phoneController.dispose();
     _lang.dispose();
     _fadeController.dispose();
@@ -182,6 +182,8 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
         children: [
           _buildHeader(),
           const SizedBox(height: 20),
+
+          // Business Name
           CustomWidgets.buildTextField(
             context: context,
             controller: _nameController,
@@ -191,9 +193,10 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             keyboardType: TextInputType.text,
             maxLength: 50,
             validator: (value) {
-              if (value != null &&
-                  value.isNotEmpty &&
-                  value.trim().length < 2) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Business name is required';
+              }
+              if (value.trim().length < 2) {
                 return 'Please enter complete name';
               }
               return null;
@@ -201,56 +204,48 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
           ),
           const SizedBox(height: 20),
 
+          // Personal Number (NEW)
           CustomWidgets.buildTextField(
             context: context,
-            controller: _phoneController,
-            label: "Owner Phone (WhatsApp) *",
-            hint: "10 Digit mobile number, e.g., 9876543210",
-            icon: Icons.phone,
+            controller: _personalController,
+            label: "Personal Number *",
+            hint: "10 digit mobile number, e.g., 9876543210",
+            icon: Icons.person,
             keyboardType: TextInputType.phone,
             maxLength: 10,
             validator: (value) {
-              if (value?.isEmpty == false && value?.trim().length != 10) {
+              final v = value?.trim() ?? '';
+              if (v.isEmpty) return 'Personal number is required';
+              if (v.length != 10 || int.tryParse(v) == null) {
                 return 'Enter a valid 10-digit mobile number';
               }
               return null;
             },
           ),
           const SizedBox(height: 20),
-          CustomWidgets.buildDropdown(
+
+          // Business WhatsApp Number (renamed)
+          CustomWidgets.buildTextField(
             context: context,
-            value: _selectedLanguage,
-            label: "Preferred Language",
-            icon: Icons.language,
-            items: const [
-              DropdownMenuItem(
-                value: 'en',
-                child: Row(
-                  children: [
-                    Text('🇺🇸'),
-                    SizedBox(width: 8),
-                    Text('English'),
-                  ],
-                ),
-              ),
-              DropdownMenuItem(
-                value: 'hi',
-                child: Row(
-                  children: [
-                    Text('🇮🇳'),
-                    SizedBox(width: 8),
-                    Text('Hindi'),
-                  ],
-                ),
-              ),
-            ],
-            onChanged: (String? value) {
-              setState(() {
-                _selectedLanguage = value;
-              });
+            controller: _phoneController,
+            label: "Business WhatsApp Number *",
+            hint: "10 digit mobile number, e.g., 9876543210",
+            icon: Icons.phone,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            validator: (value) {
+              final v = value?.trim() ?? '';
+              if (v.isEmpty) return 'Business WhatsApp number is required';
+              if (v.length != 10 || int.tryParse(v) == null) {
+                return 'Enter a valid 10-digit mobile number';
+              }
+              return null;
             },
           ),
+
           const SizedBox(height: 32),
+
+          // Save & Continue
           CustomWidgets.buildGradientButton(
             context: context,
             onPressed: _loading ? null : _submit,
@@ -273,15 +268,9 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         child: formWidget,
       );
-      return Container(
-        decoration: BoxDecoration(gradient: theme.formGradient),
-        child: formWidget,
-      );
+      return Container(decoration: BoxDecoration(gradient: theme.formGradient), child: formWidget);
     } else {
-      return Container(
-        decoration: BoxDecoration(gradient: theme.formGradient),
-        child: formWidget,
-      );
+      return Container(decoration: BoxDecoration(gradient: theme.formGradient), child: formWidget);
     }
   }
 
@@ -311,68 +300,56 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
         const SizedBox(height: 8),
         Text(
           "Tell us about your business to get started",
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey[600],
-          ),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
         ),
       ],
     );
   }
 
-  // ✅ UPDATED: _submit में बदलाव चेक लॉजिक ऐड किया गया
-  Future<void> _submit() async {
+  // submit (change detection kept, language excluded from checks as requested)
+  Future _submit() async {
     FocusScope.of(context).unfocus();
-
     if (!_formKey.currentState!.validate()) return;
 
     final currentName = _nameController.text.trim();
+    final currentPersonal = _personalController.text.trim();
     final currentPhone = _phoneController.text.trim();
-    final currentLang = _selectedLanguage ?? 'en';
 
-    // ✅ NEW: चेक करें कि क्या कोई फील्ड बदला गया है
     final hasChanged =
-        currentName != _originalName ||
-            currentPhone != _originalPhone ||
-            currentLang != _originalLanguage;
+        currentName != _originalName || currentPersonal != _originalPersonal || currentPhone != _originalPhone;
 
     if (!hasChanged) {
-      // ✅ NEW: डेटा नहीं बदला → सीधे अगले स्क्रीन पर जाएं
       widget.onNext();
       return;
     }
 
-    // ✅ NEW: डेटा बदला है → API कॉल करें
     setState(() => _loading = true);
     try {
       final response = await widget.api.postForm('/onboarding/business', {
+        'tenant_id': tenantId,                          // ensure server receives tenant
         'business_name': currentName,
-        'owner_phone': currentPhone,
-        'language': currentLang,
+        'personal_number': currentPersonal,             // NEW
+        'business_whatsapp': currentPhone,              // CHANGED (was owner_phone)
       });
 
       final ok = response['ok'] == true;
       final message = response['message']?.toString() ?? 'Unexpected response';
-      final tenantId = response['tenant_id']?? -1;
+      final returnedTenantId = response['tenant_id'] ?? -1;
 
       if (!mounted) return;
 
-      if (tenantId != -1) {
-
-        // ✅ NEW: GetX कंट्रोलर को अपडेट करें
+      if (returnedTenantId != -1) {
         final controller = Get.find<OnboardingController>();
-        await controller.refreshData(tenantId);
-
-        // ✅ NEW: नए डेटा को "ओल्ड" मान लें
+        await controller.refreshData(returnedTenantId);
         _originalName = currentName;
+        _originalPersonal = currentPersonal;
         _originalPhone = currentPhone;
-        _originalLanguage = currentLang;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(ok ? Icons.check_circle : Icons.warning_amber_rounded,
-                    color: Colors.white),
+                Icon(ok ? Icons.check_circle : Icons.warning_amber_rounded, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(child: Text(message)),
               ],
@@ -386,13 +363,12 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
         await Future.delayed(const Duration(milliseconds: 500));
         widget.onNext();
       } else {
-        AppUtils.errorToast(context, "Failed to save. Please try again.", 3);
+        AppUtils.errorToast(context, "Failed to save.\nPlease try again.", 3);
       }
     } catch (e, stack) {
       AppLogger.error('Business save error: $e\n$stack');
       if (mounted) {
-        AppUtils.errorToast(
-            context, "Something went wrong. Please try again.", 3);
+        AppUtils.errorToast(context, "Something went wrong.\nPlease try again.", 3);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -400,62 +376,35 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
   }
 
   Widget _buildWhatsAppPreview({required bool inRow}) {
+    final preview = AnimatedBuilder(
+      animation: Listenable.merge([_nameController, _phoneController, _lang]),
+      builder: (context, _) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey[300]!),
+          boxShadow: [theme.cardShadow],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildWhatsAppHeader(),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                child: _buildWhatsAppChat(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
     if (inRow) {
-      return AnimatedBuilder(
-        animation: Listenable.merge([_nameController, _phoneController, _lang]),
-        builder: (context, _) => Flexible(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey[300]!),
-              boxShadow: [theme.cardShadow],
-            ),
-            child: Column(
-              children: [
-                _buildWhatsAppHeader(),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      child: _buildWhatsAppChat(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else {
-      return AnimatedBuilder(
-        animation: Listenable.merge([_nameController, _phoneController, _lang]),
-        builder: (context, _) => Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey[300]!),
-            boxShadow: [theme.cardShadow],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _buildWhatsAppHeader(),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: _buildWhatsAppChat(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      return Flexible(child: preview);
     }
+    return preview;
   }
 
   Widget _buildWhatsAppHeader() {
@@ -463,12 +412,8 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        gradient:
-        LinearGradient(colors: [Colors.green[600]!, Colors.green[700]!]),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+        gradient: LinearGradient(colors: [Colors.green[600]!, Colors.green[700]!]),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
       ),
       child: Row(
         children: [
@@ -477,10 +422,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             backgroundColor: Colors.white,
             child: Text(
               name.isEmpty ? "B" : name[0].toUpperCase(),
-              style: const TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16),
+              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
           const SizedBox(width: 12),
@@ -490,13 +432,9 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
               children: [
                 Text(
                   name.isEmpty ? "Your Business" : name,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                Text("Online",
-                    style: TextStyle(color: Colors.green[100], fontSize: 12)),
+                Text("Online", style: TextStyle(color: Colors.green[100], fontSize: 12)),
               ],
             ),
           ),
@@ -540,29 +478,19 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _lang.value == 'hi'
-                      ? "नमस्ते $displayName! 👋"
-                      : "Hello $displayName! 👋",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87),
+                  _lang.value == 'hi' ? "नमस्ते $displayName! " : "Hello $displayName! ",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _lang.value == 'hi'
-                      ? "हम आपसे WhatsApp पर संपर्क करेंगे। 📲"
-                      : "We will reach you on WhatsApp 📲",
-                  style: const TextStyle(
-                      fontSize: 14, color: Colors.black87, height: 1.4),
+                  _lang.value == 'hi' ? "हम आपसे WhatsApp पर संपर्क करेंगे। " : "We will reach you on WhatsApp ",
+                  style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text("12:30 PM",
-                        style:
-                        TextStyle(color: Colors.grey[500], fontSize: 11)),
+                    Text("12:30 PM", style: TextStyle(color: Colors.grey[500], fontSize: 11)),
                     const SizedBox(width: 4),
                     Icon(Icons.done_all, color: Colors.blue[600], size: 14),
                   ],
@@ -576,15 +504,10 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
           alignment: Alignment.centerRight,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
             child: Text(
               phone.isEmpty ? "+91 XXXXXXXXXX" : "+91 $phone",
-              style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500),
+              style: TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w500),
             ),
           ),
         ),

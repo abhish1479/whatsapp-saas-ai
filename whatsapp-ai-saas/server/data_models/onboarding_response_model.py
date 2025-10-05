@@ -5,20 +5,25 @@ from pydantic import BaseModel
 class ReviewResponse(BaseModel):
     tenant_id: int
     onboarding_process: str
+
     has_business_profile: bool
-    has_business_type: Optional[bool]=False
-    has_items: Optional[bool]=False
-    has_web_ingest: Optional[bool]=False
-    has_workflow: Optional[bool]=False
-    has_kyc: Optional[bool]=False
-    has_payment: Optional[bool]=False
-    has_agent_configuration: Optional[bool]=False
+    has_business_type: Optional[bool] = False
+    has_items: Optional[bool] = False
+    has_web_ingest: Optional[bool] = False
+    has_workflow: Optional[bool] = False
+    has_kyc: Optional[bool] = False
+    has_payment: Optional[bool] = False
+    has_agent_configuration: Optional[bool] = False
+    has_profile_activate: Optional[bool] = False
+
     item_count: int
-    has_profile_activate: Optional[bool]=False
+
     business_name: Optional[str] = None
-    owner_phone: Optional[str] = None
+    business_whatsapp: Optional[str] = None     # CHANGED
+    personal_number: Optional[str] = None       # NEW
     language: Optional[str] = None
     business_type: Optional[str] = None
+
     items: List[dict] = []
     web_ingest: Optional[dict] = None
     workflow: Optional[dict] = None

@@ -25,7 +25,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      SignupScreen(onNext: next),
       BusinessInfoScreen(api: widget.api,  onNext: next),
       BusinessTypeScreen(api: widget.api, onNext: next, onBack: back),
       BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
