@@ -39,3 +39,76 @@ curl -s "$API_URL" | jq -r '.tree[] | select(.type=="blob") | .path' | while rea
   ENCODED_FILE=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE")
   echo "$BASE_RAW/$ENCODED_FILE"
 done
+
+
+## Query to access database locally
+docker exec -it wa_db psql -U wa_saas_user -d whatsappdb
+
+## Query to insert in DB
+INSERT INTO subscription_plans (
+    name,
+    price,
+    price_per_month,
+    credits,
+    duration_days,
+    billing_cycle,
+    features,
+    is_popular
+) VALUES (
+    'Basic',
+    999.0,
+    999.0,
+    1000,
+    30,
+    'month',
+    '["Basic AI features", "Email support", "5 projects limit"]',
+    false
+);
+
+-- Insert Premium Plan (Popular)
+INSERT INTO subscription_plans (
+    name,
+    price,
+    price_per_month,
+    credits,
+    duration_days,
+    billing_cycle,
+    features,
+    is_popular
+) VALUES (
+    'Premium',
+    1999.0,
+    1999.0,
+    5000,
+    30,
+    'month',
+    '["Advanced AI features", "Priority support", "Unlimited projects", "Analytics dashboard"]',
+    true
+);
+
+-- Insert Mega Plan
+INSERT INTO subscription_plans (
+    name,
+    price,
+    price_per_month,
+    credits,
+    duration_days,
+    billing_cycle,
+    features,
+    is_popular
+) VALUES (
+    'Mega',
+    3999.0,
+    3999.0,
+    15000,
+    30,
+    'month',
+    '["All premium features", "24/7 phone support", "Custom integrations", "Dedicated account manager"]',
+    false
+);
+
+UPDATE subscription_plans 
+SET updated_at = created_at 
+WHERE updated_at IS NULL;
+
+##
