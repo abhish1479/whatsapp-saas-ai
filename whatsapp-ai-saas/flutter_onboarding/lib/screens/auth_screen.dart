@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
@@ -9,12 +11,18 @@ import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
+import '../api/api.dart';
 import '../model/auth.dart';
+import 'leads/leads_list_screen.dart';
+import 'onboarding_wizard.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({Key? key, required this.onNext}) : super(key: key);
+  final Api api;
 
-  final VoidCallback onNext;
+  const SignupScreen({
+    Key? key,
+    required this.api,
+  }) : super(key: key);
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -38,16 +46,14 @@ class _SignupScreenState extends State<SignupScreen>
   // Social login instances
   late GoogleSignIn _googleSignIn;
 
-  // 🔑 API endpoint (replace with your real backend URL)
-  static const String _authEndpoint = "https://0b0d30716cca.ngrok-free.app/social_auth/login";
-
   @override
   void initState() {
     super.initState();
 
     String? clientId;
     if (kIsWeb) {
-      clientId = "734195415255-lj07mf33edgkgec9j4e3od0acj635nvb.apps.googleusercontent.com";
+      clientId =
+          "734195415255-lj07mf33edgkgec9j4e3od0acj635nvb.apps.googleusercontent.com";
     }
 
     _googleSignIn = GoogleSignIn(
@@ -61,12 +67,12 @@ class _SignupScreenState extends State<SignupScreen>
     _videoController = VideoPlayerController.network(
       'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     )..initialize().then((_) {
-      if (mounted) {
-        setState(() {});
-        _videoController.play();
-        _videoController.setLooping(true);
-      }
-    });
+        if (mounted) {
+          setState(() {});
+          _videoController.play();
+          _videoController.setLooping(true);
+        }
+      });
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -145,12 +151,13 @@ class _SignupScreenState extends State<SignupScreen>
           throw Exception("No ID token received from Google");
         }
 
+        final String _authEndpoint = "${widget.api.baseUrl}/social_auth/login";
         // 📤 Send ID token to your backend (not just email)
         final response = await http.post(
           Uri.parse(_authEndpoint),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
-            "id_token": idToken,        // ← Send this to backend
+            "id_token": idToken, // ← Send this to backend
             "provider": provider,
             "is_login": _isLogin,
             "plan": _isLogin ? null : _selectedPlan,
@@ -192,20 +199,20 @@ class _SignupScreenState extends State<SignupScreen>
 
           // Navigate based on onboarding status
           if (onboardingProcess.toLowerCase() == 'completed') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Login Success! HomeScreen is under development"),
-                backgroundColor: Colors.blue,
-              ),
-            );
-            // Navigate to home screen or dashboard
-            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+            // Navigate to Home Screen
+            if (mounted) {
+              Get.offAll(() => HomeScreen(/*api: widget.api*/)); // Replace HomeScreen with your actual home screen widget
+            }
           } else {
-            widget.onNext(); // proceed to onboarding screen
+            // Navigate to Onboarding Wizard (starts from the beginning or resumes)
+            if (mounted) {
+              Get.offAll(() => OnboardingWizard(api: widget.api));
+            }
           }
         } else {
           final errorData = jsonDecode(response.body);
-          final errorMessage = errorData["error"] ?? "Auth failed: ${response.statusCode}";
+          final errorMessage =
+              errorData["error"] ?? "Auth failed: ${response.statusCode}";
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
@@ -213,13 +220,15 @@ class _SignupScreenState extends State<SignupScreen>
             ),
           );
         }
-      }
-      else if (provider == "facebook") {
-        final LoginResult result = await FacebookAuth.instance.login(permissions: ['email']);
+      } else if (provider == "facebook") {
+        final LoginResult result =
+            await FacebookAuth.instance.login(permissions: ['email']);
         if (result.status == LoginStatus.success) {
           final userData = await FacebookAuth.instance.getUserData();
           final email = userData["email"] ?? "${userData["id"]}@facebook.com";
 
+          final String _authEndpoint =
+              "${widget.api.baseUrl}/social_auth/login";
           // Send to your backend
           final response = await http.post(
             Uri.parse(_authEndpoint),
@@ -240,16 +249,46 @@ class _SignupScreenState extends State<SignupScreen>
 
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
+            final authResponse = AuthResponse.fromJson(data);
+
+            // ✅ Access the parsed data
+            final String accessToken = authResponse.accessToken;
+            final int tenantId = authResponse.tenantId;
+            final String onboardingProcess = authResponse.onboardingProcess;
+            final User user = authResponse.user;
+
+            // Store the data
+            StoreUserData().setTenantId(tenantId);
+            StoreUserData().setUserStatus(onboardingProcess);
+            StoreUserData().setToken(accessToken);
+
+            // Show appropriate message
+            String message = _isLogin
+                ? "Login Successfully!"
+                : "Welcome ${user.name}! Please complete onboarding process.";
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(data["message"] ?? "Success!"),
+                content: Text(message),
                 backgroundColor: Colors.green,
               ),
             );
-            widget.onNext(); // proceed to next step/screen
+            // Navigate based on onboarding status
+            if (onboardingProcess.toLowerCase() == 'completed') {
+              // Navigate to Home Screen
+              if (mounted) {
+                Get.offAll(() => HomeScreen(/*api: widget.api*/)); // Replace HomeScreen with your actual home screen widget
+              }
+            } else {
+              // Navigate to Onboarding Wizard (starts from the beginning or resumes)
+              if (mounted) {
+                Get.offAll(() => OnboardingWizard(api: widget.api));
+              }
+            } // proceed to next step/screen
           } else {
             final errorData = jsonDecode(response.body);
-            final errorMessage = errorData["error"] ?? "Auth failed: ${response.statusCode}";
+            final errorMessage =
+                errorData["error"] ?? "Auth failed: ${response.statusCode}";
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorMessage),
@@ -316,26 +355,27 @@ class _SignupScreenState extends State<SignupScreen>
         borderRadius: BorderRadius.circular(20),
         child: _videoController.value.isInitialized
             ? AspectRatio(
-          aspectRatio: _videoController.value.aspectRatio,
-          child: VideoPlayer(_videoController),
-        )
+                aspectRatio: _videoController.value.aspectRatio,
+                child: VideoPlayer(_videoController),
+              )
             : Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1E293B),
-                const Color(0xFF334155),
-              ],
-            ),
-          ),
-          child: const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-            ),
-          ),
-        ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF1E293B),
+                      const Color(0xFF334155),
+                    ],
+                  ),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -475,64 +515,91 @@ class _SignupScreenState extends State<SignupScreen>
             textAlign: TextAlign.center,
           ),
           SizedBox(height: isWeb ? 40 : 32),
-
           if (isWeb)
             Row(
               children: [
                 Expanded(
-                  child: _buildPlanCard('Basic', '₹999', '1,000 credits', [
-                    'Basic AI features',
-                    'Email support',
-                    '5 projects limit',
-                  ], false),
+                  child: _buildPlanCard(
+                      'Basic',
+                      '₹999',
+                      '1,000 credits',
+                      [
+                        'Basic AI features',
+                        'Email support',
+                        '5 projects limit',
+                      ],
+                      false),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: _buildPlanCard('Premium', '₹1,999', '5,000 credits', [
-                    'Advanced AI features',
-                    'Priority support',
-                    'Unlimited projects',
-                    'Analytics dashboard',
-                  ], true),
+                  child: _buildPlanCard(
+                      'Premium',
+                      '₹1,999',
+                      '5,000 credits',
+                      [
+                        'Advanced AI features',
+                        'Priority support',
+                        'Unlimited projects',
+                        'Analytics dashboard',
+                      ],
+                      true),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: _buildPlanCard('Mega', '₹3,999', '15,000 credits', [
-                    'All premium features',
-                    '24/7 phone support',
-                    'Custom integrations',
-                    'Dedicated account manager',
-                  ], false),
+                  child: _buildPlanCard(
+                      'Mega',
+                      '₹3,999',
+                      '15,000 credits',
+                      [
+                        'All premium features',
+                        '24/7 phone support',
+                        'Custom integrations',
+                        'Dedicated account manager',
+                      ],
+                      false),
                 ),
               ],
             )
           else
             Column(
               children: [
-                _buildPlanCard('Basic', '₹999', '1,000 credits', [
-                  'Basic AI features',
-                  'Email support',
-                  '5 projects limit',
-                ], false),
+                _buildPlanCard(
+                    'Basic',
+                    '₹999',
+                    '1,000 credits',
+                    [
+                      'Basic AI features',
+                      'Email support',
+                      '5 projects limit',
+                    ],
+                    false),
                 const SizedBox(height: 16),
-                _buildPlanCard('Premium', '₹1,999', '5,000 credits', [
-                  'Advanced AI features',
-                  'Priority support',
-                  'Unlimited projects',
-                  'Analytics dashboard',
-                ], true),
+                _buildPlanCard(
+                    'Premium',
+                    '₹1,999',
+                    '5,000 credits',
+                    [
+                      'Advanced AI features',
+                      'Priority support',
+                      'Unlimited projects',
+                      'Analytics dashboard',
+                    ],
+                    true),
                 const SizedBox(height: 16),
-                _buildPlanCard('Mega', '₹3,999', '15,000 credits', [
-                  'All premium features',
-                  '24/7 phone support',
-                  'Custom integrations',
-                  'Dedicated account manager',
-                ], false),
+                _buildPlanCard(
+                    'Mega',
+                    '₹3,999',
+                    '15,000 credits',
+                    [
+                      'All premium features',
+                      '24/7 phone support',
+                      'Custom integrations',
+                      'Dedicated account manager',
+                    ],
+                    false),
               ],
             ),
-
           const SizedBox(height: 32),
-
           OutlinedButton.icon(
             onPressed: _goBack,
             icon: const Icon(Icons.arrow_back, size: 20),
@@ -583,23 +650,20 @@ class _SignupScreenState extends State<SignupScreen>
             textAlign: TextAlign.center,
           ),
           SizedBox(height: isWeb ? 40 : 32),
-
           _buildSocialButton(
             'Google',
             Icons.g_mobiledata,
             const Color(0xFFDB4437),
-                () => _handleSocialAuth('google'),
+            () => _handleSocialAuth('google'),
           ),
           const SizedBox(height: 16),
           _buildSocialButton(
             'Facebook',
             Icons.facebook,
             const Color(0xFF4267B2),
-                () => _handleSocialAuth('facebook'),
+            () => _handleSocialAuth('facebook'),
           ),
-
           const SizedBox(height: 32),
-
           OutlinedButton.icon(
             onPressed: _goBack,
             icon: const Icon(Icons.arrow_back, size: 20),
@@ -684,7 +748,7 @@ class _SignupScreenState extends State<SignupScreen>
               if (isPopular)
                 Container(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
@@ -724,36 +788,36 @@ class _SignupScreenState extends State<SignupScreen>
           ...features
               .map(
                 (feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      feature,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 16,
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          )
+                ),
+              )
               .toList(),
           const SizedBox(height: 24),
           SizedBox(
@@ -770,40 +834,40 @@ class _SignupScreenState extends State<SignupScreen>
               ),
               child: isPopular
                   ? Ink(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Container(
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Select Plan',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              )
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Select Plan',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
                   : Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                      color: const Color(0xFF3B82F6), width: 2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'Select Plan',
-                  style: TextStyle(
-                    color: Color(0xFF3B82F6),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: const Color(0xFF3B82F6), width: 2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Select Plan',
+                        style: TextStyle(
+                          color: Color(0xFF3B82F6),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
             ),
           ),
         ],
@@ -850,8 +914,8 @@ class _SignupScreenState extends State<SignupScreen>
                             child: _showSocialLogin
                                 ? _buildSocialLoginOptions()
                                 : _showPackSelection
-                                ? _buildPackSelection()
-                                : _buildInitialOptions(),
+                                    ? _buildPackSelection()
+                                    : _buildInitialOptions(),
                           ),
                         ),
                       ],
@@ -865,7 +929,8 @@ class _SignupScreenState extends State<SignupScreen>
                 color: Colors.black.withOpacity(0.3),
                 child: const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
                   ),
                 ),
               ),

@@ -11,8 +11,8 @@ class OnboardingData {
   final int itemCount;
   final bool hasProfileActivate;
   final String businessName;
-  final String ownerPhone;
-  final String language;
+  final String businessWhatsapp;     // CHANGED
+  final String personalNumber;
   final String businessType;
   final List<Item> items;
   final WebIngest? webIngest;
@@ -31,8 +31,8 @@ class OnboardingData {
     required this.itemCount,
     required this.hasProfileActivate,
     required this.businessName,
-    required this.ownerPhone,
-    required this.language,
+    required this.businessWhatsapp,
+    required this.personalNumber,
     required this.businessType,
     required this.items,
     this.webIngest,
@@ -59,8 +59,8 @@ class OnboardingData {
       itemCount: json['item_count'] is int ? json['item_count'] : 0,
       hasProfileActivate: json['has_profile_activate'] ?? false,
       businessName: json['business_name'] ?? '',
-      ownerPhone: json['owner_phone'] ?? '',
-      language: json['language'] ?? 'en',
+      businessWhatsapp: json['business_whatsapp'] ?? '',     // CHANGED
+      personalNumber: json['personal_number'] ?? '',         // NEW
       businessType: json['business_type'] ?? '',
       items: itemsList,
       webIngest: json['web_ingest'] != null

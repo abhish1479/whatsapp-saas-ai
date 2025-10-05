@@ -1,8 +1,9 @@
 -- server/migrations/003_onboarding.sql
 CREATE TABLE IF NOT EXISTS business_profiles (
-  tenant_id VARCHAR(64) PRIMARY KEY,
+  tenant_id INTEGER PRIMARY KEY,
   business_name TEXT NOT NULL,
-  owner_phone TEXT NOT NULL,
+  business_whatsapp TEXT NOT NULL,  -- renamed from owner_phone
+  personal_number TEXT NOT NULL,             -- new column
   language VARCHAR(8) NOT NULL DEFAULT 'en',
   business_type VARCHAR(16),
   is_active BOOLEAN NOT NULL DEFAULT false,

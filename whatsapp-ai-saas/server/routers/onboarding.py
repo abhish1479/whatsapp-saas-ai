@@ -12,55 +12,77 @@ from services.rag import rag
 from models import AgentConfiguration, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
 from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
 from utils.enums import Onboarding
+import re
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
+
+# --------------------------------------------------------------------
+# constant regex: exactly 10 numeric digits (no +, spaces, or symbols)
+# --------------------------------------------------------------------
+TEN_DIGIT_PHONE_REGEX = re.compile(r'^[0-9]{10}$')
 
 # ---------- STEP 1: Business Profile ----------
 @router.post("/business")
 def upsert_business_profile(
     business_name: str = Form(...),
-    owner_phone: str = Form(...),
+    personal_number: str = Form(...),              # NEW
+    business_whatsapp: str = Form(...),            # CHANGED (was owner_phone)
     tenant_id: int = Form(...),
-    language: str = Form("en"),
+    language: str = Form("en"),                    # keep to preserve preview/compat
     db: Session = Depends(get_db),
 ):
-    # Step 1: Check if owner_phone already exists using ORM
+    # === Empty field validation ===
+    if not tenant_id or not tenant_id.strip():
+        raise HTTPException(status_code=400, detail="Tenant ID cannot be empty.")
+    if not business_name or not business_name.strip():
+        raise HTTPException(status_code=400, detail="Business name cannot be empty.")
+    if not personal_number or not personal_number.strip():
+        raise HTTPException(status_code=400, detail="Personal number cannot be empty.")
+    if not business_whatsapp or not business_whatsapp.strip():
+        raise HTTPException(status_code=400, detail="Business WhatsApp number cannot be empty.")
+
+    # === 10-digit number validation ===
+    if not TEN_DIGIT_PHONE_REGEX.match(personal_number.strip()):
+        raise HTTPException(
+            status_code=400,
+            detail="Personal number must be exactly 10 digits (no country code or symbols)."
+        )
+    if not TEN_DIGIT_PHONE_REGEX.match(business_whatsapp.strip()):
+        raise HTTPException(
+            status_code=400,
+            detail="Business WhatsApp number must be exactly 10 digits (no country code or symbols)."
+        )
+
     existing_profile = db.query(BusinessProfile).filter(
         BusinessProfile.tenant_id == tenant_id
     ).first()
 
     if existing_profile:
-        existing_profile.business_name=business_name,
-        existing_profile.language=language
+        existing_profile.business_name = business_name
+        existing_profile.personal_number = personal_number
+        existing_profile.business_whatsapp = business_whatsapp
+        # keep existing_profile.language as-is (or set to language if desired)
         db.commit()
         return {
             "ok": True,
             "message": "Business profile updated successfully",
-            "tenant_id": existing_profile.tenant_id
+            "tenant_id": existing_profile.tenant_id,
         }
 
-    # Step 2: Create new Tenant
-    # tenant = Tenant(name=business_name)
-    # db.add(tenant)
-    # db.flush()  # Gets tenant.id without committing
-
-    # Step 3: Create BusinessProfile using ORM — is_active defaults to False automatically!
     business_profile = BusinessProfile(
         tenant_id=tenant_id,
         business_name=business_name,
-        owner_phone=owner_phone,
-        language=language
-        # 👇 is_active is automatically set to False by model default — no need to specify!
+        personal_number=personal_number,
+        business_whatsapp=business_whatsapp,
+        language=language,
     )
     db.add(business_profile)
     db.commit()
-
     return {
         "ok": True,
         "message": "Business profile created successfully",
-        "tenant_id": tenant_id
+        "tenant_id": tenant_id,
     }
-
 
 # ---------- STEP 2: Business Type ----------
 @router.post("/type")
@@ -297,7 +319,8 @@ async def get_review(
         has_profile_activate=has_profile_activate,
         item_count=item_count,
         business_name=business_profile.business_name,
-        owner_phone=business_profile.owner_phone,
+        business_whatsapp=business_profile.business_whatsapp,  # CHANGED
+        personal_number=business_profile.personal_number,      # NEW
         language=business_profile.language,
         business_type=business_profile.business_type,
         items=[

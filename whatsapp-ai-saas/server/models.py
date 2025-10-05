@@ -109,19 +109,21 @@ class Template(Base):
     body = Column(Text, nullable=False)
     status = Column(String, default="draft")
 
-
-
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
 
-    tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete="CASCADE"),primary_key=True, unique=True  )
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"),
+                       primary_key=True, unique=True)
     business_name = Column(Text, nullable=False)
-    owner_phone = Column(Text, nullable=False)
-    language = Column(String(8), nullable=False, default="en")
+    # CHANGED:
+    business_whatsapp = Column(Text, nullable=False)   # was owner_phone
+    personal_number   = Column(Text, nullable=True)    # NEW
+    language      = Column(String(8), nullable=False, default="en")
     business_type = Column(String(16))
-    is_active = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    is_active     = Column(Boolean, nullable=False, default=False)
+    created_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
 
 # -------------------------------
 # Items

@@ -2,15 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'api/api.dart';
-import 'screens/auth_screen.dart';
-// import 'package:your_app/main_app_scaffold.dart';
 import 'controller/onboarding_controller.dart';
-import 'screens/onboarding_wizard.dart';
+// Import your new check screen and home screen
+import 'screens/check_auth_screen.dart'; // Create this
+// import 'screens/home_screen.dart'; // Create this later
 
 String resolveApiBase() {
   const fromDefine = String.fromEnvironment('API_BASE');
   if (fromDefine.isNotEmpty) return fromDefine;
-  return 'https://0b0d30716cca.ngrok-free.app'; // ✅ No trailing space
+  return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Ensure no trailing space
+  // return 'https://0b0d30716cca.ngrok-free.app'; // Ensure no trailing space
 }
 
 void main() {
@@ -27,10 +28,11 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'WhatsApp AI Onboarding',
       theme: ThemeData(useMaterial3: true),
-      home: OnboardingWizard(api: api),
+      // Change the home to the new check screen
+      home: CheckAuthScreen(api: api),
       initialBinding: BindingsBuilder(() {
         Get.put(api);
-        Get.put(OnboardingController(api)); // ✅ Pass api to controller
+        Get.put(OnboardingController(api));
       }),
     );
   }
