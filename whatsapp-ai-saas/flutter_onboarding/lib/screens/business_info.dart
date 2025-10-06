@@ -26,6 +26,8 @@ class BusinessInfoScreen extends StatefulWidget {
 class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  String? _userName;
+  String? _userPhotoUrl;
 
   // controllers
   final _nameController = TextEditingController();
@@ -76,6 +78,9 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
   Future _initData() async {
     tenantId = await StoreUserData().getTenantId();
+    _userName = await StoreUserData().getUserName();
+    _userPhotoUrl = await StoreUserData().getProfilePic();
+
     if (tenantId != -1) {
       final controller = Get.find<OnboardingController>();
       await controller.fetchOnboardingData(tenantId);
@@ -89,6 +94,11 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
         _originalPhone = data.businessWhatsapp;                   // CHANGED
         _originalPersonal = data.personalNumber;                  // NEW
       }
+    }
+    if (mounted) {
+      setState(() {
+        // Triggers rebuild to show user info
+      });
     }
   }
 
@@ -279,29 +289,81 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: theme.borderRadius,
-          ),
-          child: Icon(Icons.business, color: Colors.blue[700], size: 32),
-        ),
-        const SizedBox(height: 16),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            "Business Information",
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+        // Row for the icon and user info
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between icon and user info
+          children: [
+            // Left side: Icon and title/description
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8.0), // Add some padding around the user info
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // Make row as small as its content
+                      children: [
+                        if (_userPhotoUrl != null && _userPhotoUrl!.isNotEmpty)
+                          CircleAvatar(
+                            backgroundImage: NetworkImage(_userPhotoUrl!),
+                            radius: 50, // Adjust size as needed
+                            backgroundColor: Colors.grey[200], // Fallback color
+                            // Optional: Add placeholder/error widget if needed
+                            // onBackgroundImageError: (exception, stackTrace) { ... },
+                          )
+                        else
+                          CircleAvatar( // Fallback if no photo URL
+                            child: Icon(Icons.person, color: Colors.grey[700]),
+                            radius: 40,
+                            backgroundColor: Colors.grey[300],
+                          ),
+                        const SizedBox(width: 8),
+                        if (_userName != null && _userName!.isNotEmpty)
+                          Text(
+                            _userName!,
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.grey[700], // Adjust color as needed
+                                fontWeight: FontWeight.w500),
+                          )
+                        else
+                          const Text("User"), // Fallback if no name
+                      ],
+                    ),
+                  ),
+
+                  Visibility(
+                    visible: false,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[100],
+                        borderRadius: theme.borderRadius,
+                      ),
+                      child: Icon(Icons.business, color: Colors.blue[700], size: 32),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      "Business Information",
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Tell us about your business to get started",
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          "Tell us about your business to get started",
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            // Right side: User info (name and image)
+
+          ],
         ),
       ],
     );

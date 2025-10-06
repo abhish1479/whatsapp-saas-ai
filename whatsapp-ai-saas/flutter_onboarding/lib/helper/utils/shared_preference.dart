@@ -65,5 +65,41 @@ class StoreUserData {
     return prefs.getString('Token') ?? '';
   }
 
+  // Store a string value in shared preferences
+  Future<void> setUserName(String value) async {
+    final SharedPreferences prefs = await _prefs;
+    prefs.setString('UserName', value);
+  }
+
+  // Retrieve a string value from shared preferences
+  Future<String> getUserName() async {
+    final SharedPreferences prefs = await _prefs;
+    return prefs.getString('UserName') ?? '';
+  }
+
+  // Store a string value in shared preferences
+  Future<void> setEmail(String value) async {
+    final SharedPreferences prefs = await _prefs;
+    prefs.setString('Email', value);
+  }
+
+  // Retrieve a string value from shared preferences
+  Future<String> getEmail() async {
+    final SharedPreferences prefs = await _prefs;
+    return prefs.getString('Email') ?? '';
+  }
+
+  // Store a string value in shared preferences
+  Future<void> setProfilePic(String value) async {
+    final SharedPreferences prefs = await _prefs;
+    prefs.setString('ProfilePic', value);
+  }
+
+  // Retrieve a string value from shared preferences
+  Future<String> getProfilePic() async {
+    final SharedPreferences prefs = await _prefs;
+    return prefs.getString('ProfilePic') ?? '';
+  }
+
 
 }
