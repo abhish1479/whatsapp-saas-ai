@@ -184,6 +184,7 @@ class _SignupScreenState extends State<SignupScreen>
           StoreUserData().setTenantId(tenantId);
           StoreUserData().setUserStatus(onboardingProcess);
           StoreUserData().setToken(accessToken);
+          StoreUserData().setLoggedIn(true);
 
           // Show appropriate message
           String message = _isLogin
