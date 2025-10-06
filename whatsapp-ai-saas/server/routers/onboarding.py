@@ -32,7 +32,7 @@ def upsert_business_profile(
     db: Session = Depends(get_db),
 ):
     # === Empty field validation ===
-    if not tenant_id or not tenant_id.strip():
+    if tenant_id is None:
         raise HTTPException(status_code=400, detail="Tenant ID cannot be empty.")
     if not business_name or not business_name.strip():
         raise HTTPException(status_code=400, detail="Business name cannot be empty.")

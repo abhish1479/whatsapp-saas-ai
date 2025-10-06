@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
 
+import '../helper/utils/app_loger.dart';
+
 
 class Api {
   final String baseUrl;
@@ -77,29 +79,43 @@ class Api {
       String path, Map<String, dynamic> body) async {
     final uri = _u(path);
 
-    // For form data, cURL might list each field separately
     final fieldsList = body.entries.map((e) => "  -F '${e.key}=${e.value}'").join(" \\\n");
     final curlCommand = [
       "curl -X POST '${uri.toString()}'",
       if (fieldsList.isNotEmpty) fieldsList,
     ].join(" \\\n");
-    // AppLogger.info("📤 cURL POST Form Request:\n$curlCommand", tag: AppLogger.api);
-    print("📤 cURL POST Form Request:\n$curlCommand");
+    AppLogger.info("📤 cURL POST Form Request:\n$curlCommand", tag: AppLogger.api);
 
     final response = await http.post(uri, body: body).timeout(timeout);
 
     // ✅ Log HTTP Response
-    // AppLogger.info("📥 Response Status: ${response.statusCode}", tag: AppLogger.api);
-    // AppLogger.info("📥 Response Body:\n${response.body}", tag: AppLogger.api);
-    print("📥 Response Status: ${response.statusCode}");
-    print("📥 Response Body:\n${response.body}");
+    AppLogger.info("📥 Response Status: ${response.statusCode}", tag: AppLogger.api);
+    AppLogger.info("📥 Response Body:\n${response.body}", tag: AppLogger.api);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response.body.isEmpty
-          ? {}
-          : json.decode(response.body) as Map<String, dynamic>;
+      if (response.body.isEmpty) {
+        print("Response body is empty, returning empty map.");
+        return {}; // Return empty map if body is empty
+      }
+
+      try {
+        // Decode JSON first, result is dynamic
+        final decodedJson = json.decode(response.body);
+        if (decodedJson is Map<String, dynamic>) {
+          print("Successfully decoded and validated JSON as Map<String, dynamic>.");
+          return decodedJson; // Return the correctly typed map
+        } else {
+          print("Decoded JSON is not a Map<String, dynamic>. Type: ${decodedJson.runtimeType}");
+          throw FormatException('Expected a JSON object in response body, but got ${decodedJson.runtimeType}. Body: ${response.body}');
+        }
+      } catch (e, stackTrace) {
+        print("Error parsing JSON response: $e\nStack Trace: $stackTrace");
+        rethrow; // Re-throw the parsing error or a more specific one
+      }
+    } else {
+      print("HTTP request failed with status ${response.statusCode}. Body: ${response.body}");
+      throw Exception('POST $path failed: ${response.statusCode} ${response.body}');
     }
-    throw Exception('POST $path failed: ${response.statusCode} ${response.body}');
   }
 
   /// CSV upload using multipart/form-data

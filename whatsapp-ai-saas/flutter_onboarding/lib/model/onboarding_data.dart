@@ -1,6 +1,6 @@
 // lib/models/onboarding_data.dart
 class OnboardingData {
-  final String tenantId;
+  final int tenantId;
   final String onboardingProcess;
   final bool hasBusinessProfile;
   final bool hasBusinessType;
@@ -48,7 +48,7 @@ class OnboardingData {
     }
 
     return OnboardingData(
-      tenantId: json['tenant_id'] ?? '',
+      tenantId: json['tenant_id'] ?? -1,
       onboardingProcess: json['onboarding_process'] ?? 'Pending',
       hasBusinessProfile: json['has_business_profile'] ?? false,
       hasBusinessType: json['has_business_type'] ?? false,

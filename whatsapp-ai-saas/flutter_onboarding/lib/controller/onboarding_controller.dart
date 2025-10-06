@@ -22,7 +22,7 @@ class OnboardingController extends GetxController {
     try {
       // ✅ Api क्लास का उपयोग — कोई hardcode नहीं
       final response = await _api.postForm('/onboarding/get_review', {
-        'tenant_id': tenantId,
+        'tenant_id': tenantId.toString(),
       });
 
       // ✅ Null-safe parsing

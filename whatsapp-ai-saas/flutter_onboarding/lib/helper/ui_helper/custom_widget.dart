@@ -13,6 +13,7 @@ class CustomWidgets {
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
+    TextCapitalization textCapitalization = TextCapitalization.none,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
     bool? enabled,
@@ -44,6 +45,7 @@ class CustomWidgets {
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
         inputFormatters: combinedFormatters.isEmpty ? null : combinedFormatters,
         validator: validator,
         enabled: enabled,

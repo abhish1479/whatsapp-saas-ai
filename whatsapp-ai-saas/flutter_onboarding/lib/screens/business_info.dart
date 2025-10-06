@@ -191,6 +191,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             hint: "Enter your business name",
             icon: Icons.store,
             keyboardType: TextInputType.text,
+            textCapitalization: TextCapitalization.words,
             maxLength: 50,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -326,7 +327,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     setState(() => _loading = true);
     try {
       final response = await widget.api.postForm('/onboarding/business', {
-        'tenant_id': tenantId,                          // ensure server receives tenant
+        'tenant_id': tenantId.toString(),                          // ensure server receives tenant
         'business_name': currentName,
         'personal_number': currentPersonal,             // NEW
         'business_whatsapp': currentPhone,              // CHANGED (was owner_phone)
@@ -368,7 +369,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     } catch (e, stack) {
       AppLogger.error('Business save error: $e\n$stack');
       if (mounted) {
-        AppUtils.errorToast(context, "Something went wrong.\nPlease try again.", 3);
+        AppUtils.errorToast(context, "Something went wrong.\nPlease try again. \n$e", 3);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
