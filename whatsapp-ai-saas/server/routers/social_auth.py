@@ -146,6 +146,7 @@ async def oauth_callback(
     # Extract user info from token
     user_email = payload.get("email") # Use provided email if token lacks it
     name = payload.get("name", "")
+    picture = payload.get("picture", "")
     provider_id = payload.get("sub") or payload.get("id")  # Google uses "sub", Facebook uses "id"
     access_token = payload.get("access_token")  # Optional — store if provided
     extra_data = payload
@@ -219,6 +220,7 @@ async def oauth_callback(
             "id": user.id,
             "email": user.email,
             "name": name,
+            "picture" : picture,
             "provider": provider,
             "provider_id": provider_id,
             "role": user.role,

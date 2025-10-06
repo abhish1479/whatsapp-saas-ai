@@ -28,6 +28,7 @@ class User {
   final int id;
   final String email;
   final String name;
+  final String picture;
   final String provider;
   final String providerId;
   final String role;
@@ -36,6 +37,7 @@ class User {
     required this.id,
     required this.email,
     required this.name,
+    required this.picture,
     required this.provider,
     required this.providerId,
     required this.role,
@@ -46,6 +48,7 @@ class User {
       id: json['id'],
       email: json['email'],
       name: json['name'],
+      picture: json['picture']??'',
       provider: json['provider'],
       providerId: json['provider_id'],
       role: json['role'],
