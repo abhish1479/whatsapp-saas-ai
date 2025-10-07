@@ -14,6 +14,9 @@ class OnboardingData {
   final String businessWhatsapp;     // CHANGED
   final String personalNumber;
   final String businessType;
+  final String businessDescription;
+  final String customBusinessType;
+  final String businessCategory;
   final List<Item> items;
   final WebIngest? webIngest;
   final Workflow? workflow;
@@ -34,6 +37,9 @@ class OnboardingData {
     required this.businessWhatsapp,
     required this.personalNumber,
     required this.businessType,
+    required this.businessDescription,
+    required this.customBusinessType,
+    required this.businessCategory,
     required this.items,
     this.webIngest,
     this.workflow,
@@ -62,6 +68,9 @@ class OnboardingData {
       businessWhatsapp: json['business_whatsapp'] ?? '',     // CHANGED
       personalNumber: json['personal_number'] ?? '',         // NEW
       businessType: json['business_type'] ?? '',
+      businessDescription: json['description'] ?? '',
+      customBusinessType: json['custom_business_type'] ?? '',
+      businessCategory: json['business_category'] ?? '',
       items: itemsList,
       webIngest: json['web_ingest'] != null
           ? WebIngest.fromJson(json['web_ingest'] as Map<String, dynamic>)

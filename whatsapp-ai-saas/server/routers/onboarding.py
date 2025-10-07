@@ -11,8 +11,10 @@ from deps import get_db
 from services.rag import rag
 from models import AgentConfiguration, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
 from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
+from data_models.request_model import BusinessTypeRequest
 from utils.enums import Onboarding
 import re
+import models
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
@@ -86,29 +88,63 @@ def upsert_business_profile(
 
 # ---------- STEP 2: Business Type ----------
 @router.post("/type")
-async def set_business_type(
-    tenant_id: int = Form(...),
-    business_type: Literal["products","services","professional","other"] = Form(...),
-    db: Session = Depends(get_db),
+def update_business_type(
+    req: BusinessTypeRequest,          # ✅ Request body validation (Pydantic)
+    db: Session = Depends(get_db)
 ):
-    result =  db.execute(
-        text("SELECT tenant_id FROM business_profiles WHERE tenant_id = :tenant_id"),
-        {"tenant_id": tenant_id}
-    )
-    existing = result.fetchone()
+    """
+    Handles submission of business type information for a tenant.
+    This step updates the business_profiles table with business_type,
+    description, and (if applicable) custom fields for 'other' type.
+    """
 
-    if existing is None:
-        return {
-            "ok": False,
-            "message": "Business profile with this tenant id not found",
-        }
-    db.execute(text("UPDATE business_profiles SET business_type=:bt, updated_at=now() WHERE tenant_id=:t"),
-                     {"bt": business_type, "t": tenant_id})
+    # --- VALIDATION 1: Tenant must exist ---
+    tenant = db.query(models.Tenant).filter(models.Tenant.id == req.tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=400, detail=f"Tenant {req.tenant_id} not found")
+
+    # --- VALIDATION 2: Business profile must exist ---
+    profile = db.query(models.BusinessProfile).filter(
+        models.BusinessProfile.tenant_id == req.tenant_id
+    ).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+
+    # --- VALIDATION 3: business_type must be one of the allowed categories ---
+    allowed_types = ["products", "services", "professional", "other"]
+    if req.business_type.lower() not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid business_type. Allowed: {', '.join(allowed_types)}"
+        )
+
+    # --- VALIDATION 4: For 'other', require custom type field ---
+    if req.business_type.lower() == "other" and not req.custom_business_type:
+        raise HTTPException(
+            status_code=400,
+            detail="custom_business_type is required for 'other' type"
+        )
+
+    # --- PERFORM UPDATE ---
+    profile.business_type = req.business_type
+    profile.description = req.description
+    profile.custom_business_type = req.custom_business_type
+    profile.business_category = req.business_category
     db.commit()
-    return {"ok": True,
-            "message": "Business Type Updated Successfully",
-             "tenant_id": tenant_id
-           }
+    db.refresh(profile)
+
+    # --- RETURN STRUCTURED RESPONSE (no response_model required) ---
+    return {
+        "status": "success",
+        "message": "Business type updated successfully",
+        "tenant_id": req.tenant_id,
+        "data": {
+            "business_type": profile.business_type,
+            "description": profile.description,
+            "custom_business_type": profile.custom_business_type,
+            "business_category": profile.business_category,
+        },
+    }
 
 # ---------- STEP 3a: Items via CSV (products/services) ----------
 @router.post("/items/csv")
@@ -323,6 +359,9 @@ async def get_review(
         personal_number=business_profile.personal_number,      # NEW
         language=business_profile.language,
         business_type=business_profile.business_type,
+        business_description=business_profile.description,
+        custom_business_type=business_profile.custom_business_type,
+        business_category=business_profile.business_category,
         items=[
             {
                 "id": str(item.id),

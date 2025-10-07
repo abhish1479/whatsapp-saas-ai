@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS business_profiles (
   personal_number TEXT NOT NULL,             -- new column
   language VARCHAR(8) NOT NULL DEFAULT 'en',
   business_type VARCHAR(16),
+  description TEXT,                -- 🆕 Added: Description of the business
+  custom_business_type TEXT,       -- 🆕 Added: For "Other" option
+  business_category TEXT,          -- 🆕 Added: Business category or vertical
   is_active BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
