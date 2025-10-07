@@ -54,8 +54,8 @@ class OnboardingController extends GetxController {
     String? businessCategory,
   }) async {
     try {
-      final response = await _api.postForm('/onboarding/type', {
-        'tenant_id': tenantId.toString(),
+      final response = await _api.postJson('/onboarding/type', {
+        'tenant_id': tenantId,
         'business_type': businessType,
         'description': description ?? '',
         'custom_business_type': customBusinessType ?? '',
