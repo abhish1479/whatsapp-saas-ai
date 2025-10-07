@@ -120,6 +120,9 @@ class BusinessProfile(Base):
     personal_number   = Column(Text, nullable=True)    # NEW
     language      = Column(String(8), nullable=False, default="en")
     business_type = Column(String(16))
+    description = Column(Text)
+    custom_business_type = Column(Text)
+    business_category = Column(Text)
     is_active     = Column(Boolean, nullable=False, default=False)
     created_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

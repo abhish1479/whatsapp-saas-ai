@@ -1,4 +1,6 @@
 // lib/controllers/onboarding_controller.dart
+import 'dart:developer' as AppLogger;
+
 import 'package:get/get.dart';
 import '../api/api.dart';
 import '../model/onboarding_data.dart';
@@ -43,4 +45,27 @@ class OnboardingController extends GetxController {
     _data = null;
     await fetchOnboardingData(tenantId);
   }
+
+  Future<Map<String, dynamic>> submitBusinessType({
+    required int tenantId,
+    required String businessType,
+    String? description,
+    String? customBusinessType,
+    String? businessCategory,
+  }) async {
+    try {
+      final response = await _api.postForm('/onboarding/type', {
+        'tenant_id': tenantId.toString(),
+        'business_type': businessType,
+        'description': description ?? '',
+        'custom_business_type': customBusinessType ?? '',
+        'business_category': businessCategory ?? '',
+      });
+      return response;
+    } catch (e) {
+      AppLogger.log('submitBusinessType error: $e');
+      return {'status': 'error', 'detail': e.toString()};
+    }
+  }
+
 }

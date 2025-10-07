@@ -26,7 +26,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   Widget build(BuildContext context) {
     final steps = [
       BusinessInfoScreen(api: widget.api,  onNext: next),
-      BusinessTypeScreen(api: widget.api, onNext: next, onBack: back),
+      BusinessTypeScreen( onNext: next, ),
       BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
       WorkflowSetupScreen(api: widget.api, onNext: next, onBack: back),
       // PaymentSetupScreen(api: widget.api,  onNext: next, onBack: back),//KYCScreen
