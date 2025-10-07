@@ -118,6 +118,38 @@ class Api {
     }
   }
 
+  Future<Map<String, dynamic>> postBodyJson(
+      String path,
+      Map<String, dynamic> body,
+      ) async {
+    final uri = _u(path);
+
+    AppLogger.info(
+      "📤 JSON POST Request: $uri\nBody: ${jsonEncode(body)}",
+      tag: AppLogger.api,
+    );
+
+    final response = await http
+        .post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(body),
+    )
+        .timeout(timeout);
+
+    AppLogger.info("📥 Response Status: ${response.statusCode}", tag: AppLogger.api);
+    AppLogger.info("📥 Response Body:\n${response.body}", tag: AppLogger.api);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('POST $path failed: ${response.statusCode} ${response.body}');
+    }
+  }
+
   /// CSV upload using multipart/form-data
   Future<Map<String, dynamic>> uploadCsv(
       String path, {
