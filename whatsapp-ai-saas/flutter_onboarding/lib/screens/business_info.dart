@@ -26,6 +26,8 @@ class BusinessInfoScreen extends StatefulWidget {
 class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  String? _userName;
+  String? _userPhotoUrl;
 
   // controllers
   final _nameController = TextEditingController();
@@ -76,6 +78,9 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
   Future _initData() async {
     tenantId = await StoreUserData().getTenantId();
+    _userName = await StoreUserData().getUserName();
+    _userPhotoUrl = await StoreUserData().getProfilePic();
+
     if (tenantId != -1) {
       final controller = Get.find<OnboardingController>();
       await controller.fetchOnboardingData(tenantId);
@@ -89,6 +94,11 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
         _originalPhone = data.businessWhatsapp;                   // CHANGED
         _originalPersonal = data.personalNumber;                  // NEW
       }
+    }
+    if (mounted) {
+      setState(() {
+        // Triggers rebuild to show user info
+      });
     }
   }
 
@@ -191,6 +201,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             hint: "Enter your business name",
             icon: Icons.store,
             keyboardType: TextInputType.text,
+            textCapitalization: TextCapitalization.words,
             maxLength: 50,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -279,12 +290,46 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: theme.borderRadius,
+          padding: const EdgeInsets.only(bottom: 8), // Add some padding around the user info
+          child: Row(
+            mainAxisSize: MainAxisSize.min, // Make row as small as its content
+            children: [
+              if (_userPhotoUrl != null && _userPhotoUrl!.isNotEmpty)
+                CircleAvatar(
+                  backgroundImage: NetworkImage(_userPhotoUrl!),
+                  radius: 30, // Adjust size as needed
+                  backgroundColor: Colors.grey[200],
+                )
+              else
+                CircleAvatar( // Fallback if no photo URL
+                  child: Icon(Icons.person, color: Colors.grey[700]),
+                  radius: 30,
+                  backgroundColor: Colors.grey[300],
+                ),
+              const SizedBox(width: 12),
+              if (_userName != null && _userName!.isNotEmpty)
+                Text(
+                  _userName!,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],),
+                )
+              else
+                const Text("User"), // Fallback if no name
+            ],
           ),
-          child: Icon(Icons.business, color: Colors.blue[700], size: 32),
+        ),
+
+        Visibility(
+          visible: false,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[100],
+              borderRadius: theme.borderRadius,
+            ),
+            child: Icon(Icons.business, color: Colors.blue[700], size: 32),
+          ),
         ),
         const SizedBox(height: 16),
         FittedBox(
@@ -326,7 +371,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     setState(() => _loading = true);
     try {
       final response = await widget.api.postForm('/onboarding/business', {
-        'tenant_id': tenantId,                          // ensure server receives tenant
+        'tenant_id': tenantId.toString(),                          // ensure server receives tenant
         'business_name': currentName,
         'personal_number': currentPersonal,             // NEW
         'business_whatsapp': currentPhone,              // CHANGED (was owner_phone)
@@ -368,7 +413,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
     } catch (e, stack) {
       AppLogger.error('Business save error: $e\n$stack');
       if (mounted) {
-        AppUtils.errorToast(context, "Something went wrong.\nPlease try again.", 3);
+        AppUtils.errorToast(context, "Something went wrong.\nPlease try again. \n$e", 3);
       }
     } finally {
       if (mounted) setState(() => _loading = false);

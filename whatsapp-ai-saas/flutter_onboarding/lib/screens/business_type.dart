@@ -1,323 +1,298 @@
-// lib/screens/business_type.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:leadbot_client/helper/utils/shared_preference.dart';
-import '../api/api.dart';
 import '../controller/onboarding_controller.dart';
+import '../helper/ui_helper/custom_widget.dart';
+import '../helper/ui_helper/progress_view.dart';
+import '../helper/utils/app_loger.dart';
+import '../helper/utils/shared_preference.dart';
+import '../api/api.dart';
 import '../theme/business_info_theme.dart';
 
-class BusinessTypeScreen extends StatelessWidget {
-  final Api api;
+class BusinessTypeScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
 
-  final _selectedType = ''.obs;
-  final _isLoading = true.obs;
-
-  BusinessTypeScreen({
-    required this.api,
+  const BusinessTypeScreen({
+    Key? key,
     required this.onNext,
     required this.onBack,
-    super.key,
-  }) {
-    _loadCurrentSelection();
+  }) : super(key: key);
+
+  @override
+  State<BusinessTypeScreen> createState() => _BusinessTypeScreenState();
+}
+
+class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
+  final controller = Get.find<OnboardingController>();
+  final _selectedType = ''.obs;
+  final _isLoading = false.obs;
+
+  final _descriptionController = TextEditingController();
+  final _customTypeController = TextEditingController();
+  final _categoryController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingSelection();
   }
 
-  Future<void> _loadCurrentSelection() async {
+  Future<void> _loadExistingSelection() async {
     final tid = await StoreUserData().getTenantId();
-    if (tid!=-1) {
-      _isLoading(false);
+    await controller.fetchOnboardingData(tid);
+    final data = controller.data;
+    if (data != null && data.businessType != null) {
+      _selectedType(data.businessType ?? '');
+      _descriptionController.text = data.businessDescription ?? '';
+      _customTypeController.text = data.customBusinessType ?? '';
+      _categoryController.text = data.businessCategory ?? '';
+    }
+  }
+
+  Future<void> _submit() async {
+    // --- VALIDATION 1: Business type must be selected ---
+    if (_selectedType.value.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please select a business type',
+        backgroundColor: Colors.red[100], // background color
+        colorText: Colors.black, // text color
+        borderColor: Colors.red[500], // border color
+        borderWidth: 1.5, // border width
+      );
       return;
     }
 
-    try {
-      final controller = Get.find<OnboardingController>();
-      if (controller.data == null) {
-        await controller.fetchOnboardingData(tid);
+    // --- VALIDATION 2: For "Other", mandatory fields must be filled ---
+    if (_selectedType.value == 'other') {
+      if (_customTypeController.text.trim().isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Please enter your Business Type',
+          backgroundColor: Colors.red[100], // background color
+          colorText: Colors.black, // text color
+          borderColor: Colors.red[500], // border color
+          borderWidth: 1, // border width
+        );
+        return;
       }
+      if (_categoryController.text.trim().isEmpty) {
+        Get.snackbar('Error', 'Please enter your Business Category');
+        return;
+      }
+    }
 
-      final data = controller.data;
-      if (data != null && data.hasBusinessType) {
-        _selectedType(data.businessType);
+    try {
+      _isLoading(true);
+      final tid = await StoreUserData().getTenantId();
+
+      final result = await controller.submitBusinessType(
+        tenantId: tid,
+        businessType: _selectedType.value,
+        description: _descriptionController.text.trim(),
+        customBusinessType: _customTypeController.text.trim(),
+        businessCategory: _categoryController.text.trim(),
+      );
+
+      if (result['status'] == 'success') {
+        Get.snackbar('Success', 'Business type saved');
+        widget.onNext();
+      } else {
+        Get.snackbar(
+          'Error',
+          result['detail'] ?? 'Failed to save business type',
+          backgroundColor: Colors.red[100], // background color
+          colorText: Colors.black, // text color
+          borderColor: Colors.red[500], // border color
+          borderWidth: 1, // border width
+        );
       }
     } catch (e) {
-      debugPrint('Error loading business type: $e');
+      AppLogger.log('Error: $e');
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.red[100], // background color
+        colorText: Colors.black, // text color
+        borderColor: Colors.red[500], // border color
+        borderWidth: 1, // border width
+      );
     } finally {
       _isLoading(false);
     }
   }
 
-  Future<void> _choose(String type) async {
-    _selectedType(type);
-
-    final tid = await StoreUserData().getTenantId();
-    if (tid!=-1) {
-      onNext();
-      return;
-    }
-
-    try {
-      // ✅ जब आप तैयार हों, तो इन्हें अनकमेंट करें
-      // await api.postForm('/onboarding/type', {
-      //   'tenant_id': tid,
-      //   'business_type': type,
-      // });
-      //
-      // final controller = Get.find<OnboardingController>();
-      // await controller.refreshData(tid);
-      //
-      // onNext();
-      onNext(); // अस्थायी रूप से सीधे आगे बढ़ें
-    } catch (e) {
-      if (Get.context != null) {
-        ScaffoldMessenger.of(Get.context!).showSnackBar(
-          SnackBar(content: Text('Failed to save selection. Please try again.')),
-        );
-        final controller = Get.find<OnboardingController>();
-        _selectedType(controller.data?.businessType ?? '');
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final types = [
+      {'key': 'products', 'label': 'Products'},
+      {'key': 'services', 'label': 'Services'},
+      {'key': 'professional', 'label': 'Professional'},
+      {'key': 'other', 'label': 'Other'},
+    ];
+
     final theme = Theme.of(context).extension<BusinessInfoTheme>() ??
         BusinessInfoTheme.light;
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: SafeArea(
-        child: Obx(() {
-          if (_isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final tiles = [
-            _TypeTile(
-              icon: Icons.shopping_bag,
-              label: "Products",
-              value: "products",
-              isSelected: _selectedType.value == "products",
-              onTap: _choose,
-              theme: theme,
-            ),
-            _TypeTile(
-              icon: Icons.build,
-              label: "Services",
-              value: "services",
-              isSelected: _selectedType.value == "services",
-              onTap: _choose,
-              theme: theme,
-            ),
-            _TypeTile(
-              icon: Icons.school,
-              label: "Professional",
-              value: "professional",
-              isSelected: _selectedType.value == "professional",
-              onTap: _choose,
-              theme: theme,
-            ),
-            _TypeTile(
-              icon: Icons.more_horiz,
-              label: "Other",
-              value: "other",
-              isSelected: _selectedType.value == "other",
-              onTap: _choose,
-              theme: theme,
-            ),
-          ];
-
-          return Container(
-            decoration: BoxDecoration(gradient: theme.formGradient),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// Header
-                Padding(
-                  padding: theme.screenPadding,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[100],
-                              borderRadius: theme.borderRadius,
-                            ),
-                            child: Icon(
-                              Icons.category,
-                              color: Colors.blue[700],
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            "Select Business Type",
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Choose the category that best describes your business",
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                /// Responsive Grid
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      int crossAxisCount = 2;
-                      if (MediaQuery.of(context).orientation ==
-                          Orientation.landscape ||
-                          kIsWeb) {
-                        crossAxisCount = 3;
-                      }
-
-                      return GridView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        physics: const ClampingScrollPhysics(),
-                        gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: kIsWeb ||
-                              MediaQuery.of(context).orientation ==
-                                  Orientation.landscape
-                              ? 1.5
-                              : 1.3,
-                        ),
-                        itemCount: tiles.length,
-                        itemBuilder: (context, i) => tiles[i],
-                      );
-                    },
-                  ),
-                ),
-
-                /// Sticky Footer (केवल वेब पर)
-                if (kIsWeb)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Obx(() => WillPopScope(
+          onWillPop: () async {
+            widget.onBack();
+            return false;
+          },
+          child: Stack(
+            children: [
+              Scaffold(
+                body: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        OutlinedButton.icon(
-                          onPressed: onBack,
-                          icon: const Icon(
-                            Icons.arrow_back_ios,
-                            color: Colors.black,
-                            size: 18,
-                          ),
-                          label: const Text("Back"),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 16),
-                            side: const BorderSide(color: Color(0xFFE2E8F0)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[100],
+                                borderRadius: theme.borderRadius,
+                              ),
+                              child: Icon(
+                                Icons.category,
+                                color: Colors.blue[700],
+                                size: 28,
+                              ),
                             ),
-                            foregroundColor: const Color(0xFF64748B),
-                          ),
+                            const SizedBox(width: 16),
+                            Text(
+                              "Select Business Type",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[800],
+                                  ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Choose the category that best describes your business",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 20),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: types.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 1.5,
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = types[index];
+                            final selected = _selectedType.value == item['key'];
+                            return GestureDetector(
+                              onTap: () {
+                                _selectedType(item['key']!);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: selected
+                                      ? Colors.blue[100]!
+                                      : Colors.grey.shade200,
+                                  border: Border.all(
+                                    color: selected
+                                        ? Colors.blue[700]!
+                                        : Colors.grey.shade400,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    item['label']!,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: selected
+                                          ? FontWeight.bold
+                                          : FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        if (_selectedType.value.isNotEmpty)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_selectedType.value == 'other') ...[
+                                const SizedBox(height: 20),
+                                // Business Type
+                                CustomWidgets.buildTextField2(
+                                  context: context,
+                                  controller: _customTypeController,
+                                  label: "Business Type *",
+                                  hint: "Enter your business type",
+                                  keyboardType: TextInputType.text,
+                                  textCapitalization: TextCapitalization.words,
+                                  maxLength: 100,
+                                ),
+
+                                SizedBox(height: 20),
+                                CustomWidgets.buildTextField2(
+                                  context: context,
+                                  controller: _categoryController,
+                                  label: "Business Category *",
+                                  hint: "Enter business category",
+                                  keyboardType: TextInputType.text,
+                                  textCapitalization: TextCapitalization.words,
+                                  maxLength: 100,
+                                ),
+                              ],
+
+                              SizedBox(height: 20),
+                              //Others
+                              CustomWidgets.buildTextField2(
+                                  context: context,
+                                  controller: _descriptionController,
+                                  label: "Description",
+                                  hint: "Describe your business...",
+                                  keyboardType: TextInputType.text,
+                                  textCapitalization: TextCapitalization.words,
+                                  maxLength: 100,
+                                  maxLines: 3),
+                              SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: CustomWidgets.buildGradientButton(
+                                  context: context,
+                                  onPressed: _isLoading.value ? null : _submit,
+                                  text: "Submit & Continue",
+                                  isLoading: _isLoading.value,
+                                  icon: Icons.save,
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+                            ],
+                          ),
                       ],
                     ),
                   ),
-              ],
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-/// ✅ फिक्स्ड _TypeTile — Expanded हटाया गया, सेंटरिंग सुनिश्चित की गई
-class _TypeTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool isSelected;
-  final Function(String) onTap;
-  final BusinessInfoTheme theme;
-
-  const _TypeTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.isSelected,
-    required this.onTap,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: isSelected ? 5 : 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: theme.borderRadius,
-        side: isSelected
-            ? BorderSide(color: Colors.blue[600]!, width: 1.2)
-            : BorderSide.none,
-      ),
-      color: isSelected ? Colors.blue[20] : Colors.white,
-      child: InkWell(
-        borderRadius: theme.borderRadius,
-        onTap: () => onTap(value),
-        splashColor: Colors.blue.withOpacity(0.1),
-        highlightColor: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center, // ✅ सेंटर
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.blue[100] : Colors.blue[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 24,
-                  color: isSelected ? Colors.blue[700] : Colors.blue[600],
                 ),
               ),
-              const SizedBox(height: 8),
-              // ✅ Expanded हटाया गया — अब कार्ड स्क्रॉल होगा
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.blue[800] : Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (_isLoading.value) CustomProgressView(progressText: 'Loading'),
             ],
           ),
-        ),
-      ),
-    );
+        ));
   }
 }

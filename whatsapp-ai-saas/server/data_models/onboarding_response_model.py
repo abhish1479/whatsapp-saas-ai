@@ -23,6 +23,9 @@ class ReviewResponse(BaseModel):
     personal_number: Optional[str] = None       # NEW
     language: Optional[str] = None
     business_type: Optional[str] = None
+    business_description: Optional[str] = None
+    custom_business_type: Optional[str] = None
+    business_category: Optional[str] = None
 
     items: List[dict] = []
     web_ingest: Optional[dict] = None
