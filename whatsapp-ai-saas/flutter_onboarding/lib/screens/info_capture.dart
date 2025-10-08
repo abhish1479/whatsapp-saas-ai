@@ -11,10 +11,18 @@ import '../api/api.dart';
 import '../controller/catalog_controller.dart';
 
 class InfoCaptureScreen extends StatelessWidget {
-  InfoCaptureScreen({super.key});
+  
+  final Api api;
+  final VoidCallback onNext;
+  final VoidCallback onBack;
+  InfoCaptureScreen({
+    super.key,
+    required this.api,
+    required this.onNext,
+    required this.onBack,
+  });
 
-  final CatalogController c = Get.put(CatalogController());
-  final Api api = Api(Api.baseUrl);
+  final CatalogController controller = Get.find<CatalogController>();
 
   // Manual add fields
   final _formKey = GlobalKey<FormState>();
@@ -45,7 +53,7 @@ class InfoCaptureScreen extends StatelessWidget {
     if (res == null) return;
     final f = res.files.first;
     if (f.bytes == null) return;
-    await c.importCatalog(f.name, f.bytes!);
+    await controller.importCatalog(f.name, f.bytes!);
   }
 
   Future<void> _pickImage() async {
@@ -66,28 +74,30 @@ class InfoCaptureScreen extends StatelessWidget {
       'discount': discount.text.trim(),
       'source_url': source.text.trim(),
     };
-    await c.addManual(data, image: pickedImage.value, filename: pickedImageName.value);
+    await controller.addManual(data, image: pickedImage.value, filename: pickedImageName.value);
     name.clear(); desc.clear(); cat.clear(); price.clear(); discount.clear(); source.clear();
     pickedImage.value = null; pickedImageName.value = '';
   }
 
   @override
   Widget build(BuildContext context) {
-    c.fetchCatalog();
+    controller.fetchCatalog();
+
+    final theme = Theme.of(context);
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF8B5CF6);
+    const surfaceColor = Color(0xFFFAFAFA);
+    const cardColor = Colors.white;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Business Catalog'),
-        backgroundColor: ColorConstant.primaryColor,
-      ),
       body: Obx(() {
-        if (c.loading.value) return const Center(child: CircularProgressIndicator());
+        if (controller.loading.value) return const Center(child: CircularProgressIndicator());
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              _actionRow(),
+              _header(context),
+              _actionRow(context),
               const SizedBox(height: 16),
               _manualAddCard(context),
               const SizedBox(height: 16),
@@ -99,37 +109,154 @@ class InfoCaptureScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionRow() {
+  Widget _header(BuildContext context){
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Add Products & Services',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1E293B),
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Choose how you\'d like to add your offerings',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: const Color(0xFF64748B),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionRow(BuildContext context) {
+    final theme = Theme.of(context);
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF8B5CF6);
+    const surfaceColor = Color(0xFFFAFAFA);
+    const cardColor = Colors.white;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Wrap(
           spacing: 10,
           children: [
-            CustomButton(
-              label: 'Download CSV Template',
+            CustomWidgets.buildGradientButton(
+              onPressed: _downloadTemplate,
+              text: "Download CSV Template",
               icon: Icons.download,
-              onTap: _downloadTemplate,
             ),
-            CustomButton(
-              label: 'Import CSV/XLSX',
-              icon: Icons.upload_file,
-              onTap: _pickAndImport,
+
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _pickAndImport,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [primaryColor, secondaryColor],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: controller.loadingCSV.value
+                              ? const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                          )
+                              : const Icon(
+                            Icons.upload_file_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Upload CSV File',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Bulk upload: name, price, description, image_url',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
-        if (c.selected.isNotEmpty)
+        /*if (controller.selected.isNotEmpty)
           CustomButton(
-            label: 'Bulk Discount (${c.selected.length})',
+            label: 'Bulk Discount (${controller.selected.length})',
             icon: Icons.percent,
             onTap: () => _promptDiscount(),
             color: ColorConstant.secondaryColor,
-          ),
+          ),*/
       ],
     );
   }
 
-  void _promptDiscount() {
+  /*void _promptDiscount() {
     final ctrl = TextEditingController();
     Get.defaultDialog(
       title: 'Apply Discount (%)',
@@ -141,16 +268,17 @@ class InfoCaptureScreen extends StatelessWidget {
             label: 'Apply',
             onTap: () {
               final val = double.tryParse(ctrl.text) ?? 0;
-              c.bulkDiscount(val);
+              controller.bulkDiscount(val);
               Get.back();
             },
           )
         ],
       ),
     );
-  }
+  }*/
 
   Widget _manualAddCard(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -159,7 +287,13 @@ class InfoCaptureScreen extends StatelessWidget {
         child: Form(
           key: _formKey,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Add Service or Product', style: CustomTextStyle.headingTextStyle),
+            Text('Add Service or Product',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1E293B),
+                letterSpacing: -0.5,
+              ),
+            ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 12,
@@ -177,13 +311,17 @@ class InfoCaptureScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Row(children: [
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: ColorConstant.secondaryColor),
+                style: ElevatedButton.styleFrom(backgroundColor: ColorConstant.black),
                 onPressed: _pickImage,
                 icon: const Icon(Icons.image),
                 label: Obx(() => Text(pickedImageName.isEmpty ? 'Pick Image' : pickedImageName.value)),
               ),
               const SizedBox(width: 10),
-              CustomButton(label: 'Add Item', onTap: _submitManual),
+              CustomWidgets.buildGradientButton(
+                onPressed: _submitManual,
+                text: "Add Item",
+                icon: Icons.add,
+              ),
             ]),
           ]),
         ),
@@ -192,7 +330,7 @@ class InfoCaptureScreen extends StatelessWidget {
   }
 
   Widget _catalogTable(BuildContext context) {
-    if (c.items.isEmpty) {
+    if (controller.items.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(24),
         child: Text('No items yet. Import or add manually.'),
@@ -215,21 +353,21 @@ class InfoCaptureScreen extends StatelessWidget {
             DataColumn(label: Text('Image')),
             DataColumn(label: Text('Actions')),
           ],
-          rows: c.items.map<DataRow>((e) {
+          rows: controller.items.map<DataRow>((e) {
             final id = e['id'] as int;
-            final selected = c.selected.contains(id);
+            final selected = controller.selected.contains(id);
             return DataRow(
               selected: selected,
               onSelectChanged: (v) {
                 if (v == true) {
-                  c.selected.add(id);
+                  controller.selected.add(id);
                 } else {
-                  c.selected.remove(id);
+                  controller.selected.remove(id);
                 }
               },
               cells: [
                 DataCell(Checkbox(value: selected, onChanged: (v) {
-                  if (v == true) c.selected.add(id); else c.selected.remove(id);
+                  if (v == true) controller.selected.add(id); else controller.selected.remove(id);
                 })),
                 DataCell(Text(e['item_type'] ?? '')),
                 DataCell(Text(e['name'] ?? '')),
@@ -239,7 +377,7 @@ class InfoCaptureScreen extends StatelessWidget {
                 DataCell(_thumb(e['image_url'])),
                 DataCell(Row(children: [
                   IconButton(icon: const Icon(Icons.edit), onPressed: () => _editDialog(e)),
-                  IconButton(icon: const Icon(Icons.delete), onPressed: () => c.deleteItem(id)),
+                  IconButton(icon: const Icon(Icons.delete), onPressed: () => controller.deleteItem(id)),
                 ])),
               ],
             );
@@ -297,9 +435,9 @@ class InfoCaptureScreen extends StatelessWidget {
           _field(catC, 'Category'),
           _field(descC, 'Description'),
           const SizedBox(height: 10),
-          CustomButton(
-            label: 'Save',
-            onTap: () {
+
+          CustomWidgets.buildGradientButton(
+            onPressed: () {
               final body = {
                 'item_type': type.value,
                 'name': nameC.text.trim(),
@@ -308,9 +446,11 @@ class InfoCaptureScreen extends StatelessWidget {
                 'description': descC.text.trim(),
                 'category': catC.text.trim(),
               };
-              c.updateItem(e['id'], body);
+              controller.updateItem(e['id'], body);
               Get.back();
             },
+            text: "Save",
+            icon: Icons.save,
           ),
         ],
       ),

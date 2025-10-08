@@ -4,10 +4,12 @@ import 'package:get/get.dart';
 import '../api/api.dart';
 
 class CatalogController extends GetxController {
-  final Api api = Api(Api.baseUrl);
+  final Api api;
+  CatalogController( this.api);
 
   final items = <dynamic>[].obs;
   final loading = false.obs;
+  final loadingCSV = false.obs;
   final selected = <int>[].obs;
 
   Future<void> fetchCatalog({String? q}) async {
