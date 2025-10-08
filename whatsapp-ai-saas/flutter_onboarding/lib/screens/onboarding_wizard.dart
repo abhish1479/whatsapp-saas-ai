@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/api.dart';
 import 'business_info.dart';
 import 'business_type.dart';
-import 'info_capture.dart';
+import 'info_capture_old.dart';
 import 'workflow_setup.dart';
 import 'payment_setup.dart';
 import 'review_activate.dart';
