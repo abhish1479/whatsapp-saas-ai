@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/api.dart';
 import 'business_info.dart';
 import 'business_type.dart';
+import 'info_capture.dart';
 import 'info_capture_old.dart';
 import 'workflow_setup.dart';
 import 'payment_setup.dart';
@@ -35,7 +36,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
     final steps = [
       BusinessInfoScreen(api: widget.api,  onNext: next),
       BusinessTypeScreen( onNext: next, onBack: back ),
-      BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
+      InfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
+      // BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
       WorkflowSetupScreen(api: widget.api, onNext: next, onBack: back),
       // PaymentSetupScreen(api: widget.api,  onNext: next, onBack: back),//KYCScreen
       WhatsAppAgentScreen(api: widget.api,  onNext: next, onBack: back),

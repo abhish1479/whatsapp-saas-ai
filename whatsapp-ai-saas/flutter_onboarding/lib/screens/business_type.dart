@@ -274,7 +274,6 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: CustomWidgets.buildGradientButton(
-                                  context: context,
                                   onPressed: _isLoading.value ? null : _submit,
                                   text: "Submit & Continue",
                                   isLoading: _isLoading.value,
