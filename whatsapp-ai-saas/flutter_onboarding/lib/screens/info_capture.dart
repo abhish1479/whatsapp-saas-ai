@@ -1,773 +1,318 @@
-import 'dart:convert';
-import 'package:csv/csv.dart';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:leadbot_client/helper/utils/shared_preference.dart';
+import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
+import '../../helper/utils/color_constant.dart';
+import '../../helper/ui_helper/custom_text_style.dart';
+import '../../helper/ui_helper/custom_widget.dart';
 import '../api/api.dart';
+import '../controller/catalog_controller.dart';
 
-class BusinessInfoCaptureScreen extends StatefulWidget {
-  final Api api;
-  final VoidCallback onNext;
-  final VoidCallback onBack;
-  const BusinessInfoCaptureScreen({
-    super.key,
-    required this.api,
-    required this.onNext,
-    required this.onBack,
-  });
+class InfoCaptureScreen extends StatelessWidget {
+  InfoCaptureScreen({super.key});
 
-  @override
-  State<BusinessInfoCaptureScreen> createState() => _InfoCaptureScreenState();
-}
+  final CatalogController c = Get.put(CatalogController());
+  final Api api = Api(Api.baseUrl);
 
-class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
-  final _manualForm = GlobalKey<FormState>();
-  final _manualName = TextEditingController();
-  final _manualPrice = TextEditingController();
-  final _manualDesc = TextEditingController();
-  final _site = TextEditingController();
+  // Manual add fields
+  final _formKey = GlobalKey<FormState>();
+  final itemType = 'service'.obs;
+  final name = TextEditingController();
+  final desc = TextEditingController();
+  final cat = TextEditingController();
+  final price = TextEditingController();
+  final discount = TextEditingController();
+  final source = TextEditingController();
+  final pickedImage = Rx<Uint8List?>(null);
+  final pickedImageName = ''.obs;
 
-  bool _loadingCsv = false;
-  bool _savingManual = false;
-  bool _ingestingSite = false;
-
-  @override
-  void dispose() {
-    _manualName.dispose();
-    _manualPrice.dispose();
-    _manualDesc.dispose();
-    _site.dispose();
-    super.dispose();
-  }
-
-  void _toast(String m) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
-  }
-
-  Future<bool> _validateCsv(List<int> bytes) async {
+  Future<void> _downloadTemplate() async {
     try {
-      final csvString = utf8.decode(bytes);
-      final List<List<String>> rows = const CsvToListConverter(
-        shouldParseNumbers: false,
-        allowInvalid: false,
-      ).convert(csvString);
-
-      if (rows.isEmpty) {
-        _toast('CSV file is empty');
-        return false;
-      }
-
-      // Normalize headers: trim and lowercase
-      final List<String> headers =
-          rows.first.map((e) => e.trim().toLowerCase()).toList();
-
-      final expectedHeaders = ['name', 'price', 'description', 'image_url'];
-      final missing = <String>[];
-
-      for (final required in expectedHeaders) {
-        if (!headers.contains(required)) {
-          missing.add(required);
-        }
-      }
-
-      if (missing.isNotEmpty) {
-        _toast('Missing required columns: ${missing.join(', ')}');
-        return false;
-      }
-
-      // Validate first few data rows (skip header)
-      final int sampleRows = 5;
-      for (int i = 1; i < rows.length && i <= sampleRows; i++) {
-        final row = rows[i];
-        if (row.length < 4) continue; // skip malformed short rows
-
-        // Validate price
-        final priceStr = row[headers.indexOf('price')].trim();
-        if (priceStr.isEmpty) {
-          _toast('Price is required in row ${i + 1}');
-          return false;
-        }
-        final price = num.tryParse(priceStr);
-        if (price == null || price < 0) {
-          _toast('Invalid price in row ${i + 1}: "$priceStr"');
-          return false;
-        }
-
-        // Validate name
-        final name = row[headers.indexOf('name')].trim();
-        if (name.isEmpty) {
-          _toast('Name is required in row ${i + 1}');
-          return false;
-        }
-      }
-
-      return true;
+      final bytes = await api.downloadCsvTemplate();
+      final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/business_catalog_template.csv');
+      await file.writeAsBytes(bytes);
+      Get.snackbar('Download', 'Template saved to ${file.path}');
     } catch (e) {
-      _toast('Invalid CSV format: $e');
-      return false;
+      Get.snackbar('Error', 'Download failed: $e');
     }
   }
 
-  Future<void> _pickCsv() async {
-    if (_loadingCsv) return;
-
-    try {
-      setState(() => _loadingCsv = true);
-
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-        withData: true,
-        allowMultiple: false,
-      );
-
-      if (result == null || result.files.isEmpty) {
-        _toast('No file selected');
-        return;
-      }
-
-      final platformFile = result.files.single;
-
-      // On all platforms (including web), `withData: true` ensures bytes are available
-      final bytes = platformFile.bytes;
-      if (bytes == null) {
-        _toast('Failed to read file. Please try again or use a smaller file.');
-        return;
-      }
-
-      // Validate CSV content before uploading
-      final isValid = await _validateCsv(bytes);
-      if (!isValid) {
-        return;
-      }
-
-      // Perform upload
-      final response = await widget.api.uploadCsv(
-        '/onboarding/items/csv',
-        filename: platformFile.name,
-        bytes: bytes,
-      );
-
-      // Handle success response
-      final message = response['message'] ?? 'CSV uploaded successfully';
-      final count = response['count'];
-      final successMessage =
-          count != null ? '$message ($count items added)' : message;
-
-      _toast(successMessage);
-    } catch (e, stackTrace) {
-      debugPrint('CSV upload error: $e\n$stackTrace');
-
-      String errorMessage = 'Upload failed. Please try again.';
-      if (e is Exception) {
-        final message = e.toString().replaceAll('Exception: ', '').trim();
-        // Try to extract user-friendly message
-        if (message.contains('statusCode')) {
-          errorMessage = 'Upload failed. Server error.';
-        } else if (message.length > 100) {
-          errorMessage = 'Upload failed: ${message.substring(0, 100)}...';
-        } else {
-          errorMessage = 'Upload failed: $message';
-        }
-      }
-
-      _toast(errorMessage);
-    } finally {
-      if (mounted) {
-        setState(() => _loadingCsv = false);
-      }
-    }
+  Future<void> _pickAndImport() async {
+    final res = await FilePicker.platform.pickFiles(withData: true, allowedExtensions: ['csv', 'xls', 'xlsx']);
+    if (res == null) return;
+    final f = res.files.first;
+    if (f.bytes == null) return;
+    await c.importCatalog(f.name, f.bytes!);
   }
 
-  Future<void> _addManual() async {
-    if (!_manualForm.currentState!.validate()) return;
-    try {
-      setState(() => _savingManual = true);
-      await widget.api.postForm('/onboarding/items/manual', {
-        'tenant_id': await StoreUserData().getTenantId(),
-        'name': _manualName.text.trim(),
-        'price': _manualPrice.text.trim(),
-        'description': _manualDesc.text.trim(),
-      });
-      _manualName.clear();
-      _manualPrice.clear();
-      _manualDesc.clear();
-      _toast('Item added');
-    } catch (e) {
-      _toast('Add failed: $e');
-    } finally {
-      if (mounted) setState(() => _savingManual = false);
-    }
+  Future<void> _pickImage() async {
+    final res = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+    if (res == null) return;
+    pickedImage.value = res.files.first.bytes;
+    pickedImageName.value = res.files.first.name;
   }
 
-  bool _isLikelyUrl(String s) {
-    final t = s.trim().toLowerCase();
-    return t.startsWith('http://') || t.startsWith('https://');
-  }
-
-  Future<void> _submitSite() async {
-    final url = _site.text.trim();
-    if (!_isLikelyUrl(url)) {
-      _toast('Enter a valid URL starting with http:// or https://');
-      return;
-    }
-    try {
-      setState(() => _ingestingSite = true);
-      await widget.api.postForm('/onboarding/items/website', {
-        'tenant_id': await StoreUserData().getTenantId(),
-        'url': url,
-      });
-      _toast('Website queued for analysis');
-    } catch (e) {
-      _toast('Website ingestion failed: $e');
-    } finally {
-      if (mounted) setState(() => _ingestingSite = false);
-    }
+  Future<void> _submitManual() async {
+    if (!_formKey.currentState!.validate()) return;
+    final data = {
+      'item_type': itemType.value,
+      'name': name.text.trim(),
+      'description': desc.text.trim(),
+      'category': cat.text.trim(),
+      'price': price.text.trim(),
+      'discount': discount.text.trim(),
+      'source_url': source.text.trim(),
+    };
+    await c.addManual(data, image: pickedImage.value, filename: pickedImageName.value);
+    name.clear(); desc.clear(); cat.clear(); price.clear(); discount.clear(); source.clear();
+    pickedImage.value = null; pickedImageName.value = '';
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    const primaryColor = Color(0xFF3B82F6);
-    const secondaryColor = Color(0xFF8B5CF6);
-    const surfaceColor = Color(0xFFFAFAFA);
-    const cardColor = Colors.white;
+    c.fetchCatalog();
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF8FAFC),
-            Color(0xFFF1F5F9),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Business Catalog'),
+        backgroundColor: ColorConstant.primaryColor,
+      ),
+      body: Obx(() {
+        if (c.loading.value) return const Center(child: CircularProgressIndicator());
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _actionRow(),
+              const SizedBox(height: 16),
+              _manualAddCard(context),
+              const SizedBox(height: 16),
+              _catalogTable(context),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _actionRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Wrap(
+          spacing: 10,
+          children: [
+            CustomButton(
+              label: 'Download CSV Template',
+              icon: Icons.download,
+              onTap: _downloadTemplate,
+            ),
+            CustomButton(
+              label: 'Import CSV/XLSX',
+              icon: Icons.upload_file,
+              onTap: _pickAndImport,
+            ),
           ],
         ),
+        if (c.selected.isNotEmpty)
+          CustomButton(
+            label: 'Bulk Discount (${c.selected.length})',
+            icon: Icons.percent,
+            onTap: () => _promptDiscount(),
+            color: ColorConstant.secondaryColor,
+          ),
+      ],
+    );
+  }
+
+  void _promptDiscount() {
+    final ctrl = TextEditingController();
+    Get.defaultDialog(
+      title: 'Apply Discount (%)',
+      content: Column(
+        children: [
+          TextField(controller: ctrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'e.g. 15')),
+          const SizedBox(height: 12),
+          CustomButton(
+            label: 'Apply',
+            onTap: () {
+              final val = double.tryParse(ctrl.text) ?? 0;
+              c.bulkDiscount(val);
+              Get.back();
+            },
+          )
+        ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final maxW = constraints.maxWidth < 900 ? constraints.maxWidth : 900.0;
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxW),
-              child: ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.only(bottom: 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Add Products & Services',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E293B),
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Choose how you\'d like to add your offerings',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1,
-                      ),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: _loadingCsv ? null : _pickCsv,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [primaryColor, secondaryColor],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: _loadingCsv
-                                    ? const Center(
-                                        child: SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.upload_file_rounded,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Upload CSV File',
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF1E293B),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Bulk upload: name, price, description, image_url',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: const Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 16,
-                                color: const Color(0xFF94A3B8),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+    );
+  }
 
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Form(
-                        key: _manualForm,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.edit_rounded,
-                                    color: primaryColor,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Add Manually',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF1E293B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            TextFormField(
-                              controller: _manualName,
-                              decoration: InputDecoration(
-                                labelText: 'Product/Service Name',
-                                hintText: 'Premium Consultation',
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryColor, width: 2),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              ),
-                              validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? 'Required'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            TextFormField(
-                              controller: _manualPrice,
-                              decoration: InputDecoration(
-                                labelText: 'Price',
-                                hintText: '499',
-                                prefixText: '\$ ',
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryColor, width: 2),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (v) {
-                                final t = (v ?? '').trim();
-                                if (t.isEmpty) return 'Required';
-                                final n = num.tryParse(t);
-                                if (n == null || n < 0)
-                                  return 'Enter a valid number';
-                                return null;
-                              },
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            TextFormField(
-                              controller: _manualDesc,
-                              decoration: InputDecoration(
-                                labelText: 'Description',
-                                hintText: 'Brief description of your offering',
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryColor, width: 2),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                alignLabelWithHint: true,
-                              ),
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [primaryColor, secondaryColor],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryColor.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: _savingManual ? null : _addManual,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  icon: _savingManual
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        )
-                                      : const Icon(Icons.add_rounded, color: Colors.white),
-                                  label: Text(
-                                    _savingManual ? 'Adding...' : 'Add Item',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 32),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: secondaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.language_rounded,
-                                  color: secondaryColor,
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Analyze Website',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1E293B),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'We\'ll automatically extract products and services from your website',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF64748B),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          TextField(
-                            controller: _site,
-                            decoration: InputDecoration(
-                              labelText: 'Website URL',
-                              hintText: 'https://yourwebsite.com',
-                              prefixIcon: Icon(Icons.link_rounded, color: secondaryColor),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: secondaryColor, width: 2),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                            ),
-                            keyboardType: TextInputType.url,
-                            onSubmitted: (_) => _ingestingSite ? null : _submitSite(),
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [secondaryColor, primaryColor],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: secondaryColor.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton.icon(
-                                onPressed: _ingestingSite ? null : _submitSite,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                icon: _ingestingSite
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      )
-                                    : const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-                                label: Text(
-                                  _ingestingSite ? 'Analyzing...' : 'Analyze Website',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                         OutlinedButton.icon(
-                  onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text("Back"),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    foregroundColor: const Color(0xFF64748B),
-                  ),
-                ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [primaryColor, secondaryColor],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primaryColor.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: FilledButton.icon(
-                            onPressed: (_loadingCsv || _savingManual || _ingestingSite)
-                                ? null
-                                : widget.onNext,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                            label: const Text(
-                              'Continue',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+  Widget _manualAddCard(BuildContext context) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Add Service or Product', style: CustomTextStyle.headingTextStyle),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _dropdown(['product','service','course','package','room','membership','other'], itemType),
+                _field(name, 'Name *', required: true),
+                _field(cat, 'Category'),
+                _field(desc, 'Description'),
+                _field(price, 'Price', numeric: true),
+                _field(discount, 'Discount', numeric: true),
+                _field(source, 'Source URL'),
+              ],
             ),
-          );
-        },
+            const SizedBox(height: 10),
+            Row(children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: ColorConstant.secondaryColor),
+                onPressed: _pickImage,
+                icon: const Icon(Icons.image),
+                label: Obx(() => Text(pickedImageName.isEmpty ? 'Pick Image' : pickedImageName.value)),
+              ),
+              const SizedBox(width: 10),
+              CustomButton(label: 'Add Item', onTap: _submitManual),
+            ]),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _catalogTable(BuildContext context) {
+    if (c.items.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('No items yet. Import or add manually.'),
+      );
+    }
+
+    return Obx(() => Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('Sel')),
+            DataColumn(label: Text('Type')),
+            DataColumn(label: Text('Name')),
+            DataColumn(label: Text('Price')),
+            DataColumn(label: Text('Discount')),
+            DataColumn(label: Text('Category')),
+            DataColumn(label: Text('Image')),
+            DataColumn(label: Text('Actions')),
+          ],
+          rows: c.items.map<DataRow>((e) {
+            final id = e['id'] as int;
+            final selected = c.selected.contains(id);
+            return DataRow(
+              selected: selected,
+              onSelectChanged: (v) {
+                if (v == true) {
+                  c.selected.add(id);
+                } else {
+                  c.selected.remove(id);
+                }
+              },
+              cells: [
+                DataCell(Checkbox(value: selected, onChanged: (v) {
+                  if (v == true) c.selected.add(id); else c.selected.remove(id);
+                })),
+                DataCell(Text(e['item_type'] ?? '')),
+                DataCell(Text(e['name'] ?? '')),
+                DataCell(Text('${e['price'] ?? ''}')),
+                DataCell(Text('${e['discount'] ?? ''}')),
+                DataCell(Text(e['category'] ?? '')),
+                DataCell(_thumb(e['image_url'])),
+                DataCell(Row(children: [
+                  IconButton(icon: const Icon(Icons.edit), onPressed: () => _editDialog(e)),
+                  IconButton(icon: const Icon(Icons.delete), onPressed: () => c.deleteItem(id)),
+                ])),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    ));
+  }
+
+  Widget _thumb(String? url) {
+    if (url == null || url.isEmpty) return const Icon(Icons.image_not_supported);
+    return SizedBox(width: 48, height: 48, child: Image.network(url, fit: BoxFit.cover));
+  }
+
+  Widget _dropdown(List<String> options, RxString value) {
+    return SizedBox(
+      width: 200,
+      child: Obx(() => DropdownButtonFormField<String>(
+        value: value.value,
+        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+        onChanged: (v) => value.value = v!,
+        decoration: const InputDecoration(labelText: 'Type'),
+      )),
+    );
+  }
+
+  Widget _field(TextEditingController ctrl, String label, {bool required = false, bool numeric = false}) {
+    return SizedBox(
+      width: 220,
+      child: TextFormField(
+        controller: ctrl,
+        decoration: InputDecoration(labelText: label),
+        keyboardType: numeric ? TextInputType.number : TextInputType.text,
+        validator: required ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null : null,
+      ),
+    );
+  }
+
+  Future<void> _editDialog(Map e) async {
+    final nameC = TextEditingController(text: e['name']);
+    final priceC = TextEditingController(text: e['price']?.toString() ?? '');
+    final discountC = TextEditingController(text: e['discount']?.toString() ?? '');
+    final descC = TextEditingController(text: e['description'] ?? '');
+    final catC = TextEditingController(text: e['category'] ?? '');
+    final type = (e['item_type'] ?? 'service').obs;
+
+    Get.defaultDialog(
+      title: 'Edit Item',
+      content: Column(
+        children: [
+          _dropdown(['product','service','course','package','room','membership','other'], type),
+          _field(nameC, 'Name', required: true),
+          _field(priceC, 'Price', numeric: true),
+          _field(discountC, 'Discount', numeric: true),
+          _field(catC, 'Category'),
+          _field(descC, 'Description'),
+          const SizedBox(height: 10),
+          CustomButton(
+            label: 'Save',
+            onTap: () {
+              final body = {
+                'item_type': type.value,
+                'name': nameC.text.trim(),
+                'price': priceC.text.trim(),
+                'discount': discountC.text.trim(),
+                'description': descC.text.trim(),
+                'category': catC.text.trim(),
+              };
+              c.updateItem(e['id'], body);
+              Get.back();
+            },
+          ),
+        ],
       ),
     );
   }

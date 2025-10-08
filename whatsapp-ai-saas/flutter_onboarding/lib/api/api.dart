@@ -202,4 +202,99 @@ class Api {
       'CSV upload failed: ${res.statusCode} - ${res.reasonPhrase}\n${res.body}',
     );
   }
+
+
+
+
+  Future<Uint8List> downloadCsvTemplate() async {
+    final url = Uri.parse('$baseUrl/catalog/csv-template');
+    final resp = await http.get(url, headers: {'Accept': 'text/csv'});
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return resp.bodyBytes;
+    }
+    throw Exception('Failed to download template: ${resp.statusCode}: ${resp.body}');
+  }
+
+  Future<Map<String, dynamic>> importCatalogFile({
+    required String path,
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    final uri = Uri.parse('$baseUrl/catalog/import');
+    final req = http.MultipartRequest('POST', uri);
+    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    // add tenant_id if your backend still expects it from form
+    final store = StoreUserData();
+    final tenantId = await store.getTenantId();
+    if (tenantId != null) req.fields['tenant_id'] = '$tenantId';
+    final streamed = await req.send();
+    final resp = await http.Response.fromStream(streamed);
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    throw Exception('Import failed: ${resp.statusCode}: ${resp.body}');
+  }
+
+  Future<List<dynamic>> getCatalog({String? q}) async {
+    final uri = Uri.parse('$baseUrl/catalog${q != null ? "?q=$q" : ""}');
+    final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return jsonDecode(resp.body) as List<dynamic>;
+    }
+    throw Exception('Get catalog failed: ${resp.statusCode}: ${resp.body}');
+  }
+
+  Future<Map<String,dynamic>> createCatalogWithImage({
+    required Map<String,String> fields,
+    Uint8List? imageBytes,
+    String? filename,
+  }) async {
+    final uri = Uri.parse('$baseUrl/catalog/with-image');
+    final req = http.MultipartRequest('POST', uri);
+    fields.forEach((k,v){ if (v.isNotEmpty) req.fields[k] = v; });
+    if (imageBytes != null && filename != null) {
+      req.files.add(http.MultipartFile.fromBytes('image', imageBytes, filename: filename));
+    }
+    final store = StoreUserData();
+    final tenantId = await store.getTenantId();
+    if (tenantId != null) req.fields['tenant_id'] = '$tenantId';
+    final streamed = await req.send();
+    final resp = await http.Response.fromStream(streamed);
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    throw Exception('Create failed: ${resp.statusCode}: ${resp.body}');
+  }
+
+  Future<Map<String,dynamic>> updateCatalogItem(int id, Map<String,dynamic> body) async {
+    final uri = Uri.parse('$baseUrl/catalog/$id');
+    final resp = await http.put(uri, headers: {
+      'Content-Type':'application/json',
+      'Accept':'application/json'
+    }, body: jsonEncode(body));
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    throw Exception('Update failed: ${resp.statusCode}: ${resp.body}');
+  }
+
+  Future<void> deleteCatalogItem(int id) async {
+    final uri = Uri.parse('$baseUrl/catalog/$id');
+    final resp = await http.delete(uri);
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception('Delete failed: ${resp.statusCode}: ${resp.body}');
+    }
+  }
+
+  Future<Map<String,dynamic>> bulkUpdate(List<int> ids, Map<String,dynamic> update) async {
+    final uri = Uri.parse('$baseUrl/catalog/bulk-update');
+    final resp = await http.post(uri, headers: {
+      'Content-Type':'application/json',
+      'Accept':'application/json'
+    }, body: jsonEncode({'ids': ids, 'update': update}));
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    throw Exception('Bulk update failed: ${resp.statusCode}: ${resp.body}');
+  }
 }
