@@ -1,93 +1,32 @@
 # server/routers/catalog.py
+import io
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import Optional, List, Any, Dict
 from io import BytesIO, StringIO
 import csv, os, shutil
-from decimal import Decimal
-from ..database import get_db
-from ..models import BusinessCatalog
-from ..settings import settings
-from ..deps import get_current_user  # or your tenant dependency
-from pydantic import BaseModel, Field
+from decimal import Decimal, InvalidOperation
+from models import BusinessCatalog
+from settings import settings
+from deps import get_db
+from data_models.catalog_models import CatalogOut, CatalogCreate, CatalogUpdate, BulkUpdateIn
+from utils.media import save_image      
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 
-# ------- Schemas -------
-class CatalogOut(BaseModel):
-    id: int
-    item_type: str
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    currency: Optional[str] = None
-    source_url: Optional[str] = None
-    image_url: Optional[str] = None
-    class Config:
-        orm_mode = True
 
-class CatalogCreate(BaseModel):
-    item_type: str = Field(..., description="product|service|course|package|room|membership|other")
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    # currency is optional in create; default from settings
-    source_url: Optional[str] = None
-    image_url: Optional[str] = None
-
-class CatalogUpdate(BaseModel):
-    item_type: Optional[str] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    currency: Optional[str] = None
-    source_url: Optional[str] = None
-    image_url: Optional[str] = None
-
-class BulkUpdateIn(BaseModel):
-    ids: List[int]
-    update: CatalogUpdate
-
-# ------- Helpers -------
-def _tenant_id_from_user(user: Any) -> int:
-    # Adjust to your auth model; typically user.tenant_id
-    tid = getattr(user, "tenant_id", None)
-    if tid is None:
-        raise HTTPException(status_code=400, detail="No tenant_id on user")
-    return tid
-
-def _save_image(file: UploadFile) -> str:
-    # save into MEDIA_DIR and return public URL
-    filename = file.filename
-    dest_path = os.path.join(settings.MEDIA_DIR, filename)
-    # avoid overwrite: add suffix if exists
-    base, ext = os.path.splitext(filename)
-    i = 1
-    while os.path.exists(dest_path):
-        filename = f"{base}_{i}{ext}"
-        dest_path = os.path.join(settings.MEDIA_DIR, filename)
-        i += 1
-    with open(dest_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    return f"{settings.BASE_URL}/media/{filename}"
 
 # ------- Endpoints -------
-@router.get("", response_model=List[CatalogOut])
+@router.get("/get_catalog", response_model=List[CatalogOut])
 def list_catalog(
+    tenant_id: int ,
     q: Optional[str] = None,
     limit: int = 200,
     offset: int = 0,
     db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
 ):
-    tenant_id = _tenant_id_from_user(user)
     query = db.query(BusinessCatalog).filter(BusinessCatalog.tenant_id == tenant_id)
     if q:
         like = f"%{q}%"
@@ -103,29 +42,27 @@ def csv_template():
     w = csv.writer(s)
     w.writerow(header)
     # add an example row
-    w.writerow(["service","Full Body Massage","60 min aromatherapy","Spa Service","120","20","https://example.com/spa","https://example.com/img.jpg"])
+    w.writerow(["service","AMC","1 Year","Repair","500","20","https://example.com/spa","https://example.com/img.jpg"])
     buf = BytesIO(s.getvalue().encode("utf-8"))
     return StreamingResponse(
         buf, media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=business_catalog_template.csv"}
     )
 
-@router.post("", response_model=CatalogOut)
+@router.post("/add", response_model=CatalogOut)
 def create_catalog_item(
     payload: CatalogCreate,
-    db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    tenant_id = _tenant_id_from_user(user)
     item = BusinessCatalog(
-        tenant_id=tenant_id,
+        tenant_id=payload.tenant_id,
         item_type=payload.item_type,
         name=payload.name,
         description=payload.description,
         category=payload.category,
         price=payload.price,
         discount=payload.discount,
-        currency=settings.DEFAULT_CURRENCY,
+        currency=settings.CURRENCY,
         source_url=payload.source_url,
         image_url=payload.image_url,
     )
@@ -134,10 +71,11 @@ def create_catalog_item(
     db.refresh(item)
     return item
 
-@router.post("/with-image", response_model=CatalogOut)
+@router.post("/add_with_media", response_model=CatalogOut)
 def create_catalog_item_with_image(
     item_type: str = Form(...),
     name: str = Form(...),
+    tenant_id: int = Form(...),
     description: Optional[str] = Form(None),
     category: Optional[str] = Form(None),
     price: Optional[str] = Form(None),
@@ -145,10 +83,8 @@ def create_catalog_item_with_image(
     source_url: Optional[str] = Form(None),
     image: UploadFile = File(None),
     db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
 ):
-    tenant_id = _tenant_id_from_user(user)
-    image_url = _save_image(image) if image else None
+    image_url = save_image(image) if image else None
     price_d = Decimal(price) if price not in (None, "", "null") else None
     discount_d = Decimal(discount) if discount not in (None, "", "null") else None
     item = BusinessCatalog(
@@ -159,7 +95,7 @@ def create_catalog_item_with_image(
         category=category,
         price=price_d,
         discount=discount_d,
-        currency=settings.DEFAULT_CURRENCY,
+        currency=settings.CURRENCY,
         source_url=source_url,
         image_url=image_url,
     )
@@ -168,16 +104,13 @@ def create_catalog_item_with_image(
     db.refresh(item)
     return item
 
-@router.put("/{item_id}", response_model=CatalogOut)
+@router.put("/update", response_model=CatalogOut)
 def update_catalog_item(
-    item_id: int,
     payload: CatalogUpdate,
-    db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    tenant_id = _tenant_id_from_user(user)
     item = db.query(BusinessCatalog).filter(
-        BusinessCatalog.id == item_id, BusinessCatalog.tenant_id == tenant_id
+        BusinessCatalog.id == payload.item_id
     ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -187,15 +120,13 @@ def update_catalog_item(
     db.refresh(item)
     return item
 
-@router.delete("/{item_id}")
+@router.delete("/delete")
 def delete_catalog_item(
     item_id: int,
     db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
 ):
-    tenant_id = _tenant_id_from_user(user)
     item = db.query(BusinessCatalog).filter(
-        BusinessCatalog.id == item_id, BusinessCatalog.tenant_id == tenant_id
+        BusinessCatalog.id == item_id
     ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -206,14 +137,12 @@ def delete_catalog_item(
 @router.post("/bulk-update")
 def bulk_update(
     payload: BulkUpdateIn,
-    db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    tenant_id = _tenant_id_from_user(user)
     if not payload.ids:
         return {"updated": 0}
     q = db.query(BusinessCatalog).filter(
-        BusinessCatalog.tenant_id == tenant_id,
+        BusinessCatalog.tenant_id == payload.update.tenant_id,
         BusinessCatalog.id.in_(payload.ids)
     )
     update_data = {k: v for k, v in payload.update.dict(exclude_unset=True).items()}
@@ -225,62 +154,89 @@ def bulk_update(
     db.commit()
     return {"updated": updated}
 
-@router.post("/import")
+@router.post("/CSV_upload")
 async def import_catalog_file(
+    tenant_id: int = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user: Any = Depends(get_current_user),
 ):
-    """
-    Accepts CSV/XLS/XLSX. For CSV, we read directly.
-    For Excel, we fallback to pandas if available.
-    Required columns: item_type, name, description, category, price, discount, source_url, image_url
-    """
-    tenant_id = _tenant_id_from_user(user)
-    filename = file.filename.lower()
-    content = await file.read()
+    # --- Validate file type ---
+    if not file.filename or not file.filename.lower().endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
 
-    rows: List[Dict[str, Any]] = []
-    if filename.endswith(".csv"):
-        s = StringIO(content.decode("utf-8", errors="ignore"))
+    # --- Read CSV ---
+    content = await file.read()
+    try:
+        s = io.StringIO(content.decode("utf-8", errors="ignore"))
         reader = csv.DictReader(s)
         rows = list(reader)
-    else:
-        try:
-            import pandas as pd  # requires pandas + openpyxl in requirements
-            buf = BytesIO(content)
-            df = pd.read_excel(buf)
-            rows = df.to_dict(orient="records")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Unsupported file or pandas error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid CSV file: {e}")
 
-    required = ["item_type","name","description","category","price","discount","source_url","image_url"]
-    for r in rows:
-        for col in required:
-            if col not in r:
-                raise HTTPException(status_code=400, detail=f"Missing column: {col}")
+    if not rows:
+        raise HTTPException(status_code=400, detail="CSV file is empty")
 
-    created = 0
-    for r in rows:
-        price = r.get("price")
-        discount = r.get("discount")
-        price_d = Decimal(str(price)) if price not in (None, "", "nan") else None
-        discount_d = Decimal(str(discount)) if discount not in (None, "", "nan") else None
+    # --- Validate all rows before inserting ---
+    validated_items = []
+    for idx, r in enumerate(rows, start=1):
+        # Validate name
+        name = (r.get("name") or "").strip()
+        if not name:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Row {idx}: 'name' is required and cannot be empty"
+            )
+
+        # Validate item_type
+        item_type = (r.get("item_type") or "").strip()
+        if not item_type:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Row {idx}: 'item_type' is required"
+            )
+        if not item_type :
+            raise HTTPException(
+                status_code=400,
+                detail=f"Row {idx}: 'item_type' is required"
+            )
+
+        # Parse optional fields
+        def safe_decimal(val):
+            if val in (None, "", "nan", "null", "N/A"):
+                return None
+            try:
+                return Decimal(str(val).strip())
+            except (ValueError, InvalidOperation, TypeError):
+                return None
+
         item = BusinessCatalog(
             tenant_id=tenant_id,
-            item_type=str(r.get("item_type") or "other"),
-            name=str(r.get("name") or "").strip(),
-            description=r.get("description"),
-            category=r.get("category"),
-            price=price_d,
-            discount=discount_d,
-            currency=settings.DEFAULT_CURRENCY,
-            source_url=r.get("source_url"),
-            image_url=r.get("image_url"),
+            item_type=item_type,
+            name=name,
+            description=str(r.get("description") or "").strip() or None,
+            category=str(r.get("category") or "").strip() or None,
+            price=safe_decimal(r.get("price")),
+            discount=safe_decimal(r.get("discount")),
+            currency=settings.CURRENCY,
+            source_url=str(r.get("source_url") or "").strip() or None,
+            image_url=str(r.get("image_url") or "").strip() or None,
         )
-        if not item.name:
-            continue
+        validated_items.append(item)
+
+    # --- Bulk insert ---
+    for item in validated_items:
         db.add(item)
-        created += 1
     db.commit()
-    return {"created": created}
+
+    return {"ok": True, "created": len(validated_items)}
+
+
+@router.post("/image_upload")
+def image_upload(
+    payload: UploadFile = File(...),
+
+):
+    if not payload.filename or not payload.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+        raise HTTPException(status_code=400, detail="Only image files are allowed")
+    image_url = save_image(payload)
+    return {"image_url": image_url}

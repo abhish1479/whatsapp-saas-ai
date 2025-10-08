@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
-from database import SessionLocal, Base, engine
+from database import SessionLocal
 from models import Tenant, User, Wallet
 from passlib.hash import bcrypt
 import hashlib
