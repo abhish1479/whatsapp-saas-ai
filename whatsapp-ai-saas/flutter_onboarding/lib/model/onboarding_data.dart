@@ -68,7 +68,7 @@ class OnboardingData {
       businessWhatsapp: json['business_whatsapp'] ?? '',     // CHANGED
       personalNumber: json['personal_number'] ?? '',         // NEW
       businessType: json['business_type'] ?? '',
-      businessDescription: json['description'] ?? '',
+      businessDescription: json['business_description'] ?? '',
       customBusinessType: json['custom_business_type'] ?? '',
       businessCategory: json['business_category'] ?? '',
       items: itemsList,
