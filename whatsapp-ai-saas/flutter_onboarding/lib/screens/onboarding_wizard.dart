@@ -20,13 +20,21 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   int _step = 0;
 
   void next() => setState(() => _step = (_step + 1).clamp(0, 5));
-  void back() => setState(() => _step = (_step - 1).clamp(0, 5));
+
+  void back() {
+    if (_step > 0) {
+      setState(() => _step -= 1);
+    } else {
+      // if already at first step, leave the wizard
+      Navigator.of(context).maybePop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final steps = [
       BusinessInfoScreen(api: widget.api,  onNext: next),
-      BusinessTypeScreen( onNext: next, ),
+      BusinessTypeScreen( onNext: next, onBack: back ),
       BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
       WorkflowSetupScreen(api: widget.api, onNext: next, onBack: back),
       // PaymentSetupScreen(api: widget.api,  onNext: next, onBack: back),//KYCScreen

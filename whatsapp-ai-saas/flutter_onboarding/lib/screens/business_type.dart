@@ -10,10 +10,12 @@ import '../theme/business_info_theme.dart';
 
 class BusinessTypeScreen extends StatefulWidget {
   final VoidCallback onNext;
+  final VoidCallback onBack;
 
   const BusinessTypeScreen({
     Key? key,
     required this.onNext,
+    required this.onBack,
   }) : super(key: key);
 
   @override
@@ -134,7 +136,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
 
     return Obx(() => WillPopScope(
           onWillPop: () async {
-            Get.back(); // navigate back to BusinessInfoScreen
+            widget.onBack();
             return false;
           },
           child: Stack(
