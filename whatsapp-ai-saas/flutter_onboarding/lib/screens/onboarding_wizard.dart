@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/api.dart';
+import '../theme/business_info_theme.dart';
 import 'business_info.dart';
 import 'business_type.dart';
 import 'info_capture.dart';
@@ -18,6 +19,9 @@ class OnboardingWizard extends StatefulWidget {
 }
 
 class _OnboardingWizardState extends State<OnboardingWizard> {
+
+  BusinessInfoTheme get theme =>
+      Theme.of(context).extension<BusinessInfoTheme>() ?? BusinessInfoTheme.light;
   int _step = 0;
 
   void next() => setState(() => _step = (_step + 1).clamp(0, 5));
@@ -45,11 +49,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
     ];
     return Scaffold(
       appBar: AppBar(title: const Text("Onboarding")),
-      body: Column(
-        children: [
-          LinearProgressIndicator(value: (_step + 1) / steps.length , color: Colors.blue[700],),
-          Expanded(child: steps[_step]),
-        ],
+      body: Container(
+        decoration: BoxDecoration(gradient: theme.formGradient),
+        child: Column(
+          children: [
+            LinearProgressIndicator(value: (_step + 1) / steps.length , color: Colors.blue[700],),
+            Expanded(child: steps[_step]),
+          ],
+        ),
       ),
     );
   }

@@ -3,415 +3,647 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leadbot_client/helper/utils/app_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../helper/utils/color_constant.dart';
 import '../../helper/ui_helper/custom_text_style.dart';
 import '../../helper/ui_helper/custom_widget.dart';
 import '../api/api.dart';
 import '../controller/catalog_controller.dart';
+import '../helper/utils/shared_preference.dart';
+import '../theme/business_info_theme.dart';
 
-class InfoCaptureScreen extends StatelessWidget {
-  
+class InfoCaptureScreen extends StatefulWidget {
   final Api api;
   final VoidCallback onNext;
   final VoidCallback onBack;
-  InfoCaptureScreen({
+
+  const InfoCaptureScreen({
     super.key,
     required this.api,
     required this.onNext,
     required this.onBack,
   });
 
-  final CatalogController controller = Get.find<CatalogController>();
+  @override
+  State<InfoCaptureScreen> createState() => _InfoCaptureScreenState();
+}
 
-  // Manual add fields
-  final _formKey = GlobalKey<FormState>();
-  final itemType = 'service'.obs;
-  final name = TextEditingController();
-  final desc = TextEditingController();
-  final cat = TextEditingController();
-  final price = TextEditingController();
-  final discount = TextEditingController();
-  final source = TextEditingController();
-  final pickedImage = Rx<Uint8List?>(null);
-  final pickedImageName = ''.obs;
+class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
+  late final CatalogController controller = Get.find<CatalogController>();
 
+  BusinessInfoTheme get themeInfo =>
+      Theme.of(context).extension<BusinessInfoTheme>() ??
+      BusinessInfoTheme.light;
+
+  // For Manual Add Dialog
+  final _manualFormKey = GlobalKey<FormState>();
+  final _itemType = 'service'.obs;
+  final _name = TextEditingController();
+  final _desc = TextEditingController();
+  final _cat = TextEditingController();
+  final _price = TextEditingController();
+  final _discount = TextEditingController();
+  final _source = TextEditingController();
+  final _pickedImage = Rx<Uint8List?>(null);
+  final _pickedImageName = ''.obs;
+
+  // For Website Analysis Dialog
+  final _siteController = TextEditingController();
+  final _ingestingSite = false.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    controller.fetchCatalog();
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _desc.dispose();
+    _cat.dispose();
+    _price.dispose();
+    _discount.dispose();
+    _source.dispose();
+    _siteController.dispose();
+    super.dispose();
+  }
+
+  // --- Actions ---
   Future<void> _downloadTemplate() async {
     try {
-      final bytes = await api.downloadCsvTemplate();
-      final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final bytes = await widget.api.downloadCsvTemplate();
+      final dir = await getDownloadsDirectory() ??
+          await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/business_catalog_template.csv');
       await file.writeAsBytes(bytes);
-      Get.snackbar('Download', 'Template saved to ${file.path}');
+      AppUtils.showSuccess('Download', 'Template saved to ${file.path}');
     } catch (e) {
-      Get.snackbar('Error', 'Download failed: $e');
+      AppUtils.showError('Error', 'Download failed: $e');
     }
   }
 
   Future<void> _pickAndImport() async {
-    final res = await FilePicker.platform.pickFiles(withData: true, allowedExtensions: ['csv', 'xls', 'xlsx']);
+    final res = await FilePicker.platform.pickFiles(
+      withData: true,
+      allowedExtensions: ['csv'],
+    );
     if (res == null) return;
     final f = res.files.first;
     if (f.bytes == null) return;
     await controller.importCatalog(f.name, f.bytes!);
   }
 
-  Future<void> _pickImage() async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
-    if (res == null) return;
-    pickedImage.value = res.files.first.bytes;
-    pickedImageName.value = res.files.first.name;
+  Future<void> _showManualAddDialog() async {
+    // Reset fields
+    _itemType.value = 'service';
+    _name.clear();
+    _desc.clear();
+    _cat.clear();
+    _price.clear();
+    _discount.clear();
+    _source.clear();
+    _pickedImage.value = null;
+    _pickedImageName.value = '';
+
+    await Get.dialog(
+      AlertDialog(
+        title: const Text('Add Item Manually'),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Form(
+              key: _manualFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _dropdownField([
+                    'product',
+                    'service',
+                    'course',
+                    'package',
+                    'room',
+                    'membership',
+                    'other'
+                  ], _itemType),
+                  _textField(_name, 'Name *', required: true),
+                  _textField(_cat, 'Category'),
+                  _textField(_desc, 'Description'),
+                  _textField(_price, 'Price', numeric: true),
+                  _textField(_discount, 'Discount', numeric: true),
+                  _textField(_source, 'Source URL'),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: ColorConstant.black),
+                    onPressed: _pickImageForDialog,
+                    icon: const Icon(Icons.image, color: Colors.white),
+                    label: Obx(() => Text(
+                          _pickedImageName.value.isEmpty
+                              ? 'Pick Image'
+                              : _pickedImageName.value,
+                          style: const TextStyle(color: Colors.white),
+                        )),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+          Obx(() => ElevatedButton(
+                onPressed: controller.loading.value
+                    ? null
+                    : () async {
+                        if (!_manualFormKey.currentState!.validate()) return;
+                        final data = {
+                          'item_type': _itemType.value,
+                          'name': _name.text.trim(),
+                          'description': _desc.text.trim(),
+                          'category': _cat.text.trim(),
+                          'price': _price.text.trim(),
+                          'discount': _discount.text.trim(),
+                          'source_url': _source.text.trim(),
+                        };
+                        await controller.addManual(
+                          data,
+                          image: _pickedImage.value,
+                          filename: _pickedImageName.value,
+                        );
+                        Get.back(); // Close dialog
+                      },
+                child: const Text('Add'),
+              )),
+        ],
+      ),
+    );
   }
 
-  Future<void> _submitManual() async {
-    if (!_formKey.currentState!.validate()) return;
-    final data = {
-      'item_type': itemType.value,
-      'name': name.text.trim(),
-      'description': desc.text.trim(),
-      'category': cat.text.trim(),
-      'price': price.text.trim(),
-      'discount': discount.text.trim(),
-      'source_url': source.text.trim(),
-    };
-    await controller.addManual(data, image: pickedImage.value, filename: pickedImageName.value);
-    name.clear(); desc.clear(); cat.clear(); price.clear(); discount.clear(); source.clear();
-    pickedImage.value = null; pickedImageName.value = '';
+  Future<void> _pickImageForDialog() async {
+    final res = await FilePicker.platform
+        .pickFiles(type: FileType.image, withData: true);
+    if (res == null) return;
+    _pickedImage.value = res.files.first.bytes;
+    _pickedImageName.value = res.files.first.name;
+  }
+
+  Future<void> _showWebsiteDialog() async {
+    _siteController.clear();
+    _ingestingSite.value = false;
+
+    await Get.dialog(
+      AlertDialog(
+        title: const Text('Analyze Website'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'We\'ll automatically extract products and services from your website',
+                style: TextStyle(color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _siteController,
+                decoration: InputDecoration(
+                  labelText: 'Website URL',
+                  hintText: 'www.yourwebsite.com',
+                  prefixIcon: const Icon(Icons.link_rounded),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  ),
+                ),
+                keyboardType: TextInputType.url,
+                onSubmitted: (_) => _submitWebsite(),
+              ),
+              const SizedBox(height: 16),
+              Obx(() => ElevatedButton.icon(
+                    onPressed: _ingestingSite.value ? null : _submitWebsite,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                    ),
+                    icon: _ingestingSite.value
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.auto_awesome_rounded,
+                            color: Colors.white),
+                    label: Text(
+                      _ingestingSite.value ? 'Analyzing...' : 'Analyze Website',
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitWebsite() async {
+    final url = _siteController.text.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      Get.snackbar('Invalid URL',
+          'Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+
+    try {
+      _ingestingSite.value = true;
+      final tenantId = await StoreUserData().getTenantId();
+      if (tenantId == null) {
+        Get.snackbar('Error', 'Tenant not found');
+        return;
+      }
+
+      await widget.api.postForm('/onboarding/items/website', {
+        'tenant_id': tenantId,
+        'url': url,
+      });
+
+      Get.snackbar('Success', 'Website queued for analysis');
+      Get.back(); // Close dialog
+    } catch (e) {
+      Get.snackbar('Error', 'Website ingestion failed: $e');
+    } finally {
+      _ingestingSite.value = false;
+    }
+  }
+
+  // --- Reusable Widgets ---
+  Widget _dropdownField(List<String> options, RxString value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: SizedBox(
+        width: double.infinity,
+        child: Obx(() => DropdownButtonFormField<String>(
+              value: value.value,
+              items: options
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => value.value = v!,
+              decoration: const InputDecoration(labelText: 'Type'),
+            )),
+      ),
+    );
+  }
+
+  Widget _textField(TextEditingController ctrl, String label,
+      {bool required = false, bool numeric = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: TextFormField(
+        controller: ctrl,
+        decoration: InputDecoration(labelText: label),
+        keyboardType: numeric ? TextInputType.number : TextInputType.text,
+        validator: required
+            ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null
+            : null,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    controller.fetchCatalog();
-
     final theme = Theme.of(context);
     const primaryColor = Color(0xFF3B82F6);
     const secondaryColor = Color(0xFF8B5CF6);
-    const surfaceColor = Color(0xFFFAFAFA);
     const cardColor = Colors.white;
 
     return Scaffold(
-      body: Obx(() {
-        if (controller.loading.value) return const Center(child: CircularProgressIndicator());
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _header(context),
-              _actionRow(context),
-              const SizedBox(height: 16),
-              _manualAddCard(context),
-              const SizedBox(height: 16),
-              _catalogTable(context),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _header(BuildContext context){
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Add Products & Services',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E293B),
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose how you\'d like to add your offerings',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: const Color(0xFF64748B),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _actionRow(BuildContext context) {
-    final theme = Theme.of(context);
-    const primaryColor = Color(0xFF3B82F6);
-    const secondaryColor = Color(0xFF8B5CF6);
-    const surfaceColor = Color(0xFFFAFAFA);
-    const cardColor = Colors.white;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Wrap(
-          spacing: 10,
+      body: SafeArea(
+        child: Column(
           children: [
-            CustomWidgets.buildGradientButton(
-              onPressed: _downloadTemplate,
-              text: "Download CSV Template",
-              icon: Icons.download,
-            ),
-
-            Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: _pickAndImport,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
+            Expanded(
+              child: Obx(() {
+                if (controller.loading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return Container(
+                  decoration: BoxDecoration(gradient: themeInfo.formGradient),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [primaryColor, secondaryColor],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
+                        // Header
+                        Text(
+                          'Add Products & Services',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1E293B),
+                            letterSpacing: -0.5,
                           ),
-                          child: controller.loadingCSV.value
-                              ? const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Choose how you\'d like to add your offerings',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkWell(
+                            onTap: _downloadTemplate,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.download,
+                                    size: 18,
+                                    color: const Color(0xFF3B82F6),
+                                  ),
+                                  Text(
+                                    'Download Template',
+                                    style: TextStyle(
+                                      color: const Color(0xFF3B82F6),
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: const Color(0xFF3B82F6),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          )
-                              : const Icon(
-                            Icons.upload_file_rounded,
-                            color: Colors.white,
-                            size: 24,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Upload CSV File',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1E293B),
-                                ),
+
+                        // ✅ 4 Action Buttons in Grid
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            //  Manual Add
+                            Flexible(
+                              child: _buildActionCard(
+                                context,
+                                icon: Icons.add,
+                                title: 'Add Service/Product',
+                                color: primaryColor,
+                                onPressed: _showManualAddDialog,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Bulk upload: name, price, description, image_url',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: const Color(0xFF64748B),
-                                ),
+                            ),
+
+
+                            // 2. Upload CSV File
+                            Flexible(
+                              child: _buildActionCard(
+                                context,
+                                icon: Icons.upload_file_rounded,
+                                title: 'Upload CSV File',
+                                color: primaryColor,
+                                onPressed: _pickAndImport,
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+
+
+
+                        const SizedBox(height: 10),
+
+                        // 4. Analyze Website
+                        _buildActionCardWitTitle(
+                          context,
+                          icon: Icons.language_rounded,
+                          title: 'Analyze Website',
+                          subtitle: 'Extract service/Product from your site',
+                          color: secondaryColor,
+                          onPressed: _showWebsiteDialog,
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        // Catalog Table
+                        if (controller.items.isNotEmpty)
+                          _catalogTable(context)
+                        else
+                          const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                                'No items yet. Use the options above to add your offerings.'),
                           ),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 16,
-                          color: const Color(0xFF94A3B8),
-                        ),
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
+            _bottomNavigation(context),
           ],
         ),
-        /*if (controller.selected.isNotEmpty)
-          CustomButton(
-            label: 'Bulk Discount (${controller.selected.length})',
-            icon: Icons.percent,
-            onTap: () => _promptDiscount(),
-            color: ColorConstant.secondaryColor,
-          ),*/
-      ],
+      ),
     );
   }
 
-  /*void _promptDiscount() {
-    final ctrl = TextEditingController();
-    Get.defaultDialog(
-      title: 'Apply Discount (%)',
-      content: Column(
-        children: [
-          TextField(controller: ctrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'e.g. 15')),
-          const SizedBox(height: 12),
-          CustomButton(
-            label: 'Apply',
-            onTap: () {
-              final val = double.tryParse(ctrl.text) ?? 0;
-              controller.bulkDiscount(val);
-              Get.back();
-            },
-          )
-        ],
-      ),
-    );
-  }*/
-
-  Widget _manualAddCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Add Service or Product',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E293B),
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+  Widget _buildActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                _dropdown(['product','service','course','package','room','membership','other'], itemType),
-                _field(name, 'Name *', required: true),
-                _field(cat, 'Category'),
-                _field(desc, 'Description'),
-                _field(price, 'Price', numeric: true),
-                _field(discount, 'Discount', numeric: true),
-                _field(source, 'Source URL'),
+                Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 17),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 12),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(children: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: ColorConstant.black),
-                onPressed: _pickImage,
-                icon: const Icon(Icons.image),
-                label: Obx(() => Text(pickedImageName.isEmpty ? 'Pick Image' : pickedImageName.value)),
-              ),
-              const SizedBox(width: 10),
-              CustomWidgets.buildGradientButton(
-                onPressed: _submitManual,
-                text: "Add Item",
-                icon: Icons.add,
-              ),
-            ]),
-          ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCardWitTitle(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                            fontSize: 13, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios,
+                    size: 16, color: Color(0xFF94A3B8)),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _catalogTable(BuildContext context) {
-    if (controller.items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('No items yet. Import or add manually.'),
-      );
-    }
+    return Obx(() => SizedBox(
+          width: MediaQuery.of(context).size.width,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 20, bottom: 5),
+                child: Text(
+                  'Added Service (${controller.items.length})',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+              ),
 
-    return Obx(() => Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Sel')),
-            DataColumn(label: Text('Type')),
-            DataColumn(label: Text('Name')),
-            DataColumn(label: Text('Price')),
-            DataColumn(label: Text('Discount')),
-            DataColumn(label: Text('Category')),
-            DataColumn(label: Text('Image')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows: controller.items.map<DataRow>((e) {
-            final id = e['id'] as int;
-            final selected = controller.selected.contains(id);
-            return DataRow(
-              selected: selected,
-              onSelectChanged: (v) {
-                if (v == true) {
-                  controller.selected.add(id);
-                } else {
-                  controller.selected.remove(id);
-                }
-              },
-              cells: [
-                DataCell(Checkbox(value: selected, onChanged: (v) {
-                  if (v == true) controller.selected.add(id); else controller.selected.remove(id);
-                })),
-                DataCell(Text(e['item_type'] ?? '')),
-                DataCell(Text(e['name'] ?? '')),
-                DataCell(Text('${e['price'] ?? ''}')),
-                DataCell(Text('${e['discount'] ?? ''}')),
-                DataCell(Text(e['category'] ?? '')),
-                DataCell(_thumb(e['image_url'])),
-                DataCell(Row(children: [
-                  IconButton(icon: const Icon(Icons.edit), onPressed: () => _editDialog(e)),
-                  IconButton(icon: const Icon(Icons.delete), onPressed: () => controller.deleteItem(id)),
-                ])),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    ));
+              Card(
+                elevation: 2,
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Actions')),
+                      DataColumn(label: Text('Name')),
+                      DataColumn(label: Text('Price')),
+                      DataColumn(label: Text('Discount %')),
+                      DataColumn(label: Text('Category')),
+                      DataColumn(label: Text('Image')),
+                    ],
+                    rows: controller.items.map<DataRow>((e) {
+                      final id = e['id'] as int;
+                      return DataRow(
+                        cells: [
+                          DataCell(Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit, size: 18, color: Colors.blue[700]!,),
+                                onPressed: () => _editDialog(e),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete, size: 18 ,color: Colors.blue[700]!,),
+                                onPressed: () => controller.deleteItem(id),
+                              ),
+                            ],
+                          )),
+                          DataCell(Text(e['name'] ?? '')),
+                          DataCell(Text('${e['price'] ?? ''}')),
+                          DataCell(Text('${e['discount'] ?? ''}')),
+                          DataCell(Text(e['category'] ?? '')),
+                          DataCell(_thumb(e['image_url'])),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ));
   }
 
   Widget _thumb(String? url) {
-    if (url == null || url.isEmpty) return const Icon(Icons.image_not_supported);
-    return SizedBox(width: 48, height: 48, child: Image.network(url, fit: BoxFit.cover));
-  }
-
-  Widget _dropdown(List<String> options, RxString value) {
+    if (url == null || url.isEmpty)
+      return const Icon(Icons.image_not_supported, size: 20);
     return SizedBox(
-      width: 200,
-      child: Obx(() => DropdownButtonFormField<String>(
-        value: value.value,
-        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: (v) => value.value = v!,
-        decoration: const InputDecoration(labelText: 'Type'),
-      )),
-    );
-  }
-
-  Widget _field(TextEditingController ctrl, String label, {bool required = false, bool numeric = false}) {
-    return SizedBox(
-      width: 220,
-      child: TextFormField(
-        controller: ctrl,
-        decoration: InputDecoration(labelText: label),
-        keyboardType: numeric ? TextInputType.number : TextInputType.text,
-        validator: required ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null : null,
+      width: 40,
+      height: 40,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.image_not_supported, size: 20),
+        ),
       ),
     );
   }
@@ -426,31 +658,110 @@ class InfoCaptureScreen extends StatelessWidget {
 
     Get.defaultDialog(
       title: 'Edit Item',
-      content: Column(
-        children: [
-          _dropdown(['product','service','course','package','room','membership','other'], type),
-          _field(nameC, 'Name', required: true),
-          _field(priceC, 'Price', numeric: true),
-          _field(discountC, 'Discount', numeric: true),
-          _field(catC, 'Category'),
-          _field(descC, 'Description'),
-          const SizedBox(height: 10),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _dropdownField([
+              'product',
+              'service',
+              'course',
+              'package',
+              'room',
+              'membership',
+              'other'
+            ], type),
+            _textField(nameC, 'Name', required: true),
+            _textField(priceC, 'Price', numeric: true),
+            _textField(discountC, 'Discount', numeric: true),
+            _textField(catC, 'Category'),
+            _textField(descC, 'Description'),
+            const SizedBox(height: 10),
+            CustomWidgets.buildGradientButton(
+              onPressed: () {
+                final body = {
+                  'item_id': e['id'],
+                  'item_type': type.value,
+                  'name': nameC.text.trim(),
+                  'price': priceC.text.trim(),
+                  'discount': discountC.text.trim(),
+                  'description': descC.text.trim(),
+                  'category': catC.text.trim(),
+                };
+                controller.updateItem(e['id'], body);
+                Get.back();
+              },
+              text: "Save",
+              icon: Icons.save,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          CustomWidgets.buildGradientButton(
-            onPressed: () {
-              final body = {
-                'item_type': type.value,
-                'name': nameC.text.trim(),
-                'price': priceC.text.trim(),
-                'discount': discountC.text.trim(),
-                'description': descC.text.trim(),
-                'category': catC.text.trim(),
-              };
-              controller.updateItem(e['id'], body);
-              Get.back();
-            },
-            text: "Save",
-            icon: Icons.save,
+  Widget _bottomNavigation(BuildContext context) {
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF8B5CF6);
+
+    return Container(
+      decoration: BoxDecoration(gradient: themeInfo.formGradient),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // ⬅️ Back button
+          OutlinedButton.icon(
+            onPressed: widget.onBack,
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text("Back"),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              foregroundColor: const Color(0xFF64748B),
+            ),
+          ),
+
+          // ➡️ Continue button
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [primaryColor, secondaryColor],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: FilledButton.icon(
+              onPressed: widget.onNext,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon:
+                  const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+              label: const Text(
+                'Continue',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ],
       ),
