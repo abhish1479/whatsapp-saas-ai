@@ -245,8 +245,9 @@ async def add_website(
         VALUES (:t,:u,'queued')
     """), {"t": tenant_id, "u": url})
     db.commit()
-    background_tasks.add_task(background_crawl, tenant_id, url)
-    return {"ok": True, "status": "queued"}
+    # background_tasks.add_task(background_crawl, tenant_id, url)
+    catalog = await background_crawl(tenant_id, url)
+    return {"ok": True, "Bussiness_Catalog": catalog}
 
 # ---------- STEP 4: Workflow Setup ----------
 @router.post("/workflow")

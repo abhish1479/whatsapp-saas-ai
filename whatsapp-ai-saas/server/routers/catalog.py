@@ -42,7 +42,7 @@ def csv_template():
     w = csv.writer(s)
     w.writerow(header)
     # add an example row
-    w.writerow(["service","AMC","1 Year","Repair","500","20","https://example.com/spa","https://example.com/img.jpg"])
+    w.writerow(["service","AMC","1 Year","Repair","500","20","CSV_UPLOAD","https://example.com/img.jpg"])
     buf = BytesIO(s.getvalue().encode("utf-8"))
     return StreamingResponse(
         buf, media_type="text/csv",
@@ -63,7 +63,7 @@ def create_catalog_item(
         price=payload.price,
         discount=payload.discount,
         currency=settings.CURRENCY,
-        source_url=payload.source_url,
+        source_url="CSV_UPLOAD",
         image_url=payload.image_url,
     )
     db.add(item)
@@ -96,7 +96,7 @@ def create_catalog_item_with_image(
         price=price_d,
         discount=discount_d,
         currency=settings.CURRENCY,
-        source_url=source_url,
+        source_url="CSV_UPLOAD",
         image_url=image_url,
     )
     db.add(item)
@@ -218,7 +218,7 @@ async def import_catalog_file(
             price=safe_decimal(r.get("price")),
             discount=safe_decimal(r.get("discount")),
             currency=settings.CURRENCY,
-            source_url=str(r.get("source_url") or "").strip() or None,
+            source_url="CSV_UPLOAD",
             image_url=str(r.get("image_url") or "").strip() or None,
         )
         validated_items.append(item)

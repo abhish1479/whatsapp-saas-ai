@@ -1,5 +1,6 @@
 import asyncio
 from datetime import time
+import json
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -13,7 +14,7 @@ from services.rag import rag
 
 logger = logging.getLogger(__name__)
 
-CRAWL_LIMIT = 50  # max pages per request
+CRAWL_LIMIT = 10  # max pages per request
 LLM_BATCH_SIZE = 2000  # chars per chunk for LLM parsing
 
 async def fetch_html(url: str) -> str:
@@ -34,9 +35,23 @@ def extract_links(base_url: str, html: str) -> list[str]:
 
 def clean_text(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "noscript"]):
+    
+    # Remove unwanted tags
+    for tag in soup(["script", "style", "noscript", "svg", "head", "meta", "link"]):
         tag.decompose()
-    return soup.get_text(" ", strip=True)
+    for img in soup.find_all("img"):
+        alt = img.get("alt", "").strip()
+        src = img.get("src", "")
+        # Create a natural-language description
+        desc = f"[Image: {alt}]" if alt else "[Image]"
+        img.replace_with(desc)
+    
+    # Extract text with reasonable spacing
+    text = soup.get_text(separator=" ", strip=True)
+    import re
+    text = re.sub(r"\s+", " ", text)
+    
+    return text
 
 def extract_images(base_url: str, html: str) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
@@ -46,23 +61,48 @@ def extract_images(base_url: str, html: str) -> list[str]:
         image_urls.append(url)
     return image_urls
 
-async def parse_structured_with_llm(text: str, source_url: str) -> list[dict]:
+async def parse_structured_with_llm(text: str, source_url: str,tenant_id:str) -> list[dict]:
     """
-    Ask LLM to return structured catalog items (generic schema).
+    Use a standardized prompt to extract business catalog items from any webpage text.
+    Returns a list of dictionaries with consistent schema.
     """
-    prompt = f"""
-    Extract business items from the following text. Items may be products, services, rooms, courses, packages.
-    Return as JSON list with fields:
-    item_type, name, description, category, price, discount, currency, source_url.
-    Text:
-    {text[:LLM_BATCH_SIZE]}
-    """
+    prompt = f"""You are an expert data extractor.Respond ONLY with a JSON array. Do not include any other text, markdown, or explanation. The output must be parseable by json.loads(). Analyze the following text and extract all business offerings such as products, services, courses, packages, rooms, or plans.
+
+Return a JSON list of items. Each item must be a JSON object with EXACTLY these fields:
+- "item_type": one of ["product", "service", "course", "package", "room", "plan", "other"]
+- "name": short, clear title (string)
+- "description": concise summary (string, max 300 chars)
+- "category": logical category (e.g., "Electronics", "Consulting", "Fitness") (string)
+- "price": numeric price (float or null if not available)
+- "discount": numeric discount amount or percentage (float or null)
+- "currency": ISO currency code (e.g., "USD", "EUR") (string, default "USD")
+- "image_url": a brief note if an image is relevant (e.g., "military discount badge", "product photo"), or null
+
+If a field is unknown, use null (for price/discount) or a reasonable default (e.g., "other" for item_type).
+Only return valid JSON. Do not include any other text.
+
+Text:
+{text[:LLM_BATCH_SIZE]}
+"""
+
     try:
-        response = await llm.generate_reply(prompt)  # assume llm.call returns JSON
-        items = response if isinstance(response, list) else []
-        for item in items:
-            item["source_url"] = source_url
-        return items
+        raw_response = await llm.analysis(tenant_id,prompt)
+        # Ensure response is a list of dicts
+        # Parse the JSON string
+        try:
+            response = json.loads(raw_response)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse LLM JSON response from {source_url}: {e}")
+            logger.debug(f"Raw LLM response: {raw_response[:500]}...")
+            return []
+        
+        if isinstance(response, list):
+            return response
+        elif isinstance(response, dict) and "items" in response:
+            return response["items"]
+        else:
+            logger.warning(f"Unexpected LLM response format from {source_url}")
+            return []
     except Exception as e:
         logger.error(f"LLM parsing failed for {source_url}: {e}")
         return []
@@ -71,6 +111,7 @@ async def crawl_and_ingest(session: Session, tenant_id: str, start_url: str):
     visited, to_visit = set(), [start_url]
     pages_processed = 0
     print(f"Starting crawl for tenant {tenant_id} from {start_url}")
+    
     while to_visit and pages_processed < CRAWL_LIMIT:
         url = to_visit.pop()
         if url in visited:
@@ -79,32 +120,30 @@ async def crawl_and_ingest(session: Session, tenant_id: str, start_url: str):
             html = await fetch_html(url)
             print(f"Fetched {url} ({len(html)} bytes)")
             text = clean_text(html)
-            print(f"Fetched {url} with {len(text)} chars")
-            # Step A: Add to RAG
-            await rag.add_documents(tenant_id, [{"text": text, "source_url": url}])
-            # Step B: Parse structured catalog via LLM
-            items = await parse_structured_with_llm(text, url)
-            # also extract images from page
-            image_urls = extract_images(url, html)
+            print(f"Cleaned text from {url}: {len(text)} chars")
 
-            for idx, item in enumerate(items):
+            # Step: Parse structured catalog via LLM (NO RAG)
+            items = await parse_structured_with_llm(text, url,tenant_id)
+
+            for item in items:
+                # Normalize and validate fields
                 catalog_entry = BusinessCatalog(
                     tenant_id=tenant_id,
-                    item_type=item.get("item_type", "other"),
-                    name=item.get("name"),
-                    description=item.get("description"),
-                    category=item.get("category"),
+                    item_type=item.get("item_type") or "other",
+                    name=item.get("name") or "Unnamed Item",
+                    description=item.get("description") or "",
+                    category=item.get("category") or "General",
                     price=item.get("price"),
                     discount=item.get("discount"),
-                    currency=item.get("currency"),
-                    source_url=item.get("source_url"),
-                    image_url=image_urls[idx] if idx < len(image_urls) else None
+                    currency=item.get("currency") or "USD",  # or use settings.CURRENCY if available
+                    source_url=item.get("source_url") or url,
+                    image_url=item.get("image_url") or None,
                 )
                 session.add(catalog_entry)
 
-            # Find more links
+            # Discover new links (same domain only)
             for link in extract_links(url, html):
-                if link not in visited:
+                if link not in visited and link not in to_visit:
                     to_visit.append(link)
 
             visited.add(url)
@@ -115,7 +154,7 @@ async def crawl_and_ingest(session: Session, tenant_id: str, start_url: str):
             logger.error(f"Error processing {url}: {e}")
             session.rollback()
 
-def background_crawl(tenant_id: int, url: str):
+async def background_crawl(tenant_id: int, url: str):
     """Sync function called in background"""
     db_gen = get_db()
     session = next(db_gen)
@@ -129,7 +168,7 @@ def background_crawl(tenant_id: int, url: str):
         session.commit()
 
         # Do the crawl
-        asyncio.run(crawl_and_ingest(session, str(tenant_id), url))
+        await crawl_and_ingest(session, str(tenant_id), url)
 
         # Mark as done
         print(f"✅ Completed crawl for tenant {tenant_id} at {url}")
@@ -138,6 +177,8 @@ def background_crawl(tenant_id: int, url: str):
             {"t": tenant_id, "u": url}
         )
         session.commit()
+        catalog = session.query(BusinessCatalog).filter(BusinessCatalog.tenant_id == tenant_id , BusinessCatalog.source_url != "CSV_UPLOAD").all()
+        return catalog
     except Exception as e:
         logger.exception("Crawl failed")
         session.rollback()
@@ -149,43 +190,3 @@ def background_crawl(tenant_id: int, url: str):
     finally:
         db_gen.close()
 
-def main():
-    while True:
-        db_gen = get_db()
-        session = next(db_gen)  # Get the session from the generator
-        try:
-            print("🔍 Checking for queued ingest requests...")
-            result = session.execute(
-                text("SELECT id, tenant_id, url FROM web_ingest_requests WHERE status = 'queued' LIMIT 5")
-            )
-            rows = result.fetchall()
-
-            for row in rows:
-                try:
-                    crawl_and_ingest(session, str(row.tenant_id), row.url)
-                    session.execute(
-                        text("UPDATE web_ingest_requests SET status = 'done' WHERE id = :id"),
-                        {"id": row.id}
-                    )
-                    session.commit()
-                    print(f"✅ Completed request {row.id}")
-                except Exception as e:
-                    logger.exception(f"❌ Failed request {row.id}: {e}")
-                    session.rollback()
-                    session.execute(
-                        text("UPDATE web_ingest_requests SET status = 'error' WHERE id = :id"),
-                        {"id": row.id}
-                    )
-                    session.commit()
-
-        except Exception as e:
-            logger.critical(f"💥 Fatal error in main loop: {e}")
-        finally:
-            # Ensure the generator is closed (triggers db.close())
-            db_gen.close()
-
-        print("😴 Sleeping for 30 seconds...")
-        time.sleep(30)
-
-if __name__ == "__main__":
-    main()

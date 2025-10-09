@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from requests import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from deps import get_db
+from services.exotel_api import whatsapp_msg_send_api_bulk
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -22,3 +24,11 @@ async def get_summary(conversation_id: str, db: AsyncSession = Depends(get_db)):
     if not convo:
         raise HTTPException(404, "Conversation not found")
     return {"conversation_id": conversation_id, "summary": convo[0]}
+
+
+@router.post("/talk_to_me")
+async def talk_to_me(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    return await whatsapp_msg_send_api_bulk(request, db)
