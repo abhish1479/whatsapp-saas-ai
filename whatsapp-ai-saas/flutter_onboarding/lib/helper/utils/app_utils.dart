@@ -7,12 +7,13 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
 
 import '../ui_helper/custom_text_style.dart';
 import 'app_loger.dart';
 import 'color_constant.dart';
-
 
 class AppUtils {
   static void showToast(String message) {
@@ -221,6 +222,28 @@ class AppUtils {
     );
   }
 
+  static void showSuccess(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      backgroundColor: Colors.green[100], // background color
+      colorText: Colors.black, // text color
+      borderColor: Colors.green[500], // border color
+      borderWidth: 1, // border width
+    );
+  }
+
+  static void showError(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      backgroundColor: Colors.red[100], // background color
+      colorText: Colors.black, // text color
+      borderColor: Colors.red[500], // border color
+      borderWidth: 1, // border width
+    );
+  }
+
   // method defined to check internet connectivity
   static Future<bool> isConnected() async {
     /*var connectivityResult = await Connectivity().checkConnectivity();
@@ -337,7 +360,7 @@ class AppUtils {
   static String todayDateString() {
     final now = DateTime.now();
     final today =
-    DateTime(now.year, now.month, now.day); // sets time to 00:00:00
+        DateTime(now.year, now.month, now.day); // sets time to 00:00:00
     final formatter = DateFormat('yyyy-MM-dd');
     return formatter.format(today);
   }
@@ -347,7 +370,6 @@ class AppUtils {
     final formatter = DateFormat('yyyy-MM-dd');
     return formatter.format(now);
   }
-
 
   static String tomorrowDate() {
     final tomorrow = DateTime.now().add(Duration(days: 1));
@@ -388,6 +410,4 @@ class AppUtils {
     List<String> newList = seen.toList();
     return newList;
   }
-
 }
-
