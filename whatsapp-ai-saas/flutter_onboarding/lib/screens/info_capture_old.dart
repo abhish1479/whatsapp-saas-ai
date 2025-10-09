@@ -9,6 +9,7 @@ class BusinessInfoCaptureScreen extends StatefulWidget {
   final Api api;
   final VoidCallback onNext;
   final VoidCallback onBack;
+
   const BusinessInfoCaptureScreen({
     super.key,
     required this.api,
@@ -143,7 +144,7 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
       }
 
       // Perform upload
-      final response = await widget.api.uploadCsv(
+      final response = await widget.api.uploadCsv1(
         '/onboarding/items/csv',
         filename: platformFile.name,
         bytes: bytes,
@@ -247,7 +248,8 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final maxW = constraints.maxWidth < 900 ? constraints.maxWidth : 900.0;
+          final maxW =
+              constraints.maxWidth < 900 ? constraints.maxWidth : 900.0;
           return Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxW),
@@ -277,7 +279,6 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                       ],
                     ),
                   ),
-                  
                   Container(
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
@@ -326,7 +327,9 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                           height: 24,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
                                           ),
                                         ),
                                       )
@@ -343,7 +346,8 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                   children: [
                                     Text(
                                       'Upload CSV File',
-                                      style: theme.textTheme.titleMedium?.copyWith(
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: const Color(0xFF1E293B),
                                       ),
@@ -351,7 +355,8 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       'Bulk upload: name, price, description, image_url',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
                                         color: const Color(0xFF64748B),
                                       ),
                                     ),
@@ -369,7 +374,6 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                       ),
                     ),
                   ),
-
                   Container(
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
@@ -425,7 +429,6 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                               ],
                             ),
                             const SizedBox(height: 24),
-                            
                             TextFormField(
                               controller: _manualName,
                               decoration: InputDecoration(
@@ -435,17 +438,21 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryColor, width: 2),
+                                  borderSide:
+                                      BorderSide(color: primaryColor, width: 2),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
                               ),
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? 'Required'
@@ -453,7 +460,6 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                               textInputAction: TextInputAction.next,
                             ),
                             const SizedBox(height: 16),
-                            
                             TextFormField(
                               controller: _manualPrice,
                               decoration: InputDecoration(
@@ -464,17 +470,21 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryColor, width: 2),
+                                  borderSide:
+                                      BorderSide(color: primaryColor, width: 2),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
                               ),
                               keyboardType: TextInputType.number,
                               validator: (v) {
@@ -488,7 +498,6 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                               textInputAction: TextInputAction.next,
                             ),
                             const SizedBox(height: 16),
-                            
                             TextFormField(
                               controller: _manualDesc,
                               decoration: InputDecoration(
@@ -498,23 +507,26 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: primaryColor, width: 2),
+                                  borderSide:
+                                      BorderSide(color: primaryColor, width: 2),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
                                 alignLabelWithHint: true,
                               ),
                               maxLines: 3,
                             ),
                             const SizedBox(height: 24),
-                            
                             Align(
                               alignment: Alignment.centerRight,
                               child: Container(
@@ -536,7 +548,8 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -547,10 +560,13 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                           height: 16,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
                                           ),
                                         )
-                                      : const Icon(Icons.add_rounded, color: Colors.white),
+                                      : const Icon(Icons.add_rounded,
+                                          color: Colors.white),
                                   label: Text(
                                     _savingManual ? 'Adding...' : 'Add Item',
                                     style: const TextStyle(
@@ -566,7 +582,6 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                       ),
                     ),
                   ),
-
                   Container(
                     margin: const EdgeInsets.only(bottom: 32),
                     decoration: BoxDecoration(
@@ -627,34 +642,38 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          
                           TextField(
                             controller: _site,
                             decoration: InputDecoration(
                               labelText: 'Website URL',
                               hintText: 'https://yourwebsite.com',
-                              prefixIcon: Icon(Icons.link_rounded, color: secondaryColor),
+                              prefixIcon: Icon(Icons.link_rounded,
+                                  color: secondaryColor),
                               filled: true,
                               fillColor: const Color(0xFFF8FAFC),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: secondaryColor, width: 2),
+                                borderSide:
+                                    BorderSide(color: secondaryColor, width: 2),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 16),
                             ),
                             keyboardType: TextInputType.url,
-                            onSubmitted: (_) => _ingestingSite ? null : _submitSite(),
+                            onSubmitted: (_) =>
+                                _ingestingSite ? null : _submitSite(),
                           ),
                           const SizedBox(height: 20),
-                          
                           Align(
                             alignment: Alignment.centerRight,
                             child: Container(
@@ -676,7 +695,8 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 12),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -687,12 +707,17 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                                         height: 16,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
                                         ),
                                       )
-                                    : const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+                                    : const Icon(Icons.auto_awesome_rounded,
+                                        color: Colors.white),
                                 label: Text(
-                                  _ingestingSite ? 'Analyzing...' : 'Analyze Website',
+                                  _ingestingSite
+                                      ? 'Analyzing...'
+                                      : 'Analyze Website',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -705,25 +730,25 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                       ),
                     ),
                   ),
-
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                         OutlinedButton.icon(
-                  onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text("Back"),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    foregroundColor: const Color(0xFF64748B),
-                  ),
-                ),
+                        OutlinedButton.icon(
+                          onPressed: widget.onBack,
+                          icon: const Icon(Icons.arrow_back, size: 18),
+                          label: const Text("Back"),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            foregroundColor: const Color(0xFF64748B),
+                          ),
+                        ),
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -739,18 +764,21 @@ class _InfoCaptureScreenState extends State<BusinessInfoCaptureScreen> {
                             ],
                           ),
                           child: FilledButton.icon(
-                            onPressed: (_loadingCsv || _savingManual || _ingestingSite)
-                                ? null
-                                : widget.onNext,
+                            onPressed:
+                                (_loadingCsv || _savingManual || _ingestingSite)
+                                    ? null
+                                    : widget.onNext,
                             style: FilledButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                            icon: const Icon(Icons.arrow_forward_rounded,
+                                color: Colors.white),
                             label: const Text(
                               'Continue',
                               style: TextStyle(

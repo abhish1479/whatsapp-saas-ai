@@ -258,7 +258,6 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
 
           // Save & Continue
           CustomWidgets.buildGradientButton(
-            context: context,
             onPressed: _loading ? null : _submit,
             text: "Save & Continue",
             isLoading: _loading,

@@ -251,7 +251,6 @@ class CustomWidgets {
   // DROPDOWN
   // ───────────────────────
   static Widget buildDropdown<T>({
-    required BuildContext context,
     required T? value,
     required String label,
     required IconData icon,
@@ -303,7 +302,6 @@ class CustomWidgets {
   // GRADIENT BUTTON (WITH LOADING)
   // ───────────────────────
   static Widget buildGradientButton({
-    required BuildContext context,
     required VoidCallback? onPressed,
     required String text,
     bool isLoading = false,
