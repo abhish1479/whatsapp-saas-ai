@@ -177,35 +177,19 @@ class _SignupScreenState extends State<SignupScreen>
 
     try {
       if (provider == "google") {
-        UserCredential? userCredential;
+
         var idToken = '';
         if (kIsWeb) {
-          //   final googleAuthUrl = Uri(
-          //   scheme: 'https',
-          //   host: 'accounts.google.com',
-          //   path: '/o/oauth2/auth',
-          //   queryParameters: {
-          //     'client_id': '734195415255-lj07mf33edgkgec9j4e3od0acj635nvb.apps.googleusercontent.com',
-          //     'redirect_uri': 'https://diglottic-nondisingenuously-gordon.ngrok-free.dev/auth/google/callback', // Clean value, no spaces
-          //     'response_type': 'code',
-          //     'scope': 'openid profile email',
-          //     'state': 'abc123xyz',
-          //   },
-          // );
-
-          // html.window.location.href = googleAuthUrl.toString();
-
-          // ✅ Web: Use Firebase popup (guarantees ID token)
+          // For Web
+          UserCredential? userCredential;
           final GoogleAuthProvider googleProvider = GoogleAuthProvider();
           googleProvider.addScope('email');
           googleProvider.addScope('profile');
           userCredential =
               await FirebaseAuth.instance.signInWithPopup(googleProvider);
-
           if (userCredential?.user == null) {
             throw Exception("Google sign-in failed");
           }
-
           final user = userCredential!.user!;
           idToken = await user.getIdToken() ?? '';
         } else {
@@ -216,11 +200,8 @@ class _SignupScreenState extends State<SignupScreen>
             if (mounted) setState(() => _isLoading = false);
             return;
           }
-
-          // 🔥 Get the ID Token (CRITICAL for backend verification)
           final auth = await account.authentication;
           idToken = auth.idToken ?? '';
-
           if (idToken.isEmpty) {
             throw Exception("No ID token received from Google");
           }
