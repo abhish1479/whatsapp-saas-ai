@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/services.dart';
+// import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
@@ -28,7 +31,10 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
 
   String? _selectedTone = 'Friendly';
   List<String> _selectedLanguages = ['English'];
+
   File? _profileImage;
+  Uint8List? _webImageBytes;
+
   bool _enableOutgoingVoice = false;
   bool _enableIncomingVoice = false;
   bool _enableIncomingMedia = false;
@@ -44,7 +50,8 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     'Hindi',
     'Spanish',
     'French',
-    'German'
+    'German',
+    'Urdu'
   ];
 
   static const List<String> _tones = [
@@ -58,24 +65,24 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      setState(() {
-        _profileImage = File(image.path);
-      });
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() => _webImageBytes = bytes);
+      } else {
+        setState(() => _profileImage = File(image.path));
+      }
     }
   }
 
   Future<void> _saveAndContinue() async {
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Agent name is required')),
-      );
+          const SnackBar(content: Text('Agent name is required')));
       return;
     }
-
-    if (_profileImage == null) {
+    if (_profileImage == null && _webImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar image is required')),
-      );
+          const SnackBar(content: Text('Avatar image is required')));
       return;
     }
 
@@ -86,6 +93,10 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
 
     try {
       final tenantId = await StoreUserData().getTenantId();
+      final String base64Image = kIsWeb
+          ? base64Encode(_webImageBytes!)
+          : base64Encode(await _profileImage!.readAsBytes());
+
       final Map<String, dynamic> payload = {
         "tenant_id": tenantId,
         "agent_name": _nameController.text.trim(),
@@ -97,13 +108,10 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
         "incoming_media_message_enabled": _enableIncomingMedia,
         "outgoing_media_message_enabled": _enableOutgoingMedia,
         "image_analyzer_enabled": _enableAIImageAnalysis,
-        "agent_image": _profileImage!.path,
+        "agent_image": base64Image,
       };
 
-      await widget.api.postJson(
-        '/onboarding/agent-configurations',
-        payload,
-      );
+      await widget.api.postJson('/onboarding/agent-configurations', payload);
 
       setState(() {
         _isSuccess = true;
@@ -129,26 +137,36 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
         title: const Text('Test WhatsApp Agent'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Enter WhatsApp number to test with:'),
+            const Text(
+              'Enter a 10-digit mobile number (digits only)',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _testPhoneController,
               decoration: InputDecoration(
-                hintText: '+1234567890',
+                hintText: '9876543210',
                 prefixIcon: const Icon(Icons.phone, color: Color(0xFF3B82F6)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                 ),
               ),
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: Navigator.of(ctx).pop,
+            onPressed: () {
+              _testPhoneController.clear();
+              Navigator.of(ctx).pop();
+            },
             child: const Text('Cancel'),
           ),
           Container(
@@ -160,24 +178,40 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
             ),
             child: ElevatedButton(
               onPressed: () {
-                if (_testPhoneController.text.trim().isNotEmpty) {
-                  Navigator.of(ctx).pop();
+                FocusScope.of(context).unfocus();
+                final phone = _testPhoneController.text.trim();
+
+                final isValid = RegExp(r'^\d{10}$').hasMatch(phone);
+
+                if (!isValid) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Test message will be sent to ${_testPhoneController.text}'),
-                      backgroundColor: const Color(0xFF3B82F6),
+                    const SnackBar(
+                      content: Text(
+                          'Please enter a valid 10-digit WhatsApp number.'),
+                      backgroundColor: Colors.redAccent,
                     ),
                   );
-                  _testPhoneController.clear();
+                  return;
                 }
+
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Test message will be sent to $phone'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                _testPhoneController.clear();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 foregroundColor: Colors.white,
                 shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               ),
               child: const Text('Send Test'),
             ),
@@ -187,60 +221,165 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     );
   }
 
+  // ---------- NEW MULTISELECT MODAL ----------
+  Future<void> _showLanguageSelector(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Select up to 3 languages",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  ..._languages.map((lang) {
+                    bool selected = _selectedLanguages.contains(lang);
+                    bool canSelect = selected || _selectedLanguages.length < 3;
+                    return CheckboxListTile(
+                      title: Text(lang),
+                      value: selected,
+                      onChanged: canSelect
+                          ? (val) {
+                              setModalState(() {
+                                setState(() {
+                                  if (val == true) {
+                                    _selectedLanguages.add(lang);
+                                  } else {
+                                    _selectedLanguages.remove(lang);
+                                  }
+                                });
+                              });
+                            }
+                          : null,
+                      activeColor: const Color(0xFF3B82F6),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    );
+                  }).toList(),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B82F6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text("Done"),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMultiSelectDropdown() {
+    return GestureDetector(
+      onTap: () => _showLanguageSelector(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                _selectedLanguages.isEmpty
+                    ? "Select languages..."
+                    : _selectedLanguages.join(", "),
+                style: TextStyle(
+                  color: _selectedLanguages.isEmpty
+                      ? Colors.grey[600]
+                      : Colors.black87,
+                  fontSize: 16,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down, color: Color(0xFF64748B)),
+          ],
+        ),
+      ),
+    );
+  }
+  // -------------------------------------------
+
+  void _selectTone(String tone, bool selected) {
+    setState(() {
+      _selectedTone = selected ? tone : _selectedTone ?? 'Friendly';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8FAFC),
-              Color(0xFFE2E8F0),
-            ],
+            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
           ),
         ),
         child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: kIsWeb ? 700 : size.width * 0.95,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Text(
-                      "Configure WhatsApp Agent",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E293B),
-                            fontSize: 28,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Set up your AI agent's personality, language, and capabilities",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF64748B),
-                            fontSize: 16,
-                          ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Main Card (all fields)
-                    _buildMainCard(),
-
-                    const SizedBox(height: 24),
-
-                    // Buttons Row
-                    _buildButtonsRow(),
-                  ],
+          child: Scrollbar(
+            thumbVisibility: kIsWeb, // ✅ visible scrollbar on web
+            radius: const Radius.circular(12),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                 maxWidth: kIsWeb ? 1200 : 700, // ✅ stretch slightly on web
+                  minHeight:
+                      MediaQuery.of(context).size.height, // ✅ full height
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Configure WhatsApp Agent",
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E293B),
+                                  fontSize: 28,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Set up your AI agent's personality, language, and capabilities",
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF64748B),
+                              fontSize: 16,
+                            ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildMainCard(),
+                      const SizedBox(height: 24),
+                      _buildButtonsRow(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -264,15 +403,11 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile image
           Center(
             child: GestureDetector(
               onTap: _pickImage,
@@ -285,37 +420,30 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
                 ),
                 child: _profileImage != null
                     ? ClipOval(
-                        child: Image.file(
-                          _profileImage!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFF1F5F9),
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFF94A3B8),
-                          size: 40,
-                        ),
-                      ),
+                        child: Image.file(_profileImage!, fit: BoxFit.cover))
+                    : _webImageBytes != null
+                        ? ClipOval(
+                            child: Image.memory(_webImageBytes!,
+                                fit: BoxFit.cover))
+                        : Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFF1F5F9),
+                            ),
+                            child: const Icon(Icons.person,
+                                color: Color(0xFF94A3B8), size: 40),
+                          ),
               ),
             ),
           ),
           const SizedBox(height: 24),
-
-          // Agent Name
           _buildLabel("Agent Name *"),
           const SizedBox(height: 8),
           TextField(
             controller: _nameController,
-            decoration: _inputDecoration("e.g., Alex - AI Support"),
+            decoration: _inputDecoration("e.g., Arjun - AI Support"),
           ),
           const SizedBox(height: 20),
-
-          // Status
           _buildLabel("Status Message"),
           const SizedBox(height: 8),
           TextField(
@@ -323,40 +451,42 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
             decoration: _inputDecoration("Online • Ready to help!"),
           ),
           const SizedBox(height: 20),
-
-          // Languages
           _buildLabel("Preferred Languages (Max 3)"),
+          const SizedBox(height: 8),
+          _buildMultiSelectDropdown(),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _languages.map((lang) {
-              final isSelected = _selectedLanguages.contains(lang);
-              return ChoiceChip(
-                label: Text(lang),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      if (_selectedLanguages.length < 3) {
-                        _selectedLanguages.add(lang);
-                      }
-                    } else {
-                      _selectedLanguages.remove(lang);
-                      if (_selectedLanguages.isEmpty) {
-                        _selectedLanguages = ['English'];
-                      }
-                    }
-                  });
-                },
-                selectedColor: const Color(0xFF3B82F6),
-                backgroundColor: const Color(0xFFF1F5F9),
-              );
-            }).toList(),
-          ),
+          if (_selectedLanguages.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedLanguages.map((lang) {
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(lang,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12)),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _selectedLanguages.remove(lang));
+                        },
+                        child: const Icon(Icons.close,
+                            size: 14, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           const SizedBox(height: 20),
-
-          // Tone
           _buildLabel("Tone of Conversation"),
           const SizedBox(height: 12),
           Wrap(
@@ -366,51 +496,54 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
               return FilterChip(
                 label: Text(tone),
                 selected: _selectedTone == tone,
-                onSelected: (selected) {
-                  setState(() {
-                    _selectedTone = selected ? tone : null;
-                  });
-                },
+                onSelected: (selected) => _selectTone(tone, selected),
                 selectedColor: const Color(0xFF3B82F6),
                 backgroundColor: const Color(0xFFF1F5F9),
               );
             }).toList(),
           ),
           const SizedBox(height: 24),
-
-          // Capabilities
           _buildLabel("Agent Capabilities"),
           const SizedBox(height: 12),
-          _buildToggle('Enable Incoming Voice Message Responses', _enableIncomingVoice,
-              (value) => setState(() => _enableIncomingVoice = value)),
-          _buildToggle('Enable Outgoing Voice Message Responses', _enableOutgoingVoice,
-              (value) => setState(() => _enableOutgoingVoice = value)),
+          _buildToggle(
+              'Enable Incoming Voice Message Responses',
+              _enableIncomingVoice,
+              (v) => setState(() => _enableIncomingVoice = v)),
+          _buildToggle(
+              'Enable Outgoing Voice Message Responses',
+              _enableOutgoingVoice,
+              (v) => setState(() => _enableOutgoingVoice = v)),
           _buildToggle('Allow Incoming Media Messages', _enableIncomingMedia,
-              (value) => setState(() => _enableIncomingMedia = value)),
+              (v) => setState(() => _enableIncomingMedia = v)),
           _buildToggle('Allow Outgoing Media Messages', _enableOutgoingMedia,
-              (value) => setState(() => _enableOutgoingMedia = value)),
-          _buildToggle('Analyze User Images with AI (for complaints)', _enableAIImageAnalysis,
-              (value) => setState(() => _enableAIImageAnalysis = value)),
-
-          // Save Message
+              (v) => setState(() => _enableOutgoingMedia = v)),
+          _buildToggle(
+              'Analyze User Images with AI (for complaints)',
+              _enableAIImageAnalysis,
+              (v) => setState(() => _enableAIImageAnalysis = v)),
           if (_saveMessage != null)
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _isSuccess ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                  color: _isSuccess
+                      ? const Color(0xFFF0FDF4)
+                      : const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _isSuccess ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-                    width: 1,
+                    color: _isSuccess
+                        ? const Color(0xFF22C55E)
+                        : const Color(0xFFEF4444),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       _isSuccess ? Icons.check_circle : Icons.error,
-                      color: _isSuccess ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                      color: _isSuccess
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFFEF4444),
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -419,7 +552,9 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
                         _saveMessage!,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: _isSuccess ? const Color(0xFF166534) : const Color(0xFFDC2626),
+                          color: _isSuccess
+                              ? const Color(0xFF166534)
+                              : const Color(0xFFDC2626),
                           fontSize: 14,
                         ),
                       ),
@@ -433,119 +568,92 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     );
   }
 
- Widget _buildButtonsRow() {
-  return Wrap(
-    spacing: 12, // horizontal gap
-    runSpacing: 12, // vertical gap if buttons wrap
-    alignment: WrapAlignment.spaceBetween,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    children: [
-      // Back button
-      OutlinedButton.icon(
-        onPressed: widget.onBack,
-        icon: const Icon(Icons.arrow_back, size: 18),
-        label: const Text("Back"),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          foregroundColor: const Color(0xFF64748B),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
-
-      // Talk to Me button
-      OutlinedButton(
-        onPressed: _testAgent,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          side: const BorderSide(color: Color(0xFF3B82F6)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          foregroundColor: const Color(0xFF3B82F6),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        child: const Text("Talk to Me"),
-      ),
-
-      // Save & Continue button
-      Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF3B82F6).withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: _loading ? null : _saveAndContinue,
-          icon: _loading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Icon(Icons.save, size: 18),
-          label: Text(_loading ? "Saving..." : "Save & Continue"),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            shadowColor: Colors.transparent,
+  Widget _buildButtonsRow() {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: WrapAlignment.spaceBetween,
+      children: [
+        OutlinedButton.icon(
+          onPressed: widget.onBack,
+          icon: const Icon(Icons.arrow_back, size: 18),
+          label: const Text("Back"),
+          style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            foregroundColor: const Color(0xFF64748B),
           ),
         ),
-      ),
-    ],
-  );
-}
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF1E293B),
-        fontSize: 16,
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    );
-  }
-
-  Widget _buildToggle(String title, bool value, Function(bool) onChanged) {
-    return SwitchListTile.adaptive(
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Color(0xFF1E293B),
-          fontWeight: FontWeight.w500,
+        OutlinedButton(
+          onPressed: _testAgent,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            side: const BorderSide(color: Color(0xFF3B82F6)),
+            foregroundColor: const Color(0xFF3B82F6),
+          ),
+          child: const Text("Talk to Me"),
         ),
-      ),
-      value: value,
-      onChanged: onChanged,
-      activeColor: const Color(0xFF3B82F6),
-      contentPadding: EdgeInsets.zero,
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ElevatedButton.icon(
+            onPressed: _loading ? null : _saveAndContinue,
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.save, size: 18),
+            label: Text(_loading ? "Saving..." : "Save & Continue"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
     );
   }
+
+  Widget _buildLabel(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF1E293B),
+          fontSize: 16,
+        ),
+      );
+
+  InputDecoration _inputDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      );
+
+  Widget _buildToggle(String title, bool value, Function(bool) onChanged) =>
+      SwitchListTile.adaptive(
+        title: Text(title,
+            style: const TextStyle(
+                color: Color(0xFF1E293B), fontWeight: FontWeight.w500)),
+        value: value,
+        onChanged: onChanged,
+        activeColor: const Color(0xFF3B82F6),
+        contentPadding: EdgeInsets.zero,
+      );
 }
