@@ -199,7 +199,9 @@ class AgentConfiguration(Base):
     outgoing_voice_message_enabled = Column(Boolean, default=True)  # allow outgoing voice messages
     incoming_media_message_enabled = Column(Boolean, default=True)  # allow images, docs, etc.
     outgoing_media_message_enabled = Column(Boolean, default=True)
-    image_analyzer_enabled = Column(Boolean, default=False)  # enable AI image analysis (OCR, object detection)
+    image_analyzer_enabled = Column(Boolean, default=False),  # enable AI image analysis (OCR, object detection)
+    created_at = Column(DateTime, server_default=func.now()),
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant")
 
