@@ -6,10 +6,11 @@ from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
 from services.metrics import inc_message
-from routers import onboarding
+from routers import onboarding , catalog
 from database import Base, engine
-
-
+import os
+from fastapi.staticfiles import StaticFiles
+from settings import settings
 
 
 app = FastAPI(title="WhatsApp AI Agent SaaS", version="1.0")
@@ -29,6 +30,10 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+
+os.makedirs(settings.MEDIA_DIR, exist_ok=True)
+app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
+
 app.include_router(onboarding.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(social_auth.router, tags=["social_auth"])
@@ -43,6 +48,7 @@ app.include_router(billing.router, prefix="/billing", tags=["billing"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(kyc.router)
 app.include_router(subscriptions_plans.router)
+app.include_router(catalog.router)
 
 @app.get("/healthz")
 def healthz():

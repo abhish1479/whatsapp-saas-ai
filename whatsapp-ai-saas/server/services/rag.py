@@ -73,8 +73,8 @@ class RAGService:
         metadatas = [
             {
                 "source_url": d.get("source_url"),
-                "version": d.get("version"),
-                "language": d.get("language"),
+                "version": d.get("version") or "",
+                "language": d.get("language") or "",
             }
             for d in docs
         ]

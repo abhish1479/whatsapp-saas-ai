@@ -1,6 +1,6 @@
 # server/routers/onboarding.py
 import random
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends ,status
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, Form, HTTPException, Depends ,status
 from fastapi.responses import JSONResponse
 from typing import Optional, List, Literal
 from requests import Session
@@ -15,6 +15,8 @@ from data_models.request_model import BusinessTypeRequest
 from utils.enums import Onboarding
 import re
 import models
+
+from workers.ingest_worker import background_crawl
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
@@ -223,6 +225,8 @@ async def add_website(
     tenant_id: int = Form(...),
     url: str = Form(...),
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+
 ):
     result =  db.execute(
         text("SELECT tenant_id FROM business_profiles WHERE tenant_id = :tenant_id"),
@@ -241,7 +245,9 @@ async def add_website(
         VALUES (:t,:u,'queued')
     """), {"t": tenant_id, "u": url})
     db.commit()
-    return {"ok": True, "status": "queued"}
+    # background_tasks.add_task(background_crawl, tenant_id, url)
+    catalog = await background_crawl(tenant_id, url)
+    return {"ok": True, "Bussiness_Catalog": catalog}
 
 # ---------- STEP 4: Workflow Setup ----------
 @router.post("/workflow")

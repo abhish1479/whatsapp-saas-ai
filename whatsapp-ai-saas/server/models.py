@@ -179,9 +179,10 @@ class Payment(Base):
 class WebIngestRequest(Base):
     __tablename__ = "web_ingest_requests"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     status = Column(String(16), nullable=False, default="queued")
+    url = Column(Text)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 class AgentConfiguration(Base):
@@ -256,3 +257,22 @@ class SubscriptionPlan(Base):
 
     def __repr__(self):
         return f"<SubscriptionPlan(name='{self.name}', price={self.price}, duration={self.duration_days}d)>"
+    
+
+
+class BusinessCatalog(Base):
+    __tablename__ = "business_catalog"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    item_type = Column(String, nullable=False)
+    name = Column(Text, nullable=False)
+    description = Column(Text)
+    category = Column(Text)
+    price = Column(Numeric)
+    discount = Column(Numeric)
+    currency = Column(Text)
+    source_url = Column(Text)
+    image_url = Column(Text)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

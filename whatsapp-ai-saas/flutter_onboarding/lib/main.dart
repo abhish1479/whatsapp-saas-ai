@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'api/api.dart';
+import 'controller/catalog_controller.dart';
 import 'controller/onboarding_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 // Import your new check screen and home screen
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
       initialBinding: BindingsBuilder(() {
         Get.put(api);
         Get.put(OnboardingController(api));
+        Get.put(CatalogController(api));
       }),
     );
   }

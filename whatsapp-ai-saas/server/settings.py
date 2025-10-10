@@ -1,5 +1,6 @@
 
 import os
+from pathlib import Path
 
 class Settings:
     APP_ENV = os.getenv("APP_ENV","dev")
@@ -36,6 +37,9 @@ class Settings:
     RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET","")
     RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET","")
     CURRENCY = os.getenv("CURRENCY","INR")
+    BASE_URL = os.getenv("BASE_URL","http://localhost:8000")
+
+    MEDIA_DIR: str = str(Path(__file__).resolve().parent / "media")
 
     PACKS = [
         {
