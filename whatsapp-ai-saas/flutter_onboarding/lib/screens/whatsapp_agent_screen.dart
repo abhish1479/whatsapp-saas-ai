@@ -44,6 +44,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
   bool _loading = false;
   String? _saveMessage;
   bool _isSuccess = false;
+  String? _uploadedImagePath;
 
   static const List<String> _languages = [
     'English',
@@ -64,14 +65,46 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    if (image == null) return;
+    setState(() => _loading = true);
+    try {
+    final bytes = await image.readAsBytes();
+    final filename = image.name;
+    final uploadedPath = await widget.api.uploadImage(bytes, filename);
+    setState(() {
       if (kIsWeb) {
-        final bytes = await image.readAsBytes();
-        setState(() => _webImageBytes = bytes);
+        _webImageBytes = bytes;
       } else {
-        setState(() => _profileImage = File(image.path));
+        _profileImage = File(image.path);
       }
-    }
+      _uploadedImagePath = uploadedPath;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Image uploaded successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Image upload failed: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  } finally {
+    if (mounted) setState(() => _loading = false);
+  }
+
+    // if (image != null) {
+    //   if (kIsWeb) {
+    //     final bytes = await image.readAsBytes();
+    //     setState(() => _webImageBytes = bytes);
+    //   } else {
+    //     setState(() => _profileImage = File(image.path));
+    //   }
+    // }
   }
 
   Future<void> _saveAndContinue() async {
@@ -93,9 +126,9 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
 
     try {
       final tenantId = await StoreUserData().getTenantId();
-      final String base64Image = kIsWeb
-          ? base64Encode(_webImageBytes!)
-          : base64Encode(await _profileImage!.readAsBytes());
+      // final String base64Image = kIsWeb
+      //     ? base64Encode(_webImageBytes!)
+      //     : base64Encode(await _profileImage!.readAsBytes());
 
       final Map<String, dynamic> payload = {
         "tenant_id": tenantId,
@@ -108,7 +141,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
         "incoming_media_message_enabled": _enableIncomingMedia,
         "outgoing_media_message_enabled": _enableOutgoingMedia,
         "image_analyzer_enabled": _enableAIImageAnalysis,
-        "agent_image": base64Image,
+        "agent_image": _uploadedImagePath,
       };
 
       await widget.api.postJson('/onboarding/agent-configurations', payload);
@@ -130,96 +163,147 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     }
   }
 
-  void _testAgent() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Test WhatsApp Agent'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter a 10-digit mobile number (digits only)',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _testPhoneController,
-              decoration: InputDecoration(
-                hintText: '9876543210',
-                prefixIcon: const Icon(Icons.phone, color: Color(0xFF3B82F6)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _testPhoneController.clear();
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('Cancel'),
+ void _testAgent() {
+  final _testNameController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Test WhatsApp Agent'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Enter details to test your WhatsApp agent',
+            style: TextStyle(fontSize: 13, color: Colors.grey),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+          const SizedBox(height: 12),
+
+          TextField(
+            controller: _testNameController,
+            decoration: InputDecoration(
+              hintText: 'Name (optional)',
+              prefixIcon: const Icon(Icons.person, color: Color(0xFF8B5CF6)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(8),
             ),
-            child: ElevatedButton(
-              onPressed: () {
-                FocusScope.of(context).unfocus();
-                final phone = _testPhoneController.text.trim();
+          ),
 
-                final isValid = RegExp(r'^\d{10}$').hasMatch(phone);
+          const SizedBox(height: 12),
 
-                if (!isValid) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Please enter a valid 10-digit WhatsApp number.'),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
-
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Test message will be sent to $phone'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                _testPhoneController.clear();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          // ✅ 10-digit phone number (without country code)
+          TextField(
+            controller: _testPhoneController,
+            decoration: InputDecoration(
+              hintText: '9876543210',
+              prefixIcon: const Icon(Icons.phone, color: Color(0xFF3B82F6)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('Send Test'),
             ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
           ),
         ],
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () {
+            _testPhoneController.clear();
+            _testNameController.clear();
+            Navigator.of(ctx).pop();
+          },
+          child: const Text('Cancel'),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ElevatedButton(
+            onPressed: () async {
+              FocusScope.of(context).unfocus();
+
+              final phone = _testPhoneController.text.trim();
+              final name = _testNameController.text.trim();
+              final isValid = RegExp(r'^\d{10}$').hasMatch(phone);
+
+              if (!isValid) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid 10-digit WhatsApp number.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+                return;
+              }
+
+              Navigator.of(ctx).pop();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sending test message...'),
+                  backgroundColor: Color(0xFF3B82F6),
+                ),
+              );
+
+              try {
+                final tenantId = await StoreUserData().getTenantId();
+
+                // ✅ Proper payload structure
+                final Map<String, dynamic> payload = {
+                  "tenant_id": 2,
+                  "recipients": [
+                    {
+                      "to": "+91$phone",
+                      "name": name.isEmpty ? "" : name,
+                    }
+                  ]
+                };
+
+                await widget.api.postJson('/conversation/conversations/talk_to_me', payload);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Test message sent to +91$phone'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to send test: $e'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              } finally {
+                _testPhoneController.clear();
+                _testNameController.clear();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            ),
+            child: const Text('Send Test'),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   // ---------- NEW MULTISELECT MODAL ----------
   Future<void> _showLanguageSelector(BuildContext context) async {
