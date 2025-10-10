@@ -1,6 +1,7 @@
 import asyncio
 from datetime import time
 import json
+from typing import List
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -14,8 +15,9 @@ from services.rag import rag
 
 logger = logging.getLogger(__name__)
 
-CRAWL_LIMIT = 10  # max pages per request
+CRAWL_LIMIT = 100  # max pages per request
 LLM_BATCH_SIZE = 2000  # chars per chunk for LLM parsing
+CATALOG_LIMIT = 30  # max items to ingest per request
 
 async def fetch_html(url: str) -> str:
     async with httpx.AsyncClient(timeout=20) as client:
@@ -43,7 +45,7 @@ def clean_text(html: str) -> str:
         alt = img.get("alt", "").strip()
         src = img.get("src", "")
         # Create a natural-language description
-        desc = f"[Image: {alt}]" if alt else "[Image]"
+        desc = f"[Image: {alt} | {src}]" if alt else f"[Image: {src}]"
         img.replace_with(desc)
     
     # Extract text with reasonable spacing
@@ -76,7 +78,7 @@ Return a JSON list of items. Each item must be a JSON object with EXACTLY these 
 - "price": numeric price (float or null if not available)
 - "discount": numeric discount amount or percentage (float or null)
 - "currency": ISO currency code (e.g., "USD", "EUR") (string, default "USD")
-- "image_url": a brief note if an image is relevant (e.g., "military discount badge", "product photo"), or null
+"image_url": extract the actual image URL if mentioned in the text (e.g., from '[Image: ... | https://example.com/image.jpg]'). Return the full or relative URL as a string, or null if none is found.
 
 If a field is unknown, use null (for price/discount) or a reasonable default (e.g., "other" for item_type).
 Only return valid JSON. Do not include any other text.
@@ -111,7 +113,8 @@ async def crawl_and_ingest(session: Session, tenant_id: str, start_url: str):
     visited, to_visit = set(), [start_url]
     pages_processed = 0
     print(f"Starting crawl for tenant {tenant_id} from {start_url}")
-    
+    catalog_list: List[BusinessCatalog] = []
+
     while to_visit and pages_processed < CRAWL_LIMIT:
         url = to_visit.pop()
         if url in visited:
@@ -139,8 +142,9 @@ async def crawl_and_ingest(session: Session, tenant_id: str, start_url: str):
                     source_url=item.get("source_url") or url,
                     image_url=item.get("image_url") or None,
                 )
-                session.add(catalog_entry)
-
+                #session.add(catalog_entry)
+                catalog_list.append(catalog_entry)
+                
             # Discover new links (same domain only)
             for link in extract_links(url, html):
                 if link not in visited and link not in to_visit:
@@ -148,11 +152,13 @@ async def crawl_and_ingest(session: Session, tenant_id: str, start_url: str):
 
             visited.add(url)
             pages_processed += 1
-            session.commit()
-
+            if len(catalog_list) >= CATALOG_LIMIT:
+                return catalog_list
+            #session.commit()
         except Exception as e:
             logger.error(f"Error processing {url}: {e}")
-            session.rollback()
+            #session.rollback()
+    return catalog_list
 
 async def background_crawl(tenant_id: int, url: str):
     """Sync function called in background"""
@@ -168,7 +174,7 @@ async def background_crawl(tenant_id: int, url: str):
         session.commit()
 
         # Do the crawl
-        await crawl_and_ingest(session, str(tenant_id), url)
+        catalog_list = await crawl_and_ingest(session, str(tenant_id), url)
 
         # Mark as done
         print(f"✅ Completed crawl for tenant {tenant_id} at {url}")
@@ -177,8 +183,8 @@ async def background_crawl(tenant_id: int, url: str):
             {"t": tenant_id, "u": url}
         )
         session.commit()
-        catalog = session.query(BusinessCatalog).filter(BusinessCatalog.tenant_id == tenant_id , BusinessCatalog.source_url != "CSV_UPLOAD").all()
-        return catalog
+        #catalog = session.query(BusinessCatalog).filter(BusinessCatalog.tenant_id == tenant_id , BusinessCatalog.source_url != "CSV_UPLOAD").all()
+        return catalog_list
     except Exception as e:
         logger.exception("Crawl failed")
         session.rollback()

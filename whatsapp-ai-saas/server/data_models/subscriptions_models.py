@@ -1,46 +1,8 @@
 # schemas.py
-from pydantic import BaseModel, Field, field_validator, validator
-from typing import List, Optional
-from datetime import datetime
 import json
-
-class SubscriptionPlanBase(BaseModel):
-    name: str
-    price: float
-    price_per_month: float
-    credits: int
-    duration_days: int
-    billing_cycle: Optional[str] = None
-    features: List[str]  # ✅ Must be list, not string
-    is_popular: bool
-
-    class Config:
-        from_attributes = True  # Enables ORM mode
-
-class SubscriptionPlanResponse(SubscriptionPlanBase):
-    id: int
-    created_at: str
-    updated_at: str
-
-    # ✅ Auto-convert JSON string → list for features
-    @field_validator("features", mode="before")
-    @classmethod
-    def parse_features(cls, v):
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return []  # fallback
-        return v
-
-    # ✅ Auto-convert datetime → ISO string for created_at and updated_at
-    @field_validator("created_at", "updated_at", mode="before")
-    @classmethod
-    def format_datetime(cls, v):
-        if isinstance(v, datetime):
-            return v.isoformat()  # Converts to "2025-10-03T07:08:01.295120+00:00"
-        return v  # if already string, leave as-is
-    
+from pydantic import BaseModel, Field, field_validator
+from typing import Any, List, Optional
+from datetime import datetime
 
 class SubscriptionPlanBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50, description="Plan name (e.g., 'Starter', 'Pro')")
@@ -48,38 +10,74 @@ class SubscriptionPlanBase(BaseModel):
     price_per_month: float = Field(..., gt=0, description="Normalized price per month")
     credits: int = Field(..., gt=0, description="Number of credits included")
     duration_days: int = Field(..., gt=0, description="Duration in days (e.g., 30, 365)")
-    billing_cycle: Optional[str] = Field(None, pattern=r"^(month|year|half-year)$", description="Billing cycle: 'month', 'year', 'half-year'")
-    features: str = Field(..., description="JSON string of features (e.g., '[\"Unlimited messages\", \"Priority support\"]')")
+    billing_cycle: Optional[str] = Field(
+        None,
+        pattern=r"^(month|year|half-year)$",
+        description="Billing cycle: 'month', 'year', 'half-year'"
+    )
+    features: List[str] = Field(..., min_items=1, description="List of feature strings")
     is_popular: bool = False
 
-    @validator("features")
-    def validate_features_json(cls, v):
-        import json
-        try:
-            parsed = json.loads(v)
-            if not isinstance(parsed, list):
-                raise ValueError("Features must be a JSON array")
-            return v
-        except json.JSONDecodeError:
-            raise ValueError("Features must be a valid JSON array")
+    @field_validator("features")
+    @classmethod
+    def validate_features_not_empty(cls, v: List[str]) -> List[str]:
+        if not v:
+            raise ValueError("Features list cannot be empty")
+        if not all(isinstance(item, str) and item.strip() for item in v):
+            raise ValueError("Each feature must be a non-empty string")
+        return [item.strip() for item in v]
 
 class SubscriptionPlanCreate(SubscriptionPlanBase):
     pass
 
-class SubscriptionPlanUpdate(SubscriptionPlanBase):
-    name: Optional[str] = None
-    price: Optional[float] = None
-    price_per_month: Optional[float] = None
-    credits: Optional[int] = None
-    duration_days: Optional[int] = None
-    billing_cycle: Optional[str] = None
-    features: Optional[str] = None
+class SubscriptionPlanUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    price: Optional[float] = Field(None, gt=0)
+    price_per_month: Optional[float] = Field(None, gt=0)
+    credits: Optional[int] = Field(None, gt=0)
+    duration_days: Optional[int] = Field(None, gt=0)
+    billing_cycle: Optional[str] = Field(None, pattern=r"^(month|year|half-year)$")
+    features: Optional[List[str]] = Field(None, min_items=1)
     is_popular: Optional[bool] = None
 
-class SubscriptionPlanResponse(SubscriptionPlanBase):
+    @field_validator("features")
+    @classmethod
+    def validate_features_update(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        if not all(isinstance(item, str) and item.strip() for item in v):
+            raise ValueError("Each feature must be a non-empty string")
+        return [item.strip() for item in v]
+
+class SubscriptionPlanResponse(BaseModel):
     id: int
+    name: str
+    price: float
+    price_per_month: float
+    credits: int
+    duration_days: int
+    billing_cycle: Optional[str]
+    features: List[str]
+    is_popular: bool
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("features", mode="before")
+    @classmethod
+    def parse_features_from_string(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed):
+                    return parsed
+                else:
+                    raise ValueError("Features must be a list of strings")
+            except json.JSONDecodeError:
+                raise ValueError("Features must be a valid JSON array")
+        elif isinstance(v, list):
+            return v
+        else:
+            raise ValueError("Features must be a list or JSON string")
+
     class Config:
-        from_attributes = True  # For SQLAlchemy ORM models
+        from_attributes = True
