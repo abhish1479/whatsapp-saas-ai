@@ -12,7 +12,8 @@ import 'screens/check_auth_screen.dart'; // Create this
 String resolveApiBase() {
   const fromDefine = String.fromEnvironment('API_BASE');
   if (fromDefine.isNotEmpty) return fromDefine;
-  return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Ensure no trailing space
+ return 'https://diglottic-nondisingenuously-gordon.ngrok-free.dev'; // Azim URL
+  // return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Salman URL
   // return 'https://0b0d30716cca.ngrok-free.app'; // Ensure no trailing space
 }
 
