@@ -1,10 +1,8 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leadbot_client/helper/utils/app_utils.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../helper/utils/color_constant.dart';
 import '../../helper/ui_helper/custom_text_style.dart';
 import '../../helper/ui_helper/custom_widget.dart';
@@ -12,6 +10,7 @@ import '../api/api.dart';
 import '../controller/catalog_controller.dart';
 import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class InfoCaptureScreen extends StatefulWidget {
   final Api api;
@@ -44,9 +43,10 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   final _cat = TextEditingController();
   final _price = TextEditingController();
   final _discount = TextEditingController();
-  final _source = TextEditingController();
+  final _imageUrl = TextEditingController();
   final _pickedImage = Rx<Uint8List?>(null);
   final _pickedImageName = ''.obs;
+  final _uploadingImage = false.obs;
 
   // For Website Analysis Dialog
   final _siteController = TextEditingController();
@@ -65,7 +65,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     _cat.dispose();
     _price.dispose();
     _discount.dispose();
-    _source.dispose();
+    _imageUrl.dispose();
     _siteController.dispose();
     super.dispose();
   }
@@ -74,25 +74,42 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   Future<void> _downloadTemplate() async {
     try {
       final bytes = await widget.api.downloadCsvTemplate();
-      final dir = await getDownloadsDirectory() ??
-          await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/business_catalog_template.csv');
-      await file.writeAsBytes(bytes);
-      AppUtils.showSuccess('Download', 'Template saved to ${file.path}');
+
+      // ✅ Pass bytes directly to saveFile (required on mobile)
+      final String? path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save CSV Template',
+        fileName: 'business_catalog_template.csv',
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: bytes, // 👈 REQUIRED for Android/iOS
+      );
+
+      if (path == null) {
+        // User canceled
+        return;
+      }
+
+      // ✅ On web/desktop, you can optionally verify, but not needed
+      AppUtils.showSuccess('Downloaded', 'Template saved successfully!');
     } catch (e) {
       AppUtils.showError('Error', 'Download failed: $e');
     }
   }
 
   Future<void> _pickAndImport() async {
-    final res = await FilePicker.platform.pickFiles(
-      withData: true,
-      allowedExtensions: ['csv'],
-    );
-    if (res == null) return;
-    final f = res.files.first;
-    if (f.bytes == null) return;
-    await controller.importCatalog(f.name, f.bytes!);
+    try {
+      final res = await FilePicker.platform.pickFiles(
+        type: FileType.custom, // ✅ REQUIRED when using allowedExtensions
+        allowedExtensions: ['csv'], // ✅ Now allowed
+        withData: true,
+      );
+      if (res == null) return;
+      final f = res.files.first;
+      if (f.bytes == null) return;
+      await controller.importCatalog(f.name, f.bytes!);
+    } catch (e) {
+      AppUtils.showError('Error', 'Import failed: $e');
+    }
   }
 
   Future<void> _showManualAddDialog() async {
@@ -103,48 +120,52 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     _cat.clear();
     _price.clear();
     _discount.clear();
-    _source.clear();
+    _imageUrl.clear();
     _pickedImage.value = null;
     _pickedImageName.value = '';
 
     await Get.dialog(
       AlertDialog(
-        title: const Text('Add Item Manually'),
+        title: const Text('Add Service / Product'),
         content: SizedBox(
-          width: 400,
+          width: 450,
           child: SingleChildScrollView(
             child: Form(
               key: _manualFormKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _dropdownField([
-                    'product',
-                    'service',
-                    'course',
-                    'package',
-                    'room',
-                    'membership',
-                    'other'
-                  ], _itemType),
-                  _textField(_name, 'Name *', required: true),
-                  _textField(_cat, 'Category'),
-                  _textField(_desc, 'Description'),
-                  _textField(_price, 'Price', numeric: true),
-                  _textField(_discount, 'Discount', numeric: true),
-                  _textField(_source, 'Source URL'),
+                  _textField(_name, 'Name *', "Enter service name"),
+                  _textField(_cat, 'Category *', "Enter service category"),
+                  _textField(_price, 'Price *', "Enter service price",
+                      numeric: true),
+                  _textField(_discount, 'Discount %', "Enter discount on price",
+                      numeric: true),
+                  _textField(_desc, 'Description', "Enter service description"),
+                  _textField(_imageUrl, 'Service image URL',
+                      "Enter service image url"),
                   const SizedBox(height: 12),
+
                   ElevatedButton.icon(
+                    onPressed: _uploadingImage.value ? null : _pickImageForDialog,
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorConstant.black),
-                    onPressed: _pickImageForDialog,
-                    icon: const Icon(Icons.image, color: Colors.white),
+                      backgroundColor: Colors.blue[500],
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    icon: _uploadingImage.value
+                        ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : _imagePreview(), // ✅ Shows thumbnail or icon
                     label: Obx(() => Text(
-                          _pickedImageName.value.isEmpty
-                              ? 'Pick Image'
-                              : _pickedImageName.value,
-                          style: const TextStyle(color: Colors.white),
-                        )),
+                      _pickedImageName.value.isEmpty ? 'Pick Image' : 'Uploaded',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    )),
                   ),
                 ],
               ),
@@ -165,7 +186,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                           'category': _cat.text.trim(),
                           'price': _price.text.trim(),
                           'discount': _discount.text.trim(),
-                          'source_url': _source.text.trim(),
+                          'source_url': _imageUrl.text.trim(),
                         };
                         await controller.addManual(
                           data,
@@ -181,12 +202,64 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     );
   }
 
+  Widget _imagePreview() {
+    if (_pickedImage.value == null) {
+      return const Icon(Icons.image, color: Colors.white);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.memory(
+          _pickedImage.value!,
+          width: 24,
+          height: 24,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.image, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickImageForDialog() async {
-    final res = await FilePicker.platform
-        .pickFiles(type: FileType.image, withData: true);
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
     if (res == null) return;
-    _pickedImage.value = res.files.first.bytes;
-    _pickedImageName.value = res.files.first.name;
+
+    final file = res.files.first;
+    if (file.bytes == null) return;
+
+    // Set local state first
+    _pickedImage.value = file.bytes;
+    _pickedImageName.value = file.name;
+
+    try {
+      // Start upload
+      _uploadingImage.value = true;
+
+      // Upload to server
+      final imageUrl = await widget.api.uploadImage(file.bytes!, file.name);
+
+      // Set the returned URL to the text field
+      _imageUrl.text = imageUrl;
+
+      AppUtils.showSuccess('Image Uploaded', 'Image saved successfully!');
+    } catch (e) {
+      AppUtils.showError('Upload Failed', 'Could not upload image: $e');
+      // Optional: clear image if upload fails
+      _pickedImage.value = null;
+      _pickedImageName.value = '';
+      _imageUrl.clear();
+    } finally {
+      _uploadingImage.value = false;
+    }
   }
 
   Future<void> _showWebsiteDialog() async {
@@ -315,17 +388,18 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     );
   }
 
-  Widget _textField(TextEditingController ctrl, String label,
-      {bool required = false, bool numeric = false}) {
+  Widget _textField(TextEditingController ctrl, String label, String hint,
+      {bool numeric = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: TextFormField(
+      child: CustomWidgets.buildTextField2(
+        context: context,
         controller: ctrl,
-        decoration: InputDecoration(labelText: label),
+        label: label,
+        hint: hint,
         keyboardType: numeric ? TextInputType.number : TextInputType.text,
-        validator: required
-            ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null
-            : null,
+        textCapitalization: TextCapitalization.words,
+        maxLength: 100,
       ),
     );
   }
@@ -373,7 +447,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: InkWell(
-                            onTap: _downloadTemplate,
+                            onTap: () => _downloadTemplate(),
                             borderRadius: BorderRadius.circular(8),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -416,7 +490,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                               ),
                             ),
 
-
                             // 2. Upload CSV File
                             Flexible(
                               child: _buildActionCard(
@@ -429,8 +502,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                             ),
                           ],
                         ),
-
-
 
                         const SizedBox(height: 10),
 
@@ -582,11 +653,10 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                       fontWeight: FontWeight.w600, fontSize: 15),
                 ),
               ),
-
               Card(
                 elevation: 2,
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
@@ -605,11 +675,19 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                           DataCell(Row(
                             children: [
                               IconButton(
-                                icon: Icon(Icons.edit, size: 18, color: Colors.blue[700]!,),
+                                icon: Icon(
+                                  Icons.edit,
+                                  size: 18,
+                                  color: Colors.blue[700]!,
+                                ),
                                 onPressed: () => _editDialog(e),
                               ),
                               IconButton(
-                                icon: Icon(Icons.delete, size: 18 ,color: Colors.blue[700]!,),
+                                icon: Icon(
+                                  Icons.delete,
+                                  size: 18,
+                                  color: Colors.blue[700]!,
+                                ),
                                 onPressed: () => controller.deleteItem(id),
                               ),
                             ],
@@ -651,7 +729,8 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   Future<void> _editDialog(Map e) async {
     final nameC = TextEditingController(text: e['name']);
     final priceC = TextEditingController(text: e['price']?.toString() ?? '');
-    final discountC = TextEditingController(text: e['discount']?.toString() ?? '');
+    final discountC =
+        TextEditingController(text: e['discount']?.toString() ?? '');
     final descC = TextEditingController(text: e['description'] ?? '');
     final catC = TextEditingController(text: e['category'] ?? '');
     final type = (e['item_type'] ?? 'service').obs;
@@ -663,20 +742,14 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _dropdownField([
-              'product',
-              'service',
-              'course',
-              'package',
-              'room',
-              'membership',
-              'other'
-            ], type),
-            _textField(nameC, 'Name', required: true),
-            _textField(priceC, 'Price', numeric: true),
-            _textField(discountC, 'Discount', numeric: true),
-            _textField(catC, 'Category'),
-            _textField(descC, 'Description'),
+            _textField(_name, 'Name *', "Enter service name"),
+            _textField(_cat, 'Category *', "Enter service category"),
+            _textField(_price, 'Price *', "Enter service price", numeric: true),
+            _textField(_discount, 'Discount %', "Enter discount on price",
+                numeric: true),
+            _textField(_desc, 'Description', "Enter service description"),
+            _textField(
+                _imageUrl, 'Service Image URL', "Enter service image url"),
             const SizedBox(height: 10),
             CustomWidgets.buildGradientButton(
               onPressed: () {
