@@ -260,7 +260,7 @@ class Api {
           '&limit=$limit&offset=$offset',
     );
 
-    final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+    final resp = await http.get(uri, headers: {'Accept': 'application/json','ngrok-skip-browser-warning': 'true',});
     if (resp.statusCode == 200) return jsonDecode(resp.body);
     throw Exception('getCatalog failed: ${resp.body}');
   }

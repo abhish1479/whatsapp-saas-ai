@@ -27,7 +27,7 @@ class WhatsAppAgentScreen extends StatefulWidget {
 class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
   final _nameController = TextEditingController();
   final _statusController = TextEditingController();
-  final _testPhoneController = TextEditingController();
+  // Removed _testPhoneController as it's no longer needed here
 
   String? _selectedTone = 'Friendly';
   List<String> _selectedLanguages = ['English'];
@@ -68,34 +68,34 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     if (image == null) return;
     setState(() => _loading = true);
     try {
-    final bytes = await image.readAsBytes();
-    final filename = image.name;
-    final uploadedPath = await widget.api.uploadImage(bytes, filename);
-    setState(() {
-      if (kIsWeb) {
-        _webImageBytes = bytes;
-      } else {
-        _profileImage = File(image.path);
-      }
-      _uploadedImagePath = uploadedPath;
-    });
+      final bytes = await image.readAsBytes();
+      final filename = image.name;
+      final uploadedPath = await widget.api.uploadImage(bytes, filename);
+      setState(() {
+        if (kIsWeb) {
+          _webImageBytes = bytes;
+        } else {
+          _profileImage = File(image.path);
+        }
+        _uploadedImagePath = uploadedPath;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Image uploaded successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Image upload failed: $e'),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
-  } finally {
-    if (mounted) setState(() => _loading = false);
-  }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Image uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Image upload failed: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
 
     // if (image != null) {
     //   if (kIsWeb) {
@@ -162,148 +162,6 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
       if (mounted) setState(() => _loading = false);
     }
   }
-
- void _testAgent() {
-  final _testNameController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Test WhatsApp Agent'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Enter details to test your WhatsApp agent',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
-          ),
-          const SizedBox(height: 12),
-
-          TextField(
-            controller: _testNameController,
-            decoration: InputDecoration(
-              hintText: 'Name (optional)',
-              prefixIcon: const Icon(Icons.person, color: Color(0xFF8B5CF6)),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ✅ 10-digit phone number (without country code)
-          TextField(
-            controller: _testPhoneController,
-            decoration: InputDecoration(
-              hintText: '9876543210',
-              prefixIcon: const Icon(Icons.phone, color: Color(0xFF3B82F6)),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            _testPhoneController.clear();
-            _testNameController.clear();
-            Navigator.of(ctx).pop();
-          },
-          child: const Text('Cancel'),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ElevatedButton(
-            onPressed: () async {
-              FocusScope.of(context).unfocus();
-
-              final phone = _testPhoneController.text.trim();
-              final name = _testNameController.text.trim();
-              final isValid = RegExp(r'^\d{10}$').hasMatch(phone);
-
-              if (!isValid) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid 10-digit WhatsApp number.'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-                return;
-              }
-
-              Navigator.of(ctx).pop();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Sending test message...'),
-                  backgroundColor: Color(0xFF3B82F6),
-                ),
-              );
-
-              try {
-                final tenantId = await StoreUserData().getTenantId();
-
-                // ✅ Proper payload structure
-                final Map<String, dynamic> payload = {
-                  "tenant_id": 2,
-                  "recipients": [
-                    {
-                      "to": "+91$phone",
-                      "name": name.isEmpty ? "" : name,
-                    }
-                  ]
-                };
-
-                await widget.api.postJson('/conversation/conversations/talk_to_me', payload);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Test message sent to +91$phone'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to send test: $e'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-              } finally {
-                _testPhoneController.clear();
-                _testNameController.clear();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            ),
-            child: const Text('Send Test'),
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
   // ---------- NEW MULTISELECT MODAL ----------
   Future<void> _showLanguageSelector(BuildContext context) async {
@@ -431,7 +289,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
               physics: const BouncingScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                 maxWidth: kIsWeb ? 1200 : 700, // ✅ stretch slightly on web
+                  maxWidth: kIsWeb ? 1200 : 700, // ✅ stretch slightly on web
                   minHeight:
                       MediaQuery.of(context).size.height, // ✅ full height
                 ),
@@ -514,7 +372,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
                               shape: BoxShape.circle,
                               color: Color(0xFFF1F5F9),
                             ),
-                            child: const Icon(Icons.person,
+                            child: const Icon(Icons.photo_camera,
                                 color: Color(0xFF94A3B8), size: 40),
                           ),
               ),
@@ -668,15 +526,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
             foregroundColor: const Color(0xFF64748B),
           ),
         ),
-        OutlinedButton(
-          onPressed: _testAgent,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            side: const BorderSide(color: Color(0xFF3B82F6)),
-            foregroundColor: const Color(0xFF3B82F6),
-          ),
-          child: const Text("Talk to Me"),
-        ),
+        // Removed "Talk to Me" button
         Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
