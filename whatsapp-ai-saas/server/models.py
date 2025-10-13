@@ -6,6 +6,14 @@ from sqlalchemy.sql import func
 from database import Base
 from utils.enums import Onboarding
 
+class Timestamp:
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False
+    )
 class Tenant(Base):
     __tablename__ = "tenants"
     id = Column(Integer, primary_key=True)
@@ -157,6 +165,9 @@ class Workflow(Base):
     ask_name = Column(Boolean, nullable=False, default=True)
     ask_location = Column(Boolean, nullable=False, default=False)
     offer_payment = Column(Boolean, nullable=False, default=True)
+    qr_image_url = Column(Text, nullable=True)  # URL to QR code image
+    upi_id = Column(Text, nullable=True)        # e.g., "user@upi"
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
 
@@ -199,9 +210,9 @@ class AgentConfiguration(Base):
     outgoing_voice_message_enabled = Column(Boolean, default=True)  # allow outgoing voice messages
     incoming_media_message_enabled = Column(Boolean, default=True)  # allow images, docs, etc.
     outgoing_media_message_enabled = Column(Boolean, default=True)
-    image_analyzer_enabled = Column(Boolean, default=False),  # enable AI image analysis (OCR, object detection)
-    created_at = Column(DateTime, server_default=func.now()),
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    image_analyzer_enabled = Column(Boolean, default=False)  # enable AI image analysis (OCR, object detection)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant")
 
@@ -267,7 +278,7 @@ class BusinessCatalog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
-    item_type = Column(String, nullable=False)
+    item_type = Column(String)
     name = Column(Text, nullable=False)
     description = Column(Text)
     category = Column(Text)

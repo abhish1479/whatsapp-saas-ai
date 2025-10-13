@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class CatalogOut(BaseModel):
     id: int
-    item_type: str
+    item_type: Optional[str] = None
     name: str
     description: Optional[str] = None
     category: Optional[str] = None
@@ -20,7 +20,7 @@ class CatalogOut(BaseModel):
 
 class CatalogCreate(BaseModel):
     tenant_id: int
-    item_type: str = Field(..., description="product|service|course|package|room|membership|other")
+    item_type: Optional[str] = None # e.g., "product" or "service"
     name: str
     description: Optional[str] = None
     category: Optional[str] = None
@@ -42,5 +42,5 @@ class CatalogUpdate(BaseModel):
     source_url: Optional[str] = None
     image_url: Optional[str] = None
 
-class BulkUpdateIn(BaseModel):
-    update: CatalogUpdate
+class BulkUpload(BaseModel):
+    items: List[CatalogCreate]

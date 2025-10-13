@@ -1,6 +1,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from requests import Session
+from sqlalchemy import func
 
 from data_models.subscriptions_models import SubscriptionPlanResponse
 from deps import get_db
@@ -12,10 +13,61 @@ from starlette import status
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 
+# @router.get("/get_all_plans", response_model=list[SubscriptionPlanResponse])
+# def get_all_subscriptions(db: Session = Depends(get_db)):
+#     subscriptions = db.query(SubscriptionPlan).all()
+#     return subscriptions  
+
 @router.get("/get_all_plans", response_model=list[SubscriptionPlanResponse])
 def get_all_subscriptions(db: Session = Depends(get_db)):
     subscriptions = db.query(SubscriptionPlan).all()
-    return subscriptions  
+    
+    # 🔧 TEMPORARY: Seed default plans if table is empty (for dev/testing only)
+    if not subscriptions:
+        basic = SubscriptionPlan(
+            name="Basic",
+            price=999.0,
+            price_per_month=999.0,
+            credits=1000,
+            duration_days=30,
+            billing_cycle="month",
+            features='["Basic AI features", "Email support", "5 projects limit"]',
+            is_popular=False,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+        premium = SubscriptionPlan(
+            name="Premium",
+            price=1999.0,
+            price_per_month=1999.0,
+            credits=5000,
+            duration_days=30,
+            billing_cycle="month",
+            features='["Advanced AI features", "Priority support", "Unlimited projects", "Analytics dashboard"]',
+            is_popular=True,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+        mega = SubscriptionPlan(
+            name="Mega",
+            price=3999.0,
+            price_per_month=3999.0,
+            credits=15000,
+            duration_days=30,
+            billing_cycle="month",
+            features='["All premium features", "24/7 phone support", "Custom integrations", "Dedicated account manager"]',
+            is_popular=False,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+        db.add_all([basic, premium, mega])
+        db.commit()
+        db.refresh(basic)
+        db.refresh(premium)
+        db.refresh(mega)
+        subscriptions = [basic, premium, mega]
+
+    return subscriptions
 
 @router.get("/{plan_id}", response_model=SubscriptionPlanResponse)
 def get_subscription_plan(plan_id: int, db: Session = Depends(get_db)):

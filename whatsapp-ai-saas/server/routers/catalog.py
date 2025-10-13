@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from models import BusinessCatalog
 from settings import settings
 from deps import get_db
-from data_models.catalog_models import CatalogOut, CatalogCreate, CatalogUpdate, BulkUpdateIn
+from data_models.catalog_models import BulkUpload, CatalogOut, CatalogCreate, CatalogUpdate
 from utils.media import save_image      
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
@@ -134,25 +134,25 @@ def delete_catalog_item(
     db.commit()
     return {"ok": True}
 
-@router.post("/bulk-update")
-def bulk_update(
-    payload: BulkUpdateIn,
+@router.post("/bulk-upload")
+def bulk_upload(
+    payload: BulkUpload,
     db: Session = Depends(get_db)
 ):
-    if not payload.ids:
-        return {"updated": 0}
-    q = db.query(BusinessCatalog).filter(
-        BusinessCatalog.tenant_id == payload.update.tenant_id,
-        BusinessCatalog.id.in_(payload.ids)
-    )
-    update_data = {k: v for k, v in payload.update.dict(exclude_unset=True).items()}
-    updated = 0
-    for item in q.all():
-        for k, v in update_data.items():
-            setattr(item, k, v)
-        updated += 1
+    if not payload.items:
+        return {"created": 0}
+
+    # Convert each Pydantic model to a SQLAlchemy model instance
+    catalog_objects = [
+        BusinessCatalog(**item.dict())
+        for item in payload.items
+    ]
+
+    # Bulk insert
+    db.add_all(catalog_objects)
     db.commit()
-    return {"updated": updated}
+
+    return {"created": len(catalog_objects)}
 
 @router.post("/CSV_upload")
 async def import_catalog_file(

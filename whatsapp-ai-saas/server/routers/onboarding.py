@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
 from deps import get_db
 from services.rag import rag
-from models import AgentConfiguration, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
+from models import AgentConfiguration, BusinessCatalog, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
 from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
 from data_models.request_model import BusinessTypeRequest
 from utils.enums import Onboarding
@@ -257,26 +257,52 @@ async def set_workflow(
     ask_name: bool = Form(True),
     ask_location: bool = Form(False),
     offer_payment: bool = Form(True),
+    qr_image_url: Optional[str] = Form(None),
+    upi_id: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
-    result =  db.execute(
-        text("SELECT tenant_id FROM business_profiles WHERE tenant_id = :tenant_id"),
-        {"tenant_id": tenant_id}
-    )
-    existing = result.fetchone()
+    # 1. Validate business profile exists
+    business = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found for this tenant")
 
-    if existing is None:
-        return {
-            "ok": False,
-            "message": "Business profile with this tenant id not found",
-        }
-    db.execute(text("""
-        INSERT INTO workflows (tenant_id, template, ask_name, ask_location, offer_payment)
-        VALUES (:t,:tpl,:an,:al,:op)
-        ON CONFLICT (tenant_id) DO UPDATE
-         SET template=:tpl, ask_name=:an, ask_location=:al, offer_payment=:op, updated_at=now()
-    """), {"t": tenant_id, "tpl": template, "an": ask_name, "al": ask_location, "op": offer_payment})
+    # 2. Payment validation
+    if offer_payment:
+        if not qr_image_url and not upi_id:
+            raise HTTPException(
+                status_code=400,
+                detail="If offer_payment is true, either qr_image_url or upi_id must be provided."
+            )
+
+    # 3. Try to find existing workflow
+    workflow = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
+
+    if workflow:
+        # Update
+        workflow.template = template
+        workflow.ask_name = ask_name
+        workflow.ask_location = ask_location
+        workflow.offer_payment = offer_payment
+        workflow.qr_image_url = qr_image_url
+        workflow.upi_id = upi_id
+        # updated_at auto-updates via onupdate=func.now()
+    else:
+        # Create
+        workflow = Workflow(
+            tenant_id=tenant_id,
+            template=template,
+            ask_name=ask_name,
+            ask_location=ask_location,
+            offer_payment=offer_payment,
+            qr_image_url=qr_image_url,
+            upi_id=upi_id,
+            # created_at and updated_at auto-set
+        )
+        db.add(workflow)
+
     db.commit()
+    db.refresh(workflow)
+
     return {"ok": True}
 
 # ---------- STEP 5: Payments ----------
@@ -333,7 +359,7 @@ async def get_review(
     kyc = db.query(Kyc).filter(Kyc.tenant_id == tenant_id).first()
     payment = db.query(Payment).filter(Payment.tenant_id == tenant_id).first()
     workflow = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
-    items = db.query(Item).filter(Item.tenant_id == tenant_id).all()
+    items = db.query(BusinessCatalog).filter(BusinessCatalog.tenant_id == tenant_id).all()
     web_ingest_request = db.query(WebIngestRequest).filter(WebIngestRequest.tenant_id == tenant_id).first()
     agent_configuration = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
     # Count items
@@ -368,17 +394,17 @@ async def get_review(
         business_description=business_profile.description,
         custom_business_type=business_profile.custom_business_type,
         business_category=business_profile.business_category,
-        items=[
-            {
-                "id": str(item.id),
-                "name": item.name,
-                "price": float(item.price),
-                "description": item.description,
-                "image_url": item.image_url,
-                "created_at": item.created_at.isoformat() if item.created_at else None,
-            }
-            for item in items
-        ],
+        items=[{
+            "id": item.id,
+            "name": item.name,
+            "description": item.description,
+            "category": item.category,
+            "price": float(item.price) if item.price is not None else None,
+            "discount": float(item.discount) if item.discount is not None else None,
+            "currency": item.currency,
+            "image_url": item.image_url,
+            "source_url": item.source_url,
+        } for item in items],
         web_ingest={
             "id": str(web_ingest_request.id),
             "url": web_ingest_request.url,

@@ -1,4 +1,5 @@
 from dataclasses import Field
+from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -52,8 +53,8 @@ class AgentConfigurationBase(BaseModel):
 class AgentConfigurationResponse(AgentConfigurationBase):
     id: int
     tenant_id: int
-    created_at: Optional[str] = None  # Optional for response
-    updated_at: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True  # For SQLAlchemy ORM compatibility
