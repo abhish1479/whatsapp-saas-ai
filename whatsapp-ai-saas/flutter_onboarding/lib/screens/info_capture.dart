@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leadbot_client/helper/utils/app_loger.dart';
 import 'package:leadbot_client/helper/utils/app_utils.dart';
 import '../../helper/utils/color_constant.dart';
 import '../../helper/ui_helper/custom_text_style.dart';
@@ -45,9 +46,14 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   final _price = TextEditingController();
   final _discount = TextEditingController();
   final _imageUrl = TextEditingController();
+  late var _editImageUrl = TextEditingController();
   final _pickedImage = Rx<Uint8List?>(null);
   final _pickedImageName = ''.obs;
   final _uploadingImage = false.obs;
+
+  final _pickedImageEdit = Rx<Uint8List?>(null);
+  final _pickedImageNameEdit = ''.obs;
+  final _uploadingImageEdit = false.obs;
 
   // For Website Analysis Dialog
   final _siteController = TextEditingController();
@@ -67,6 +73,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     _price.dispose();
     _discount.dispose();
     _imageUrl.dispose();
+    _editImageUrl.dispose();
     _siteController.dispose();
     super.dispose();
   }
@@ -139,16 +146,23 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                   _textField(_name, 'Name *', "Enter service name"),
                   _textField(_cat, 'Category *', "Enter service category"),
                   _textField(_price, 'Price *', "Enter service price",
-                      numeric: true , maxLength: 5),
+                      numeric: true, maxLength: 5),
                   _textField(_discount, 'Discount %', "Enter discount on price",
-                      numeric: true ,maxLength: 2),
+                      numeric: true, maxLength: 2),
                   _textField(_desc, 'Description', "Enter service description"),
-                  _textField(_imageUrl, 'Service image URL',
-                      "Enter service image url" , maxLength: 1000),
+                  _textField(
+                      _imageUrl, 'Service image URL', "Enter service image url",
+                      maxLength: 1000),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
-                    onPressed:
-                        _uploadingImage.value ? null : _pickImageForDialog,
+                    onPressed: _uploadingImage.value
+                        ? null
+                        : () {
+                            _pickImageForDialog(false, _imageUrl)
+                                .catchError((e, st) {
+                              AppLogger.log('Error: $e');
+                            });
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
@@ -180,39 +194,57 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                   backgroundColor: Colors.red[500],
                 ),
               ),
-
               SizedBox(width: 8),
               Flexible(
                 child: Obx(
-                      () => CustomWidgets.buildGradientButton(
+                  () => CustomWidgets.buildGradientButton(
                     onPressed: controller.loading.value
                         ? null
                         : () async {
-                      if (!_manualFormKey.currentState!.validate()) return;
-                      final nameValue = _name.text.trim();
-                      if (nameValue.isEmpty) {
-                        AppUtils.showError('Validation Error', 'Name is required');
-                        return; // ✅ Exit early if name is empty
-                      }
-                      final price = _price.text.trim();
-                      if (price.isEmpty) {
-                        AppUtils.showError('Validation Error', 'Price is required');
-                        return; // ✅ Exit early if name is empty
-                      }
+                            if (!_manualFormKey.currentState!.validate())
+                              return;
+                            final nameValue = _name.text.trim();
+                            if (nameValue.isEmpty) {
+                              AppUtils.showError(
+                                  'Validation Error', 'Name is required');
+                              return; // ✅ Exit early if name is empty
+                            }
+                            final price = _price.text.trim();
+                            if (price.isEmpty) {
+                              AppUtils.showError(
+                                  'Validation Error', 'Price is required');
+                              return; // ✅ Exit early if name is empty
+                            }
 
-                      final data = {
-                        // 'item_type': _itemType.value,
-                        'name': nameValue,
-                        'category': _cat.text.trim(),
-                        'price': _price.text.trim(),
-                        'discount': _discount.text.trim(),
-                        'description': _desc.text.trim(),
-                        'image_url': _imageUrl.text.trim(),
-                        'source_url': 'Manual Add',
-                      };
-                      await controller.addManual(data);
-                      Get.back(); // Close dialog
-                    },
+                            final data = {
+                              // 'item_type': _itemType.value,
+                              'name': nameValue,
+                              'category': _cat.text.trim(),
+                              'price': AppUtils.emptyToZero(_price.text.trim()),
+                              'discount':
+                                  AppUtils.emptyToZero(_discount.text.trim()),
+                              'description': _desc.text.trim(),
+                              'image_url': _imageUrl.text.trim(),
+                              'source_url': 'Manual Add',
+                            };
+                            try {
+                              await controller.addManual(data);
+                              // ✅ Only close dialog if successful
+                              _name.clear();
+                              _desc.clear();
+                              _cat.clear();
+                              _price.clear();
+                              _discount.clear();
+                              _imageUrl.clear();
+                              _pickedImage.value = null;
+                              _pickedImageName.value = '';
+                              Get.back();
+                            } catch (e) {
+                              // ❌ Do NOT close dialog on error – let user correct input
+                              // Error is already shown by controller via _showError
+                              AppLogger.log('Error: $e');
+                            }
+                          },
                     text: "Add",
                     isLoading: controller.loading.value,
                     icon: Icons.add,
@@ -222,6 +254,170 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _editDialog(Map<String, dynamic> e) async {
+    // ✅ Reset image picker state to avoid carryover from other dialogs
+    _pickedImageEdit.value = null;
+    _pickedImageNameEdit.value = '';
+    _uploadingImageEdit.value = false;
+
+    // ✅ Initialize controllers with existing data
+    final nameC = TextEditingController(text: e['name']?.toString() ?? '');
+    final priceC = TextEditingController(text: e['price']?.toString() ?? '');
+    final discountC =
+        TextEditingController(text: e['discount']?.toString() ?? '');
+    final descC =
+        TextEditingController(text: e['description']?.toString() ?? '');
+    final catC = TextEditingController(text: e['category']?.toString() ?? '');
+    final editImageUrl =
+        TextEditingController(text: e['image_url']?.toString() ?? '');
+
+    await Get.dialog(
+      AlertDialog(
+        title: const Text('Edit Item'),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(Get.context!).size.height * 0.7,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(8.0),
+            child: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _textField(nameC, 'Name *', "Enter service name"),
+                  _textField(
+                    catC,
+                    'Category *',
+                    "Enter service category",
+                  ),
+                  _textField(priceC, 'Price *', "Enter service price",
+                      numeric: true, maxLength: 5),
+                  _textField(discountC, 'Discount %', "Enter discount on price",
+                      numeric: true, maxLength: 2),
+                  _textField(descC, 'Description', "Enter service description"),
+                  _textField(editImageUrl, 'Service Image URL',
+                      "Enter service image url"),
+
+                  const SizedBox(height: 16),
+
+                  // Image Picker Button
+                  ElevatedButton.icon(
+                    onPressed: _uploadingImage.value
+                        ? null
+                        : () => _pickImageForDialog(true, editImageUrl),
+                    // 👈 pass controller
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[50],
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    icon: Obx(() =>_imagePreviewEdit()),
+                    // 👈 now safe
+                    label: Obx(() => Text(
+                          _pickedImageName.value.isEmpty
+                              ? 'Pick Image'
+                              : 'Uploaded',
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          Row(
+            children: [
+              Flexible(
+                child: CustomWidgets.buildCustomButton(
+                  onPressed: Get.back,
+                  text: "Cancel",
+                  icon: Icons.close,
+                  backgroundColor: Colors.red[500],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Obx(
+                  () => CustomWidgets.buildGradientButton(
+                    onPressed: controller.loading.value
+                        ? null
+                        : () async {
+                            // ✅ Validation
+                            if (nameC.text.trim().isEmpty) {
+                              AppUtils.showError(
+                                  'Validation Error', 'Name is required');
+                              return;
+                            }
+                            if (priceC.text.trim().isEmpty) {
+                              AppUtils.showError(
+                                  'Validation Error', 'Price is required');
+                              return;
+                            }
+
+                            final body = {
+                              'item_id': e['id'],
+                              'name': nameC.text.trim(),
+                              'price': AppUtils.emptyToZero(priceC.text.trim()),
+                              'discount':
+                                  AppUtils.emptyToZero(discountC.text.trim()),
+                              'description': descC.text.trim(),
+                              'category': catC.text.trim(),
+                              'image_url': editImageUrl.text.trim(),
+                            };
+
+                            try {
+                              await controller.updateItem(e['id'], body);
+                              Get.back(); // Close only on success
+                            } catch (e) {
+                              AppLogger.log('Edit error: $e');
+                              // Error shown via controller or AppUtils already
+                            }
+                          },
+                    text: "Save",
+                    isLoading: controller.loading.value,
+                    icon: Icons.save,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imagePreviewEdit() {
+    if (_pickedImageEdit.value == null) {
+      return const Icon(Icons.image, color: Colors.blue, size: 24);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.memory(
+          _pickedImageEdit.value!,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.image, color: Colors.blue),
+        ),
       ),
     );
   }
@@ -251,7 +447,8 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     );
   }
 
-  Future<void> _pickImageForDialog() async {
+  Future<void> _pickImageForDialog(bool isEdit,
+      [TextEditingController? urlController]) async {
     final res = await FilePicker.platform.pickFiles(
       type: FileType.image,
       withData: true,
@@ -261,27 +458,28 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     final file = res.files.first;
     if (file.bytes == null) return;
 
-    // Set local state first
-    _pickedImage.value = file.bytes;
-    _pickedImageName.value = file.name;
+    if (isEdit) {
+      _pickedImageEdit.value = file.bytes;
+      _pickedImageNameEdit.value = file.name;
+    } else {
+      _pickedImage.value = file.bytes;
+      _pickedImageName.value = file.name;
+    }
 
     try {
-      // Start upload
       _uploadingImage.value = true;
-
-      // Upload to server
       final imageUrl = await widget.api.uploadImage(file.bytes!, file.name);
 
-      // Set the returned URL to the text field
-      _imageUrl.text = imageUrl;
+      // ✅ Use passed controller or fallback (for add dialog)
+      final targetController = urlController ?? _imageUrl;
+      targetController.text = imageUrl;
 
       AppUtils.showSuccess('Image Uploaded', 'Image saved successfully!');
     } catch (e) {
       AppUtils.showError('Upload Failed', 'Could not upload image: $e');
-      // Optional: clear image if upload fails
       _pickedImage.value = null;
       _pickedImageName.value = '';
-      _imageUrl.clear();
+      (urlController ?? _imageUrl).clear();
     } finally {
       _uploadingImage.value = false;
     }
@@ -414,7 +612,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   }
 
   Widget _textField(TextEditingController ctrl, String label, String hint,
-      {bool numeric = false,int maxLength =100}) {
+      {bool numeric = false, int maxLength = 100}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: CustomWidgets.buildTextField2(
@@ -746,54 +944,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) =>
               const Icon(Icons.image_not_supported, size: 20),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _editDialog(Map e) async {
-    final nameC = TextEditingController(text: e['name']);
-    final priceC = TextEditingController(text: e['price']?.toString() ?? '');
-    final discountC =
-        TextEditingController(text: e['discount']?.toString() ?? '');
-    final descC = TextEditingController(text: e['description'] ?? '');
-    final catC = TextEditingController(text: e['category'] ?? '');
-    final type = (e['item_type'] ?? 'service').obs;
-
-    Get.defaultDialog(
-      title: 'Edit Item',
-      content: SizedBox(
-        width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _textField(_name, 'Name *', "Enter service name"),
-            _textField(_cat, 'Category *', "Enter service category"),
-            _textField(_price, 'Price *', "Enter service price", numeric: true),
-            _textField(_discount, 'Discount %', "Enter discount on price",
-                numeric: true),
-            _textField(_desc, 'Description', "Enter service description"),
-            _textField(
-                _imageUrl, 'Service Image URL', "Enter service image url"),
-            const SizedBox(height: 10),
-            CustomWidgets.buildGradientButton(
-              onPressed: () {
-                final body = {
-                  'item_id': e['id'],
-                  'item_type': type.value,
-                  'name': nameC.text.trim(),
-                  'price': priceC.text.trim(),
-                  'discount': discountC.text.trim(),
-                  'description': descC.text.trim(),
-                  'category': catC.text.trim(),
-                };
-                controller.updateItem(e['id'], body);
-                Get.back();
-              },
-              text: "Save",
-              icon: Icons.save,
-            ),
-          ],
         ),
       ),
     );

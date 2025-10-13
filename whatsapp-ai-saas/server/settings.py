@@ -37,7 +37,7 @@ class Settings:
     RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET","")
     RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET","")
     CURRENCY = os.getenv("CURRENCY","INR")
-    BASE_URL = os.getenv("BASE_URL","https://diglottic-nondisingenuously-gordon.ngrok-free.dev")
+    BASE_URL = os.getenv("BASE_URL","https://depictive-expiringly-jazmin.ngrok-free.dev")
 
     MEDIA_DIR: str = str(Path(__file__).resolve().parent / "media")
 
