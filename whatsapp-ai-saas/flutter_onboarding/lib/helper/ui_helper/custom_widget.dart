@@ -310,7 +310,7 @@ class CustomWidgets {
     final theme = BusinessInfoTheme.light;
 
     return SizedBox(
-      height: 56,
+      height: 50,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -368,6 +368,94 @@ class CustomWidgets {
                 text,
                 style: const TextStyle(
                   color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget buildCustomButton({
+    required VoidCallback? onPressed,
+    required String text,
+    Color? backgroundColor,        // Optional: custom background color
+    Color? textColor = Colors.white, // Optional: custom text/icon color
+    bool isLoading = false,
+    IconData? icon,
+    double borderRadius = 12.0,    // Optional: custom border radius
+    double height = 50.0,          // Optional: custom height
+    EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 12), // Optional: custom padding
+    String? loadingText = "Loading...", // Optional: custom loading text
+  }) {
+    final theme = BusinessInfoTheme.light;
+
+    return SizedBox(
+      height: height,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          padding: EdgeInsets.zero,
+          elevation: 0,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            // ✅ Use custom color if provided, otherwise use gradient
+            color: backgroundColor, // Use this instead of gradient
+            gradient: backgroundColor == null ? theme.buttonGradient : null, // Only use gradient if no custom color
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: (backgroundColor ?? Colors.blue).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          padding: padding, // ✅ Add custom padding
+          child: isLoading
+              ? Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                loadingText ?? "Loading...",
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          )
+              : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: textColor),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                text,
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

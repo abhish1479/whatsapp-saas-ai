@@ -37,7 +37,8 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
 
   // For Manual Add Dialog
   final _manualFormKey = GlobalKey<FormState>();
-  final _itemType = 'service'.obs;
+
+  // final _itemType = 'service'.obs;
   final _name = TextEditingController();
   final _desc = TextEditingController();
   final _cat = TextEditingController();
@@ -114,7 +115,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
 
   Future<void> _showManualAddDialog() async {
     // Reset fields
-    _itemType.value = 'service';
+    // _itemType.value = 'service';
     _name.clear();
     _desc.clear();
     _cat.clear();
@@ -138,34 +139,30 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                   _textField(_name, 'Name *', "Enter service name"),
                   _textField(_cat, 'Category *', "Enter service category"),
                   _textField(_price, 'Price *', "Enter service price",
-                      numeric: true),
+                      numeric: true , maxLength: 5),
                   _textField(_discount, 'Discount %', "Enter discount on price",
-                      numeric: true),
+                      numeric: true ,maxLength: 2),
                   _textField(_desc, 'Description', "Enter service description"),
                   _textField(_imageUrl, 'Service image URL',
-                      "Enter service image url"),
+                      "Enter service image url" , maxLength: 1000),
                   const SizedBox(height: 12),
-
                   ElevatedButton.icon(
-                    onPressed: _uploadingImage.value ? null : _pickImageForDialog,
+                    onPressed:
+                        _uploadingImage.value ? null : _pickImageForDialog,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[500],
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      backgroundColor: Colors.blue[100],
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                     ),
-                    icon: _uploadingImage.value
-                        ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                        : _imagePreview(), // ✅ Shows thumbnail or icon
+                    icon: Obx(() => _imagePreview()),
+                    // ✅ Shows thumbnail or icon
                     label: Obx(() => Text(
-                      _pickedImageName.value.isEmpty ? 'Pick Image' : 'Uploaded',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    )),
+                          _pickedImageName.value.isEmpty
+                              ? 'Pick Image'
+                              : 'Uploaded',
+                          style: const TextStyle(
+                              color: Colors.blue, fontWeight: FontWeight.w600),
+                        )),
                   ),
                 ],
               ),
@@ -173,30 +170,57 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          Obx(() => ElevatedButton(
-                onPressed: controller.loading.value
-                    ? null
-                    : () async {
-                        if (!_manualFormKey.currentState!.validate()) return;
-                        final data = {
-                          'item_type': _itemType.value,
-                          'name': _name.text.trim(),
-                          'description': _desc.text.trim(),
-                          'category': _cat.text.trim(),
-                          'price': _price.text.trim(),
-                          'discount': _discount.text.trim(),
-                          'source_url': _imageUrl.text.trim(),
-                        };
-                        await controller.addManual(
-                          data,
-                          image: _pickedImage.value,
-                          filename: _pickedImageName.value,
-                        );
-                        Get.back(); // Close dialog
-                      },
-                child: const Text('Add'),
-              )),
+          Row(
+            children: [
+              Flexible(
+                child: CustomWidgets.buildCustomButton(
+                  onPressed: Get.back,
+                  text: "Cancel",
+                  icon: Icons.close,
+                  backgroundColor: Colors.red[500],
+                ),
+              ),
+
+              SizedBox(width: 8),
+              Flexible(
+                child: Obx(
+                      () => CustomWidgets.buildGradientButton(
+                    onPressed: controller.loading.value
+                        ? null
+                        : () async {
+                      if (!_manualFormKey.currentState!.validate()) return;
+                      final nameValue = _name.text.trim();
+                      if (nameValue.isEmpty) {
+                        AppUtils.showError('Validation Error', 'Name is required');
+                        return; // ✅ Exit early if name is empty
+                      }
+                      final price = _price.text.trim();
+                      if (price.isEmpty) {
+                        AppUtils.showError('Validation Error', 'Price is required');
+                        return; // ✅ Exit early if name is empty
+                      }
+
+                      final data = {
+                        // 'item_type': _itemType.value,
+                        'name': nameValue,
+                        'category': _cat.text.trim(),
+                        'price': _price.text.trim(),
+                        'discount': _discount.text.trim(),
+                        'description': _desc.text.trim(),
+                        'image_url': _imageUrl.text.trim(),
+                        'source_url': 'Manual Add',
+                      };
+                      await controller.addManual(data);
+                      Get.back(); // Close dialog
+                    },
+                    text: "Add",
+                    isLoading: controller.loading.value,
+                    icon: Icons.add,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -204,7 +228,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
 
   Widget _imagePreview() {
     if (_pickedImage.value == null) {
-      return const Icon(Icons.image, color: Colors.white);
+      return const Icon(Icons.image, color: Colors.blue);
     }
 
     return Container(
@@ -217,10 +241,11 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
         borderRadius: BorderRadius.circular(4),
         child: Image.memory(
           _pickedImage.value!,
-          width: 24,
-          height: 24,
+          width: 40,
+          height: 40,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(Icons.image, color: Colors.white),
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.image, color: Colors.blue),
         ),
       ),
     );
@@ -389,7 +414,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   }
 
   Widget _textField(TextEditingController ctrl, String label, String hint,
-      {bool numeric = false}) {
+      {bool numeric = false,int maxLength =100}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: CustomWidgets.buildTextField2(
@@ -399,7 +424,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
         hint: hint,
         keyboardType: numeric ? TextInputType.number : TextInputType.text,
         textCapitalization: TextCapitalization.words,
-        maxLength: 100,
+        maxLength: maxLength,
       ),
     );
   }
