@@ -283,6 +283,34 @@ class Api {
     throw Exception('Add failed: ${resp.body}');
   }
 
+  Future<Map<String, dynamic>> addCatalog({
+    required int tenantId,
+    required String name,
+    String? itemType,
+    String? category,
+    String? price,
+    String? discount,
+    String? description,
+    String? imageUrl,
+    String? sourceUrl,
+  }) async {
+    final uri = Uri.parse('$baseUrl/catalog/add');
+    final req = http.MultipartRequest('POST', uri);
+
+    req.fields['tenant_id'] = tenantId.toString();
+    req.fields['name'] = name;
+    if (category != null) req.fields['category'] = category;
+    if (price != null) req.fields['price'] = price;
+    if (discount != null) req.fields['discount'] = discount;
+    if (itemType != null) req.fields['item_type'] = itemType;
+    if (description != null) req.fields['description'] = description;
+    if (imageUrl != null) req.fields['image_url'] = imageUrl;
+    if (sourceUrl != null) req.fields['source_url'] = sourceUrl;
+    final resp = await http.Response.fromStream(await req.send());
+    if (resp.statusCode == 200) return jsonDecode(resp.body);
+    throw Exception('Add with media failed: ${resp.body}');
+  }
+
   Future<Map<String, dynamic>> addCatalogWithMedia({
     required int tenantId,
     required String itemType,

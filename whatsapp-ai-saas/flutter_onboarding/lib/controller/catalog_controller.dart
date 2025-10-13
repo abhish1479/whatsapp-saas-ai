@@ -86,7 +86,37 @@ class CatalogController extends GetxController {
   }
 
   /// --- Add Manual Item with Optional Image ---
-  Future<void> addManual(Map<String, String> fields,
+  Future<void>  addManual(Map<String, String> fields) async {
+    try {
+      final store = StoreUserData();
+      final tenantId = await store.getTenantId();
+      if (tenantId == null) {
+        _showError('Error', 'Tenant not found in session');
+        return;
+      }
+
+      await api.addCatalog(
+        tenantId: tenantId,
+        name: fields['name'] ?? '',
+        itemType: fields['item_type']??'test',//comment test
+        category: fields['category'],
+        price: fields['price'],
+        discount: fields['discount'],
+        description: fields['description'],
+        imageUrl: fields['image_url'],
+        sourceUrl: fields['source_url'],
+      );
+
+      await fetchCatalog();
+      _showSuccess('Success', 'Item added successfully');
+    } catch (e) {
+      _showError('Error', 'Add failed: $e');
+    }
+  }
+
+
+  /// --- Add Manual Item with Optional Image ---
+  Future<void> addManualWithImage(Map<String, String> fields,
       {Uint8List? image, String? filename}) async {
     try {
       final store = StoreUserData();
