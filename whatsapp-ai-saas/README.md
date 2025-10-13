@@ -9,6 +9,16 @@
 ```bash
 cp .env.example .env
 docker compose up --build
+
+# Stop all containers (data remains in volumes)
+docker-compose down
+# Start only the server and worker
+docker-compose start wa_server wa_worker
+
+# Stop all containers (data remains in volumes)
+docker-compose down
+# Start all containers (data persists)
+docker-compose up -d
 ```
 - API docs: http://localhost:8000/docs
 - Web: http://localhost:5173

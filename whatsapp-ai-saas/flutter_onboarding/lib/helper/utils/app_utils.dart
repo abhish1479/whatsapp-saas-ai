@@ -410,4 +410,9 @@ class AppUtils {
     List<String> newList = seen.toList();
     return newList;
   }
+
+
+  static String emptyToZero(String input) {
+    return input.isEmpty ? '0' : input;
+  }
 }

@@ -51,7 +51,7 @@ class CatalogController extends GetxController {
 
       final list = await api.getCatalog(tenantId: tenantId, query: q);
       items.assignAll(list);
-      _showSuccess('Success', 'Catalog loaded successfully');
+      // _showSuccess('Success', 'Catalog loaded successfully');
     } catch (e) {
       _showError('Error', 'Failed to load catalog: $e');
     } finally {
@@ -101,7 +101,7 @@ class CatalogController extends GetxController {
         itemType: fields['item_type']??'test',//comment test
         category: fields['category'],
         price: fields['price'],
-        discount: fields['discount'],
+        discount: fields['discount']??'0',
         description: fields['description'],
         imageUrl: fields['image_url'],
         sourceUrl: fields['source_url'],

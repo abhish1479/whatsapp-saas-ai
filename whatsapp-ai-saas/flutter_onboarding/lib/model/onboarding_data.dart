@@ -86,7 +86,7 @@ class OnboardingData {
 }
 
 class Item {
-  final String id;
+  final int id;
   final String name;
   final double price;
   final String description;
@@ -104,7 +104,7 @@ class Item {
 
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
-      id: json['id'] ?? '',
+      id: json['id'] ?? 0,
       name: json['name'] ?? '',
       price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
       description: json['description'] ?? '',
