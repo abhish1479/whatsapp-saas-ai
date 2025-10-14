@@ -406,4 +406,37 @@ class Api {
     }
     throw Exception('Image upload failed: ${resp.body}');
   }
+
+  // --- Fetch catalog items from a website (auto-ingest)
+  Future<Map<String, dynamic>> fetchWebsiteCatalog({
+    required int tenantId,
+    required String url,
+  }) async {
+    final uri = Uri.parse('$baseUrl/onboarding/items/website');
+    final req = http.MultipartRequest('POST', uri);
+    req.fields['tenant_id'] = tenantId.toString();
+    req.fields['url'] = url;
+
+    final resp = await http.Response.fromStream(await req.send());
+    if (resp.statusCode == 200) {
+      return jsonDecode(resp.body);
+    }
+    throw Exception('Website ingestion failed: ${resp.body}');
+  }
+
+// --- Bulk upload catalog items (for saving selected/edited items)
+  Future<Map<String, dynamic>> bulkUploadCatalog(List<Map<String, dynamic>> items) async {
+    final uri = Uri.parse('$baseUrl/catalog/bulk-upload');
+    final body = jsonEncode({'items': items});
+    final resp = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+
+    if (resp.statusCode == 200) {
+      return jsonDecode(resp.body);
+    }
+    throw Exception('Bulk upload failed: ${resp.body}');
+  }
 }
