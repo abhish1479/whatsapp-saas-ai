@@ -16,6 +16,8 @@ class CatalogController extends GetxController {
   final selectedWebsiteItems = <int>[].obs;
   final loadingWebsite = false.obs;
   final websiteListVisible = false.obs;
+  final websiteAnalysisStep = 0.obs;
+  final analyzing = false.obs;
 
 
   /// --- Snackbar Helpers ---
@@ -208,31 +210,63 @@ class CatalogController extends GetxController {
 
   // --- Fetch from website
   Future<void> fetchFromWebsite(String url) async {
-    try {
-      loadingWebsite.value = true;
-      final tenantId = await StoreUserData().getTenantId();
-      if (tenantId == null) {
-        _showError('Error', 'Tenant not found');
-        return;
-      }
+    analyzing.value = true;
+    websiteAnalysisStep.value = 1; // Step 1: analyzing
 
+    final tenantId = await StoreUserData().getTenantId();
+    if (tenantId == null) {
+      _showError('Error', 'Tenant not found');
+      analyzing.value = false;
+      return;
+    }
+
+    try {
+      // --- Start progress animation (in background)
+      _runProgressTimer();
+
+      // --- Run the API request
       final response = await api.fetchWebsiteCatalog(tenantId: tenantId, url: url);
+
+      // --- Once API returns, handle result ---
+      websiteAnalysisStep.value = 3; // Filtering data
+
       if (response['ok'] == true) {
-        final list = (response['Bussiness_Catalog'] as List).cast<Map<String, dynamic>>();
-        if(list.isNotEmpty) {
+        final list =
+        (response['Bussiness_Catalog'] as List).cast<Map<String, dynamic>>();
+        websiteAnalysisStep.value = 4; // Preparing results
+        _showSuccess('Website Parsed', 'Fetched ${list.length} items');
+        if (list.isNotEmpty) {
           websiteItems.assignAll(list);
           websiteListVisible.value = true;
         }
-        _showSuccess('Website Parsed', 'Fetched ${list.length} items from website');
       } else {
-        _showError('Error', 'Failed to fetch catalog');
+        _showError('Error', 'Website ingestion failed');
       }
     } catch (e) {
       _showError('Error', 'Website ingestion failed: $e');
     } finally {
-      loadingWebsite.value = false;
+      analyzing.value = false;
+      websiteAnalysisStep.value = 0;
     }
   }
+
+
+  Future<void> _runProgressTimer() async {
+    const phases = [
+      {'step': 1, 'label': 'Analyzing Website', 'duration': 10},
+      {'step': 2, 'label': 'Fetching Data', 'duration': 15},
+      {'step': 3, 'label': 'Filtering Data', 'duration': 10},
+      {'step': 4, 'label': 'Preparing Results', 'duration':10},
+    ];
+
+    for (final phase in phases) {
+      if (!analyzing.value) break;
+      websiteAnalysisStep.value = phase['step'] as int;
+      await Future.delayed(Duration(seconds: phase['duration'] as int));
+    }
+  }
+
+
 
 // --- Toggle item selection
   void toggleSelect(int index, bool? selected) {

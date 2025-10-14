@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leadbot_client/helper/utils/app_loger.dart';
 import 'package:leadbot_client/helper/utils/app_utils.dart';
+import 'package:lottie/lottie.dart';
 import '../../helper/utils/color_constant.dart';
 import '../../helper/ui_helper/custom_text_style.dart';
 import '../../helper/ui_helper/custom_widget.dart';
 import '../api/api.dart';
 import '../controller/catalog_controller.dart';
+import '../helper/image_constant.dart';
 import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -76,6 +78,228 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     _editImageUrl.dispose();
     _siteController.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        // 👇 Custom back behavior
+        if (controller.websiteListVisible.value) {
+          controller.websiteListVisible.value = false; // hide list
+          controller.websiteItems.clear();
+          controller.selectedWebsiteItems.clear();
+          return false; // prevent navigation
+        } else {
+          widget.onBack(); // go to previous onboarding step
+          return false;
+        }
+      },
+      child: Stack(
+        children: [
+          Scaffold(
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(child: _mainContent(context)),
+                  // your existing screen
+                  _bottomNavigation(context),
+                ],
+              ),
+            ),
+          ),
+
+          // 👇 Overlay for website analysis animation
+          Obx(() => controller.analyzing.value
+              ? _buildWebsiteAnalysisOverlay(context)
+              : const SizedBox.shrink()),
+
+          // 👇 List view for analyzed website items
+          Obx(() => controller.websiteListVisible.value &&
+                  controller.websiteItems.isNotEmpty
+              ? _buildWebsiteItemList(context)
+              : const SizedBox.shrink()),
+        ],
+      ),
+    );
+  }
+
+  Widget _mainContent(BuildContext context) {
+    final theme = Theme.of(context);
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF8B5CF6);
+
+    return Obx(() {
+      if (controller.loading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      return Container(
+        decoration: BoxDecoration(gradient: themeInfo.formGradient),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Header ---
+              Text(
+                'Add Products & Services',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Choose how you'd like to add your offerings",
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+
+              // --- CSV Template download link ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: InkWell(
+                  onTap: _downloadTemplate,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.download,
+                            size: 18, color: primaryColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Download Template',
+                          style: TextStyle(
+                            color: primaryColor,
+                            decoration: TextDecoration.underline,
+                            decorationColor: primaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // --- Add / Upload options ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Flexible(
+                    child: _buildActionCard(
+                      context,
+                      icon: Icons.add,
+                      title: 'Add Service/Product',
+                      color: primaryColor,
+                      onPressed: _showManualAddDialog,
+                    ),
+                  ),
+                  Flexible(
+                    child: _buildActionCard(
+                      context,
+                      icon: Icons.upload_file_rounded,
+                      title: 'Upload CSV File',
+                      color: primaryColor,
+                      onPressed: _pickAndImport,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // --- Analyze Website option ---
+              _buildActionCardWitTitle(
+                context,
+                icon: Icons.language_rounded,
+                title: 'Analyze Website',
+                subtitle: 'Extract Products & Services automatically',
+                color: secondaryColor,
+                onPressed: _showWebsiteDialog,
+              ),
+
+              const SizedBox(height: 20),
+
+              // --- Catalog Table (existing) ---
+              if (controller.items.isNotEmpty)
+                _catalogTable(context)
+              else
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'No items yet. Use the options above to add your offerings.',
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildWebsiteAnalysisOverlay(BuildContext context) {
+    return Obx(() {
+      final step = controller.websiteAnalysisStep.value;
+
+      String message = 'Analyzing Website...';
+      if (step == 2) message = 'Fetching Data...';
+      if (step == 3) message = 'Filtering Data...';
+      if (step == 4) message = 'Preparing Results...';
+
+      return Container(
+        color: Colors.black.withOpacity(0.9),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 180,
+                child: Lottie.asset(ImageConstant.webAnalyzer, repeat: true),
+              ),
+              const SizedBox(height: 16),
+
+              // Fade-between messages + continuous breathing on the text
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 600),
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
+                child: _AnimatedMessageText(
+                  key: ValueKey(message), // important for switching
+                  message: message,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              SizedBox(
+                width: 200,
+                child: LinearProgressIndicator(
+                  value: (step / 4).clamp(0, 1),
+                  backgroundColor: Colors.white24,
+                  color: Colors.blue[800],
+                  minHeight: 6,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Please wait, this may take up to a minute...',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   // --- Actions ---
@@ -752,15 +976,14 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.start,
                                         children: [
-                                          
-                                            Text(
-                                              'Price ₹ $price',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                                color: Colors.blue[800],
-                                              ),
+                                          Text(
+                                            'Price ₹ $price',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                              color: Colors.blue[800],
                                             ),
+                                          ),
                                           if (price.isNotEmpty &&
                                               discount.isNotEmpty)
                                             const SizedBox(width: 15),
@@ -973,170 +1196,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // 👇 Custom back behavior
-        if (controller.websiteListVisible.value) {
-          controller.websiteListVisible.value = false; // hide list
-          controller.websiteItems.clear();
-          controller.selectedWebsiteItems.clear();
-          return false; // prevent navigation
-        } else {
-          widget.onBack(); // go to previous onboarding step
-          return false;
-        }
-      },
-      child: Stack(
-        children: [
-          Scaffold(
-            body: SafeArea(
-              child: Column(
-                children: [
-                  Expanded(child: _mainContent(context)),
-                  // your existing screen
-                  _bottomNavigation(context),
-                ],
-              ),
-            ),
-          ),
-
-          // 👇 Overlay for website analysis animation
-          /*Obx(() => controller.analyzing.value
-              ? _buildWebsiteAnalysisOverlay(context)
-              : const SizedBox.shrink()),*/
-
-          // 👇 List view for analyzed website items
-          Obx(() => controller.websiteListVisible.value &&
-                  controller.websiteItems.isNotEmpty
-              ? _buildWebsiteItemList(context)
-              : const SizedBox.shrink()),
-        ],
-      ),
-    );
-  }
-
-  Widget _mainContent(BuildContext context) {
-    final theme = Theme.of(context);
-    const primaryColor = Color(0xFF3B82F6);
-    const secondaryColor = Color(0xFF8B5CF6);
-
-    return Obx(() {
-      if (controller.loading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      return Container(
-        decoration: BoxDecoration(gradient: themeInfo.formGradient),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- Header ---
-              Text(
-                'Add Products & Services',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E293B),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Choose how you'd like to add your offerings",
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-
-              // --- CSV Template download link ---
-              Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  onTap: _downloadTemplate,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.download,
-                            size: 18, color: primaryColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Download Template',
-                          style: TextStyle(
-                            color: primaryColor,
-                            decoration: TextDecoration.underline,
-                            decorationColor: primaryColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // --- Add / Upload options ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Flexible(
-                    child: _buildActionCard(
-                      context,
-                      icon: Icons.add,
-                      title: 'Add Service/Product',
-                      color: primaryColor,
-                      onPressed: _showManualAddDialog,
-                    ),
-                  ),
-                  Flexible(
-                    child: _buildActionCard(
-                      context,
-                      icon: Icons.upload_file_rounded,
-                      title: 'Upload CSV File',
-                      color: primaryColor,
-                      onPressed: _pickAndImport,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              // --- Analyze Website option ---
-              _buildActionCardWitTitle(
-                context,
-                icon: Icons.language_rounded,
-                title: 'Analyze Website',
-                subtitle: 'Extract Products & Services automatically',
-                color: secondaryColor,
-                onPressed: _showWebsiteDialog,
-              ),
-
-              const SizedBox(height: 20),
-
-              // --- Catalog Table (existing) ---
-              if (controller.items.isNotEmpty)
-                _catalogTable(context)
-              else
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'No items yet. Use the options above to add your offerings.',
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
-
   Widget _buildActionCard(
     BuildContext context, {
     required IconData icon,
@@ -1238,72 +1297,207 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   }
 
   Widget _catalogTable(BuildContext context) {
-    return Obx(() => SizedBox(
-          width: MediaQuery.of(context).size.width,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 20, bottom: 5),
-                child: Text(
-                  'Added Service (${controller.items.length})',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 15),
-                ),
-              ),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Actions')),
-                      DataColumn(label: Text('Name')),
-                      DataColumn(label: Text('Price')),
-                      DataColumn(label: Text('Discount %')),
-                      DataColumn(label: Text('Category')),
-                      DataColumn(label: Text('Image')),
-                    ],
-                    rows: controller.items.map<DataRow>((e) {
-                      final id = e['id'] as int;
-                      return DataRow(
-                        cells: [
-                          DataCell(Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.edit,
-                                  size: 18,
-                                  color: Colors.blue[700]!,
-                                ),
-                                onPressed: () => _editDialog(e),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.delete,
-                                  size: 18,
-                                  color: Colors.blue[700]!,
-                                ),
-                                onPressed: () => controller.deleteItem(id),
-                              ),
-                            ],
-                          )),
-                          DataCell(Text(e['name'] ?? '')),
-                          DataCell(Text('${e['price'] ?? ''}')),
-                          DataCell(Text('${e['discount'] ?? ''}')),
-                          DataCell(Text(e['category'] ?? '')),
-                          DataCell(_thumb(e['image_url'])),
-                        ],
-                      );
-                    }).toList(),
+    final theme = Theme.of(context);
+
+    return Obx(() {
+      final items = controller.items;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: items.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'No items yet. Use the options above to add your offerings.',
+                    style: TextStyle(fontSize: 15, color: Colors.black54),
                   ),
                 ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Added Services (${items.length})',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+
+                  // Modern responsive grid/list
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final e = items[index];
+                      final id = e['id'] as int?;
+                      final price = e['price']?.toString() ?? '';
+                      final discount = e['discount']?.toString() ?? '';
+                      final name = e['name'] ?? 'Unnamed';
+                      final category = e['category'] ?? 'Uncategorized';
+                      final description = e['description'] ?? '';
+                      final imageUrl = e['image_url'] ?? '';
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 6),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: index.isEven
+                              ? Colors.grey.shade100
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Thumbnail
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: imageUrl.isNotEmpty
+                                  ? Image.network(
+                                      imageUrl,
+                                      width: 70,
+                                      height: 70,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => Container(
+                                        width: 70,
+                                        height: 70,
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey),
+                                      ),
+                                    )
+                                  : Container(
+                                      width: 70,
+                                      height: 70,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Details
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Name
+                                  Text(
+                                    name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  // Category tag
+                                  Text(
+                                    category,
+                                    style: const TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12),
+                                  ),
+
+                                  const SizedBox(height: 6),
+
+                                  // Price + Discount Row
+                                  Row(
+                                    children: [
+                                      if (price.isNotEmpty) ...[
+                                        Text(
+                                          '₹ $price',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.green[800],
+                                          ),
+                                        ),
+                                        SizedBox(width: 15),
+                                      ],
+
+                                      if (discount.isNotEmpty &&
+                                          discount != '0') ...[
+
+                                        Text(
+                                          '$discount% off',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 5),
+                                  if (description.isNotEmpty)...[
+                                    Text(
+                                      '$description',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    SizedBox(height: 5),
+                                  ]
+
+                                ],
+                              ),
+                            ),
+
+                            // Actions
+                            Column(
+                              children: [
+                                IconButton(
+                                  tooltip: 'Edit',
+                                  icon: const Icon(Icons.edit,
+                                      size: 20, color: Colors.blue),
+                                  onPressed: () => _editDialog(e),
+                                ),
+                                IconButton(
+                                  tooltip: 'Delete',
+                                  icon: const Icon(Icons.delete,
+                                      size: 20, color: Colors.redAccent),
+                                  onPressed: () => controller.deleteItem(id!),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
-        ));
+      );
+    });
   }
 
   Widget _thumb(String? url) {
@@ -1387,6 +1581,66 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AnimatedMessageText extends StatefulWidget {
+  final String message;
+
+  const _AnimatedMessageText({Key? key, required this.message})
+      : super(key: key);
+
+  @override
+  State<_AnimatedMessageText> createState() => _AnimatedMessageTextState();
+}
+
+class _AnimatedMessageTextState extends State<_AnimatedMessageText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fade;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
+    _fade = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _scale = Tween<double>(begin: 0.98, end: 1.02).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Text(
+          widget.message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            letterSpacing: 2,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
