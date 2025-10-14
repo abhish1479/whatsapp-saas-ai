@@ -238,7 +238,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                               _imageUrl.clear();
                               _pickedImage.value = null;
                               _pickedImageName.value = '';
-                              Get.back();
+                              Navigator.of(Get.context!).pop();
                             } catch (e) {
                               // ❌ Do NOT close dialog on error – let user correct input
                               // Error is already shown by controller via _showError
@@ -317,7 +317,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                     ),
-                    icon: Obx(() =>_imagePreviewEdit()),
+                    icon: Obx(() => _imagePreviewEdit()),
                     // 👈 now safe
                     label: Obx(() => Text(
                           _pickedImageName.value.isEmpty
@@ -378,7 +378,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
 
                             try {
                               await controller.updateItem(e['id'], body);
-                              Get.back(); // Close only on success
+                              Navigator.of(Get.context!).pop();
                             } catch (e) {
                               AppLogger.log('Edit error: $e');
                               // Error shown via controller or AppUtils already
@@ -564,33 +564,379 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
   }
 
   Future<void> _submitWebsite() async {
-    final url = _siteController.text.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      Get.snackbar('Invalid URL',
-          'Please enter a valid URL starting with http:// or https://');
+    String url = _siteController.text.trim();
+
+    // --- Empty field check ---
+    if (url.isEmpty) {
+      Get.snackbar('Invalid URL', 'Please enter a website URL');
       return;
     }
 
-    try {
-      _ingestingSite.value = true;
-      final tenantId = await StoreUserData().getTenantId();
-      if (tenantId == null) {
-        Get.snackbar('Error', 'Tenant not found');
-        return;
-      }
-
-      await widget.api.postForm('/onboarding/items/website', {
-        'tenant_id': tenantId,
-        'url': url,
-      });
-
-      Get.snackbar('Success', 'Website queued for analysis');
-      Get.back(); // Close dialog
-    } catch (e) {
-      Get.snackbar('Error', 'Website ingestion failed: $e');
-    } finally {
-      _ingestingSite.value = false;
+    // --- Add https:// if missing ---
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
     }
+
+    // --- Add www. if missing and domain has no subdomain ---
+    final uri = Uri.tryParse(url);
+    if (uri != null &&
+        (uri.host.isNotEmpty && !uri.host.startsWith('www.')) &&
+        uri.host.split('.').length == 2) {
+      // example: firstcry.com  →  www.firstcry.com
+      final fixedHost = 'www.${uri.host}';
+      url = uri.replace(host: fixedHost).toString();
+    }
+
+    // --- Correct, safe validation ---
+    final parsed = Uri.tryParse(url);
+    final isValid = parsed != null &&
+        (parsed.scheme == 'http' || parsed.scheme == 'https') &&
+        parsed.host.isNotEmpty;
+
+    if (!isValid) {
+      Get.snackbar('Invalid URL', 'Please enter a valid website URL');
+      return;
+    }
+
+    // --- Proceed ---
+    Get.back(); // close dialog
+    await controller.fetchFromWebsite(url);
+  }
+
+  Widget _buildWebsiteItemList(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // --- Header Row ---
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      // ✅ Wrap in Obx so it reacts to selection changes
+                      Obx(() => Checkbox(
+                            value: controller.selectedWebsiteItems.length ==
+                                    controller.websiteItems.length &&
+                                controller.websiteItems.isNotEmpty,
+                            onChanged: (v) => controller.selectAll(v ?? false),
+                          )),
+                      const Text(
+                        'Select All',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  CustomWidgets.buildCustomButton(
+                    onPressed: controller.saveSelectedWebsiteItems,
+                    text: "Add",
+                    icon: Icons.add,
+                    height: 45,
+                    backgroundColor: Colors.blue[800],
+                  ),
+                ],
+              ),
+            ),
+
+            // --- List of items ---
+            Expanded(
+              child: Obx(() {
+                final items = controller.websiteItems;
+                if (items.isEmpty) {
+                  return const Center(child: Text('No website data found'));
+                }
+
+                return ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final e = items[index];
+
+                    return Obx(() {
+                      final selected =
+                          controller.selectedWebsiteItems.contains(index);
+                      final name = (e['name'] ?? 'Unknown').toString();
+                      final description = (e['description'] ?? '').toString();
+
+                      String formatNumber(dynamic value) {
+                        if (value == null) return '';
+                        if (value is int) return value.toString();
+                        if (value is double) {
+                          return value == value.toInt()
+                              ? value.toInt().toString()
+                              : value.toStringAsFixed(2);
+                        }
+                        return value.toString();
+                      }
+
+                      final price = formatNumber(e['price']);
+                      final discount = formatNumber(e['discount']);
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: selected ? Colors.blue[50] : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: selected
+                                ? Colors.blueAccent
+                                : Colors.grey[300]!,
+                            width: selected ? 1.5 : 1,
+                          ),
+                          boxShadow: selected
+                              ? [
+                                  BoxShadow(
+                                      color: Colors.blue.withOpacity(0.2),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3))
+                                ]
+                              : [],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // --- Checkbox ---
+                              Checkbox(
+                                value: selected,
+                                onChanged: (v) =>
+                                    controller.toggleSelect(index, v),
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              // --- Main content ---
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // --- Row: Name + Edit icon ---
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        // ✅ Name with ellipsis
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.edit,
+                                              color: Colors.blue[800],
+                                              size: 20),
+                                          onPressed: () => _editWebsiteItem(
+                                              context, index, e),
+                                        ),
+                                      ],
+                                    ),
+
+                                    // --- Row: Price + Discount ---
+                                    if (price.isNotEmpty)
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          
+                                            Text(
+                                              'Price ₹ $price',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                                color: Colors.blue[800],
+                                              ),
+                                            ),
+                                          if (price.isNotEmpty &&
+                                              discount.isNotEmpty)
+                                            const SizedBox(width: 15),
+                                          if (discount.isNotEmpty)
+                                            Text(
+                                              'Disc. $discount % off',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+
+                                    const SizedBox(height: 6),
+
+                                    // --- Description ---
+                                    if (description.isNotEmpty)
+                                      Text(
+                                        description,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                          height: 1.3,
+                                        ),
+                                      ),
+
+                                    const SizedBox(height: 6),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    });
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editWebsiteItem(
+      BuildContext context, int index, Map<String, dynamic> item) async {
+    _pickedImageEdit.value = null;
+    _pickedImageNameEdit.value = '';
+    _uploadingImageEdit.value = false;
+
+    final nameC = TextEditingController(text: item['name'] ?? '');
+    final descC = TextEditingController(text: item['description'] ?? '');
+    final catC = TextEditingController(text: item['category'] ?? '');
+    final priceC = TextEditingController(text: item['price']?.toString() ?? '');
+    final discountC =
+        TextEditingController(text: item['discount']?.toString() ?? '');
+    final editWebImageUrl =
+        TextEditingController(text: item['image_url']?.toString() ?? '');
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Website Item'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              _textField(nameC, 'Name *', "Enter service name"),
+              _textField(
+                catC,
+                'Category *',
+                "Enter service category",
+              ),
+              _textField(priceC, 'Price *', "Enter service price",
+                  numeric: true, maxLength: 5),
+              _textField(discountC, 'Discount %', "Enter discount on price",
+                  numeric: true, maxLength: 2),
+              _textField(descC, 'Description', "Enter service description"),
+              _textField(editWebImageUrl, 'Service Image URL',
+                  "Enter service image url"),
+
+              const SizedBox(height: 16),
+
+              // Image Picker Button
+              ElevatedButton.icon(
+                onPressed: _uploadingImage.value
+                    ? null
+                    : () => _pickImageForDialog(true, editWebImageUrl),
+                // 👈 pass controller
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[50],
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                icon: Obx(() => _imagePreviewEdit()),
+                // 👈 now safe
+                label: Obx(() => Text(
+                      _pickedImageName.value.isEmpty
+                          ? 'Pick Image'
+                          : 'Uploaded',
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        actions: [
+          Row(
+            children: [
+              Flexible(
+                child: CustomWidgets.buildCustomButton(
+                  onPressed: Get.back,
+                  text: "Cancel",
+                  icon: Icons.close,
+                  backgroundColor: Colors.red[500],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Obx(
+                  () => CustomWidgets.buildGradientButton(
+                    onPressed: controller.loading.value
+                        ? null
+                        : () async {
+                            // ✅ Validation
+                            if (nameC.text.trim().isEmpty) {
+                              AppUtils.showError(
+                                  'Validation Error', 'Name is required');
+                              return;
+                            }
+                            if (priceC.text.trim().isEmpty) {
+                              AppUtils.showError(
+                                  'Validation Error', 'Price is required');
+                              return;
+                            }
+
+                            controller.websiteItems[index] = {
+                              ...item,
+                              'name': nameC.text.trim(),
+                              'description': descC.text.trim(),
+                              'category': catC.text.trim(),
+                              'price': double.tryParse(priceC.text.trim()) ??
+                                  item['price'],
+                              'discount':
+                                  double.tryParse(discountC.text.trim()) ??
+                                      item['discount'],
+                              'image_url': editWebImageUrl.text.trim(),
+                            };
+
+                            try {
+                              controller.websiteItems.refresh();
+                              Navigator.of(Get.context!).pop();
+                            } catch (e) {
+                              AppLogger.log('Edit error: $e');
+                              // Error shown via controller or AppUtils already
+                            }
+                          },
+                    text: "Save",
+                    isLoading: controller.loading.value,
+                    icon: Icons.save,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   // --- Reusable Widgets ---
@@ -629,137 +975,166 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        // 👇 Custom back behavior
+        if (controller.websiteListVisible.value) {
+          controller.websiteListVisible.value = false; // hide list
+          controller.websiteItems.clear();
+          controller.selectedWebsiteItems.clear();
+          return false; // prevent navigation
+        } else {
+          widget.onBack(); // go to previous onboarding step
+          return false;
+        }
+      },
+      child: Stack(
+        children: [
+          Scaffold(
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(child: _mainContent(context)),
+                  // your existing screen
+                  _bottomNavigation(context),
+                ],
+              ),
+            ),
+          ),
+
+          // 👇 Overlay for website analysis animation
+          /*Obx(() => controller.analyzing.value
+              ? _buildWebsiteAnalysisOverlay(context)
+              : const SizedBox.shrink()),*/
+
+          // 👇 List view for analyzed website items
+          Obx(() => controller.websiteListVisible.value &&
+                  controller.websiteItems.isNotEmpty
+              ? _buildWebsiteItemList(context)
+              : const SizedBox.shrink()),
+        ],
+      ),
+    );
+  }
+
+  Widget _mainContent(BuildContext context) {
     final theme = Theme.of(context);
     const primaryColor = Color(0xFF3B82F6);
     const secondaryColor = Color(0xFF8B5CF6);
-    const cardColor = Colors.white;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Obx(() {
-                if (controller.loading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return Container(
-                  decoration: BoxDecoration(gradient: themeInfo.formGradient),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+    return Obx(() {
+      if (controller.loading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      return Container(
+        decoration: BoxDecoration(gradient: themeInfo.formGradient),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Header ---
+              Text(
+                'Add Products & Services',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Choose how you'd like to add your offerings",
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+
+              // --- CSV Template download link ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: InkWell(
+                  onTap: _downloadTemplate,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Header
+                        const Icon(Icons.download,
+                            size: 18, color: primaryColor),
+                        const SizedBox(width: 4),
                         Text(
-                          'Add Products & Services',
-                          style: theme.textTheme.headlineSmall?.copyWith(
+                          'Download Template',
+                          style: TextStyle(
+                            color: primaryColor,
+                            decoration: TextDecoration.underline,
+                            decorationColor: primaryColor,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E293B),
-                            letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Choose how you\'d like to add your offerings',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: InkWell(
-                            onTap: () => _downloadTemplate(),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.download,
-                                    size: 18,
-                                    color: const Color(0xFF3B82F6),
-                                  ),
-                                  Text(
-                                    'Download Template',
-                                    style: TextStyle(
-                                      color: const Color(0xFF3B82F6),
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: const Color(0xFF3B82F6),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // ✅ 4 Action Buttons in Grid
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            //  Manual Add
-                            Flexible(
-                              child: _buildActionCard(
-                                context,
-                                icon: Icons.add,
-                                title: 'Add Service/Product',
-                                color: primaryColor,
-                                onPressed: _showManualAddDialog,
-                              ),
-                            ),
-
-                            // 2. Upload CSV File
-                            Flexible(
-                              child: _buildActionCard(
-                                context,
-                                icon: Icons.upload_file_rounded,
-                                title: 'Upload CSV File',
-                                color: primaryColor,
-                                onPressed: _pickAndImport,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // 4. Analyze Website
-                        _buildActionCardWitTitle(
-                          context,
-                          icon: Icons.language_rounded,
-                          title: 'Analyze Website',
-                          subtitle: 'Extract service/Product from your site',
-                          color: secondaryColor,
-                          onPressed: _showWebsiteDialog,
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        // Catalog Table
-                        if (controller.items.isNotEmpty)
-                          _catalogTable(context)
-                        else
-                          const Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Text(
-                                'No items yet. Use the options above to add your offerings.'),
-                          ),
                       ],
                     ),
                   ),
-                );
-              }),
-            ),
-            _bottomNavigation(context),
-          ],
+                ),
+              ),
+
+              // --- Add / Upload options ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Flexible(
+                    child: _buildActionCard(
+                      context,
+                      icon: Icons.add,
+                      title: 'Add Service/Product',
+                      color: primaryColor,
+                      onPressed: _showManualAddDialog,
+                    ),
+                  ),
+                  Flexible(
+                    child: _buildActionCard(
+                      context,
+                      icon: Icons.upload_file_rounded,
+                      title: 'Upload CSV File',
+                      color: primaryColor,
+                      onPressed: _pickAndImport,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // --- Analyze Website option ---
+              _buildActionCardWitTitle(
+                context,
+                icon: Icons.language_rounded,
+                title: 'Analyze Website',
+                subtitle: 'Extract Products & Services automatically',
+                color: secondaryColor,
+                onPressed: _showWebsiteDialog,
+              ),
+
+              const SizedBox(height: 20),
+
+              // --- Catalog Table (existing) ---
+              if (controller.items.isNotEmpty)
+                _catalogTable(context)
+              else
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'No items yet. Use the options above to add your offerings.',
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildActionCard(

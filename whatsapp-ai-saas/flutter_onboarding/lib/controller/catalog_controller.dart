@@ -12,6 +12,11 @@ class CatalogController extends GetxController {
   final loading = false.obs;
   final loadingCSV = false.obs;
   final selected = <int>[].obs;
+  final websiteItems = <Map<String, dynamic>>[].obs;
+  final selectedWebsiteItems = <int>[].obs;
+  final loadingWebsite = false.obs;
+  final websiteListVisible = false.obs;
+
 
   /// --- Snackbar Helpers ---
   void _showSuccess(String title, String message) {
@@ -198,6 +203,74 @@ class CatalogController extends GetxController {
           'Success', 'Applied $discount% discount to ${selected.length} items');
     } catch (e) {
       _showError('Error', 'Bulk update failed: $e');
+    }
+  }
+
+  // --- Fetch from website
+  Future<void> fetchFromWebsite(String url) async {
+    try {
+      loadingWebsite.value = true;
+      final tenantId = await StoreUserData().getTenantId();
+      if (tenantId == null) {
+        _showError('Error', 'Tenant not found');
+        return;
+      }
+
+      final response = await api.fetchWebsiteCatalog(tenantId: tenantId, url: url);
+      if (response['ok'] == true) {
+        final list = (response['Bussiness_Catalog'] as List).cast<Map<String, dynamic>>();
+        if(list.isNotEmpty) {
+          websiteItems.assignAll(list);
+          websiteListVisible.value = true;
+        }
+        _showSuccess('Website Parsed', 'Fetched ${list.length} items from website');
+      } else {
+        _showError('Error', 'Failed to fetch catalog');
+      }
+    } catch (e) {
+      _showError('Error', 'Website ingestion failed: $e');
+    } finally {
+      loadingWebsite.value = false;
+    }
+  }
+
+// --- Toggle item selection
+  void toggleSelect(int index, bool? selected) {
+    if (selected == true) {
+      if (!selectedWebsiteItems.contains(index)) selectedWebsiteItems.add(index);
+    } else {
+      selectedWebsiteItems.remove(index);
+    }
+  }
+
+// --- Select all items
+  void selectAll(bool select) {
+    if (select) {
+      selectedWebsiteItems.assignAll(List.generate(websiteItems.length, (i) => i));
+    } else {
+      selectedWebsiteItems.clear();
+    }
+  }
+
+// --- Save selected (bulk upload)
+  Future<void> saveSelectedWebsiteItems() async {
+    if (selectedWebsiteItems.isEmpty) {
+      _showError('Error', 'No items selected');
+      return;
+    }
+    try {
+      loading.value = true;
+      final selected = selectedWebsiteItems.map((i) => websiteItems[i]).toList();
+      final result = await api.bulkUploadCatalog(selected);
+      _showSuccess('Success', 'Uploaded ${result['created']} items');
+      websiteItems.clear();
+      selectedWebsiteItems.clear();
+      websiteListVisible.value = false; // 👈 Hide website list
+      await fetchCatalog();
+    } catch (e) {
+      _showError('Error', 'Bulk upload failed: $e');
+    } finally {
+      loading.value = false;
     }
   }
 }

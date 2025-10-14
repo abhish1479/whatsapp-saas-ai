@@ -11,15 +11,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 String resolveApiBase() {
   const fromDefine = String.fromEnvironment('API_BASE');
   if (fromDefine.isNotEmpty) return fromDefine;
- return 'https://diglottic-nondisingenuously-gordon.ngrok-free.dev'; // Azim URL
-  // return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Salman URL
+  // return 'https://diglottic-nondisingenuously-gordon.ngrok-free.dev'; // Azim URL
+  return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Salman URL
   // return 'https://0b0d30716cca.ngrok-free.app'; // Ensure no trailing space
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if(kIsWeb) {
+  if (kIsWeb) {
     await Firebase.initializeApp(
         options: const FirebaseOptions(
             apiKey: "AIzaSyBXal3rxC8vav5BvxJqoHUqHLN_yoeV9Bw",
