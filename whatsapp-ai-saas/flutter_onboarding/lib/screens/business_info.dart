@@ -128,6 +128,7 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
             position: _slideAnimation,
             child: LayoutBuilder(
               builder: (context, constraints) {
+                final screenWidth = constraints.maxWidth;
                 if (kIsWeb) {
                   if (width > 1024) {
                     return Row(
@@ -170,8 +171,14 @@ class _BusinessInfoScreenState extends State<BusinessInfoScreen>
                   } else {
                     return Row(
                       children: [
-                        Flexible(flex: 3, child: _buildForm(inRow: true)),
-                        Flexible(flex: 2, child: _buildWhatsAppPreview(inRow: true)),
+                        SizedBox(
+                          width: screenWidth * 0.60,
+                          child: _buildForm(inRow: true),
+                        ),
+                        SizedBox(
+                          width: screenWidth * 0.40,
+                          child: _buildWhatsAppPreview(inRow: true),
+                        ),
                       ],
                     );
                   }
