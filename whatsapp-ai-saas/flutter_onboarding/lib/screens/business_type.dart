@@ -32,6 +32,10 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
   final _descriptionController = TextEditingController();
   final _customTypeController = TextEditingController();
   final _categoryController = TextEditingController();
+  late String _initialType = '';
+  late String _initialDescription = '';
+  late String _initialCustomType = '';
+  late String _initialCategory = '';
 
   @override
   void initState() {
@@ -48,6 +52,12 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
       _descriptionController.text = data.businessDescription ?? '';
       _customTypeController.text = data.customBusinessType ?? '';
       _categoryController.text = data.businessCategory ?? '';
+
+      // snapshot for change detection
+      _initialType = _selectedType.value;
+      _initialDescription = _descriptionController.text;
+      _initialCustomType = _customTypeController.text;
+      _initialCategory = _categoryController.text;
     }
   }
 
@@ -74,6 +84,18 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
         Get.snackbar('Error', 'Please enter your Business Category');
         return;
       }
+    }
+
+    final hasChanged =
+        _selectedType.value != _initialType ||
+            _descriptionController.text.trim() != _initialDescription.trim() ||
+            _customTypeController.text.trim() != _initialCustomType.trim() ||
+            _categoryController.text.trim() != _initialCategory.trim();
+
+    if (!hasChanged) {
+      // Skip API call → simply proceed to next step
+      widget.onNext();
+      return;
     }
 
     try {
@@ -131,6 +153,10 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
 
     const primaryColor = Color(0xFF3B82F6);
     const secondaryColor = Color(0xFF8B5CF6);
+    final isWide = MediaQuery.of(context).size.width > 800; // web / large screen
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final crossAxisCount = isWide || isLandscape ? 4 : 2;
+    final horizontalPadding = isWide ? 100.0 : 16.0;
 
     return Obx(
       () => WillPopScope(
@@ -194,11 +220,11 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: types.length,
                                 gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
                                   mainAxisSpacing: 10,
                                   crossAxisSpacing: 10,
-                                  childAspectRatio: 1.5,
+                                  childAspectRatio: isWide ? 1.8 : 1.5,
                                 ),
                                 itemBuilder: (context, index) {
                                   final item = types[index];
@@ -240,38 +266,55 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                                   children: [
                                     if (_selectedType.value == 'other') ...[
                                       const SizedBox(height: 20),
-                                      CustomWidgets.buildTextField2(
-                                        context: context,
-                                        controller: _customTypeController,
-                                        label: "Business Type *",
-                                        hint: "Enter your business type",
+                                      ConstrainedBox(
+                                        constraints: BoxConstraints(maxWidth: isWide ? 600 : double.infinity),
+                                        child: CustomWidgets.buildTextField2(
+                                          context: context,
+                                          controller: _customTypeController,
+                                          label: "Business Type *",
+                                          hint: "Enter your business type",
+                                        ),
                                       ),
+
                                       const SizedBox(height: 20),
-                                      CustomWidgets.buildTextField2(
-                                        context: context,
-                                        controller: _categoryController,
-                                        label: "Business Category *",
-                                        hint: "Enter business category",
+                                      ConstrainedBox(
+                                        constraints: BoxConstraints(maxWidth: isWide ? 600 : double.infinity),
+                                        child:CustomWidgets.buildTextField2(
+                                          context: context,
+                                          controller: _categoryController,
+                                          label: "Business Category *",
+                                          hint: "Enter business category",
+                                        ),
                                       ),
+
                                     ],
                                     const SizedBox(height: 20),
-                                    CustomWidgets.buildTextField2(
-                                      context: context,
-                                      controller: _descriptionController,
-                                      label: "Description",
-                                      hint: "Describe your business...",
-                                      maxLines: 3,
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(maxWidth: isWide ? 600 : double.infinity),
+                                      child: CustomWidgets.buildTextField2(
+                                        context: context,
+                                        controller: _descriptionController,
+                                        label: "Description",
+                                        hint: "Describe your business...",
+                                        maxLines: 3,
+                                      ),
                                     ),
+
                                   ],
                                 ),
+
+
+                              const SizedBox(height: 30),
+                              // ✅ Add Bottom Navigation Row
+                              _bottomNavigation(primaryColor, secondaryColor),
+
+                              const SizedBox(height: 20),
                             ],
                           ),
                         ),
                       ),
                     ),
 
-                    // ✅ Add Bottom Navigation Row
-                    _bottomNavigation(primaryColor, secondaryColor),
                   ],
                 ),
               ),
@@ -285,61 +328,54 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
   }
 
   Widget _bottomNavigation(Color primaryColor, Color secondaryColor) {
-    return Container(
-      decoration: BoxDecoration(gradient: themeInfo.formGradient),
-      // decoration: BoxDecoration(
-      //   gradient: LinearGradient(colors: [primaryColor, secondaryColor]),
-      // ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          OutlinedButton.icon(
-            onPressed: widget.onBack,
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text("Back"),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
-              foregroundColor: const Color(0xFF64748B),
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        OutlinedButton.icon(
+          onPressed: widget.onBack,
+          icon: const Icon(Icons.arrow_back, size: 18),
+          label: const Text("Back"),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            foregroundColor: const Color(0xFF64748B),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient:
-                  LinearGradient(colors: [primaryColor, secondaryColor]),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: FilledButton.icon(
-              onPressed: _isLoading.value ? null : _submit,
-              icon: const Icon(Icons.save, color: Colors.white),
-              label: const Text(
-                "Save & Continue",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient:
+                LinearGradient(colors: [primaryColor, secondaryColor]),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            ],
+          ),
+          child: FilledButton.icon(
+            onPressed: _isLoading.value ? null : _submit,
+            icon: const Icon(Icons.save, color: Colors.white),
+            label: const Text(
+              "Save & Continue",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -103,7 +103,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                 children: [
                   Expanded(child: _mainContent(context)),
                   // your existing screen
-                  _bottomNavigation(context),
                 ],
               ),
             ),
@@ -237,6 +236,12 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                     'No items yet. Use the options above to add your offerings.',
                   ),
                 ),
+
+              const SizedBox(height: 30),
+
+              _bottomNavigation(context),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -1228,7 +1233,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                   child: Text(
                     title,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 12),
+                        fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                 ),
               ],
@@ -1522,66 +1527,62 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     const primaryColor = Color(0xFF3B82F6);
     const secondaryColor = Color(0xFF8B5CF6);
 
-    return Container(
-      decoration: BoxDecoration(gradient: themeInfo.formGradient),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // ⬅️ Back button
-          OutlinedButton.icon(
-            onPressed: widget.onBack,
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text("Back"),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // ⬅️ Back button
+        OutlinedButton.icon(
+          onPressed: widget.onBack,
+          icon: const Icon(Icons.arrow_back, size: 18),
+          label: const Text("Back"),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            foregroundColor: const Color(0xFF64748B),
+          ),
+        ),
+
+        // ➡️ Continue button
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [primaryColor, secondaryColor],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: FilledButton.icon(
+            onPressed: widget.onNext,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              foregroundColor: const Color(0xFF64748B),
             ),
-          ),
-
-          // ➡️ Continue button
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [primaryColor, secondaryColor],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: FilledButton.icon(
-              onPressed: widget.onNext,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon:
-                  const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-              label: const Text(
-                'Continue',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+            icon:
+                const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            label: const Text(
+              'Continue',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -41,7 +41,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       BusinessInfoScreen(api: widget.api,  onNext: next),
       BusinessTypeScreen( onNext: next, onBack: back ),
       InfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
-      // BusinessInfoCaptureScreen(api: widget.api,  onNext: next, onBack: back),
       WorkflowSetupScreen(api: widget.api, onNext: next, onBack: back),
       // PaymentSetupScreen(api: widget.api,  onNext: next, onBack: back),//KYCScreen
       WhatsAppAgentScreen(api: widget.api,  onNext: next, onBack: back),
