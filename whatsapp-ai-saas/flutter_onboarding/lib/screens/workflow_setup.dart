@@ -1,7 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:leadbot_client/helper/utils/app_utils.dart';
 import '../api/api.dart';
+import '../controller/onboarding_controller.dart';
 import '../helper/utils/shared_preference.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -18,28 +22,75 @@ class WorkflowSetupScreen extends StatefulWidget {
 }
 
 class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
+  final controller = Get.find<OnboardingController>();
   bool askName = true, askLocation = false, offerPayment = false;
   String template = "Lead capture → Qualification → Payment";
   bool _isLoading = false;
 
   // Payment state (saved when user confirms the modal)
-  String? upiId;
+  String upiId = '';
   Uint8List? qrCodeBytes;
-  String? qrCodeUrl;
+  String qrCodeUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingWorkflowData();
+  }
+
+  Future<void> _loadExistingWorkflowData() async {
+    final tid = await StoreUserData().getTenantId();
+    await controller.fetchOnboardingData(tid);
+    final data = controller.data?.workflow;
+    if (data != null) {
+      setState(() {
+        askName = data.askName ?? true;
+        askLocation = data.askLocation ?? false;
+        offerPayment = data.offerPayment ?? false;
+        upiId = data.upiId ?? '';
+        qrCodeUrl = data.qrImageUrl ?? '';
+        template = data.template ?? template;
+      });
+    }
+  }
 
   Future<void> _save() async {
+    if (offerPayment) {
+      if (upiId.isEmpty && qrCodeUrl.isEmpty) {
+        AppUtils.showError('Error', 'Please enter your payment details');
+        return;
+      }
+    }
     setState(() => _isLoading = true);
     try {
-      await widget.api.postForm('/onboarding/workflow', {
-        'tenant_id': await StoreUserData().getTenantId(),
-        'template': template,
-        'ask_name': askName.toString(),
-        'ask_location': askLocation.toString(),
-        'offer_payment': offerPayment.toString(),
-        if (offerPayment) 'upi_id': upiId ?? '',
-        if (offerPayment) 'qr_image_url': qrCodeUrl ?? '',
-      });
-      widget.onNext();
+      final tid = await StoreUserData().getTenantId();
+      final result = await controller.submitWorkflowSetup(
+        tenantId: tid!,
+        template: template,
+        askName: askName,
+        askLocation: askLocation,
+        offerPayment: offerPayment,
+        upiId: upiId,
+        qrImageUrl: qrCodeUrl,
+      );
+
+      if (result['ok'] == true) {
+        widget.onNext();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['detail'] ?? 'Failed to save workflow'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving workflow: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -210,14 +261,14 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                   }
 
                   setState(() {
-                    upiId = entered.isEmpty ? null : entered;
-                    qrCodeUrl = tempUrl;
+                    upiId = entered.isEmpty ? '' : entered;
+                    qrCodeUrl = tempUrl ?? '';
                     qrCodeBytes = tempBytes;
                     offerPayment = true;
                   });
 
                   Navigator.of(ctx).pop({
-                    'upiId': entered.isEmpty ? null : entered,
+                    'upiId': entered.isEmpty ? '' : entered,
                     'qrUrl': tempUrl,
                     'bytes': tempBytes,
                   });
@@ -242,12 +293,6 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- DEBUG PRINTS (Optional, remove later) ---
-    print('DEBUG: qrCodeBytes length: ${qrCodeBytes?.length}');
-    print('DEBUG: qrCodeUrl: $qrCodeUrl');
-    print('DEBUG: offerPayment: $offerPayment');
-    // --- END DEBUG PRINTS ---
-
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -351,16 +396,16 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                       } else {
                         setState(() {
                           offerPayment = true;
-                          upiId = result['upiId'] as String?;
-                          qrCodeUrl = result['qrUrl'] as String?;
+                          upiId = result['upiId'] as String;
+                          qrCodeUrl = result['qrUrl'] as String;
                           qrCodeBytes = result['bytes'] as Uint8List?;
                         });
                       }
                     } else {
                       setState(() {
                         offerPayment = false;
-                        upiId = null;
-                        qrCodeUrl = null;
+                        upiId = '';
+                        qrCodeUrl = '';
                         qrCodeBytes = null;
                       });
                     }
@@ -368,7 +413,11 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                   Icons.payment_outlined,
                 ),
                 // ✅ FIXED: Prioritize qrCodeBytes over qrCodeUrl for preview
-                if (offerPayment && (upiId != null || qrCodeUrl != null || qrCodeBytes != null)) ...[ // Changed condition
+                if (offerPayment &&
+                    (upiId != null ||
+                        qrCodeUrl != null ||
+                        qrCodeBytes != null)) ...[
+                  // Changed condition
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -480,7 +529,8 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                                     fontSize: 13,
                                   ),
                                 )
-                              else if (qrCodeBytes != null || qrCodeUrl != null) // Changed condition
+                              else if (qrCodeBytes != null ||
+                                  qrCodeUrl != null) // Changed condition
                                 const Text(
                                   "QR Code uploaded",
                                   style: TextStyle(
@@ -508,8 +558,8 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                             final result = await _showPaymentDialog();
                             if (result != null) {
                               setState(() {
-                                upiId = result['upiId'] as String?;
-                                qrCodeUrl = result['qrUrl'] as String?;
+                                upiId = result['upiId'] as String;
+                                qrCodeUrl = result['qrUrl'] as String;
                                 qrCodeBytes = result['bytes'] as Uint8List?;
                               });
                             }
@@ -537,8 +587,8 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                           tooltip: "Remove payment info",
                           onPressed: () {
                             setState(() {
-                              upiId = null;
-                              qrCodeUrl = null;
+                              upiId = '';
+                              qrCodeUrl = '';
                               qrCodeBytes = null;
                               offerPayment = false;
                             });

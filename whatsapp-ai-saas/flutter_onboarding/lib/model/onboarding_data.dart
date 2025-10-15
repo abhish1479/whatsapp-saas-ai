@@ -142,6 +142,8 @@ class Workflow {
   final bool askName;
   final bool askLocation;
   final bool offerPayment;
+  final String upiId;
+  final String qrImageUrl;
   final String updatedAt;
 
   Workflow({
@@ -149,6 +151,8 @@ class Workflow {
     required this.askName,
     required this.askLocation,
     required this.offerPayment,
+    required this.upiId,
+    required this.qrImageUrl,
     required this.updatedAt,
   });
 
@@ -158,6 +162,8 @@ class Workflow {
       askName: json['ask_name'] ?? false,
       askLocation: json['ask_location'] ?? false,
       offerPayment: json['offer_payment'] ?? false,
+      upiId: json['upi_id'] ?? '',
+      qrImageUrl: json['qr_image_url'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
   }

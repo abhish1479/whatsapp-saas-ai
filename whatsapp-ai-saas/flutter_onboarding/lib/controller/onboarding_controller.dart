@@ -7,6 +7,7 @@ import '../model/onboarding_data.dart';
 
 class OnboardingController extends GetxController {
   final Api _api;
+
   OnboardingController(this._api);
 
   var isLoading = false.obs;
@@ -16,7 +17,7 @@ class OnboardingController extends GetxController {
   OnboardingData? get data => _data;
 
   Future<void> fetchOnboardingData(int tenantId) async {
-    if (_data != null) return;
+    // if (_data != null) return;
 
     isLoading(true);
     errorMessage('');
@@ -68,4 +69,49 @@ class OnboardingController extends GetxController {
     }
   }
 
+  /// --- Submit Workflow Setup ---
+  Future<Map<String, dynamic>> submitWorkflowSetup({
+    required int tenantId,
+    required String template,
+    required bool askName,
+    required bool askLocation,
+    required bool offerPayment,
+    String? upiId,
+    String? qrImageUrl,
+  }) async {
+    try {
+      final body = {
+        'tenant_id': tenantId.toString(),
+        'template': template,
+        'ask_name': askName.toString(),
+        'ask_location': askLocation.toString(),
+        'offer_payment': offerPayment.toString(),
+        if (offerPayment) 'upi_id': upiId ?? '',
+        if (offerPayment) 'qr_image_url': qrImageUrl ?? '',
+      };
+
+      final response = await _api.postForm('/onboarding/workflow', body);
+
+      return response;
+    } catch (e) {
+      AppLogger.log('submitWorkflowSetup error: $e');
+      return {'status': 'error', 'detail': e.toString()};
+    }
+  }
+
+  /// --- Prefill UI fields (for WorkflowSetupScreen) ---
+  Map<String, dynamic> getWorkflowDefaults() {
+    final d = _data?.workflow;
+    if (d == null) return {};
+
+    return {
+      'askName': d.askName ?? true,
+      'askLocation': d.askLocation ?? false,
+      'offerPayment': d.offerPayment ?? false,
+      'upiId': d.upiId,
+      'qrImageUrl': d.qrImageUrl,
+      'template': d.template ??
+          "Lead capture → Qualification → Payment", // fallback default
+    };
+  }
 }
