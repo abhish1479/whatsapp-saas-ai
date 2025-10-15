@@ -21,6 +21,7 @@ class OnboardingData {
   final WebIngest? webIngest;
   final Workflow? workflow;
   final Payment? payment;
+  final AgentConfiguration? agentConfiguration;
 
   OnboardingData({
     required this.tenantId,
@@ -44,6 +45,7 @@ class OnboardingData {
     this.webIngest,
     this.workflow,
     this.payment,
+    this.agentConfiguration,
   });
 
   factory OnboardingData.fromJson(Map<String, dynamic> json) {
@@ -80,6 +82,9 @@ class OnboardingData {
           : null,
       payment: json['payment'] != null
           ? Payment.fromJson(json['payment'] as Map<String, dynamic>)
+          : null,
+      agentConfiguration: json['agent_configuration'] != null
+          ? AgentConfiguration.fromJson(json['agent_configuration'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -187,6 +192,53 @@ class Payment {
       upiId: json['upi_id'] ?? '',
       bankDetails: json['bank_details'] ?? '',
       checkoutLink: json['checkout_link'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+    );
+  }
+}
+
+class AgentConfiguration {
+  final String agentName;
+  final String agentImage;
+  final String status;
+  final String preferredLanguages;
+  final String conversationTone;
+  final bool incomingVoiceMessageEnabled;
+  final bool outgoingVoiceMessageEnabled;
+  final bool incomingMediaMessageEnabled;
+  final bool outgoingMediaMessageEnabled;
+  final bool imageAnalyzerEnabled;
+  final String createdAt;
+  final String updatedAt;
+
+  AgentConfiguration({
+    required this.agentName,
+    required this.agentImage,
+    required this.status,
+    required this.preferredLanguages,
+    required this.conversationTone,
+    required this.incomingVoiceMessageEnabled,
+    required this.outgoingVoiceMessageEnabled,
+    required this.incomingMediaMessageEnabled,
+    required this.outgoingMediaMessageEnabled,
+    required this.imageAnalyzerEnabled,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory AgentConfiguration.fromJson(Map<String, dynamic> json) {
+    return AgentConfiguration(
+      agentName: json['agent_name'] ?? '',
+      agentImage: (json['agent_image'] is String) ? (json['agent_image'] as String).trim() : '',
+      status: json['status'] ?? '',
+      preferredLanguages: json['preferred_languages'] ?? 'English',
+      conversationTone: json['conversation_tone'] ?? 'Friendly',
+      incomingVoiceMessageEnabled: json['incoming_voice_message_enabled'] ?? false,
+      outgoingVoiceMessageEnabled: json['outgoing_voice_message_enabled'] ?? false,
+      incomingMediaMessageEnabled: json['incoming_media_message_enabled'] ?? false,
+      outgoingMediaMessageEnabled: json['outgoing_media_message_enabled'] ?? false,
+      imageAnalyzerEnabled: json['image_analyzer_enabled'] ?? false,
+      createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
   }

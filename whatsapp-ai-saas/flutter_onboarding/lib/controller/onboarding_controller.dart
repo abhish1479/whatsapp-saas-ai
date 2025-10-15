@@ -114,4 +114,41 @@ class OnboardingController extends GetxController {
           "Lead capture → Qualification → Payment", // fallback default
     };
   }
+
+  Future<Map<String, dynamic>> saveAgentConfiguration({
+    required int tenantId,
+    required String agentName,
+    required String status,
+    required String preferredLanguages,
+    required String conversationTone,
+    required bool incomingVoiceMessageEnabled,
+    required bool outgoingVoiceMessageEnabled,
+    required bool incomingMediaMessageEnabled,
+    required bool outgoingMediaMessageEnabled,
+    required bool imageAnalyzerEnabled,
+    required String agentImage,
+  }) async {
+    try {
+      final payload = {
+        "tenant_id": tenantId,
+        "agent_name": agentName,
+        "status": status,
+        "preferred_languages": preferredLanguages,
+        "conversation_tone": conversationTone,
+        "incoming_voice_message_enabled": incomingVoiceMessageEnabled,
+        "outgoing_voice_message_enabled": outgoingVoiceMessageEnabled,
+        "incoming_media_message_enabled": incomingMediaMessageEnabled,
+        "outgoing_media_message_enabled": outgoingMediaMessageEnabled,
+        "image_analyzer_enabled": imageAnalyzerEnabled,
+        "agent_image": agentImage,
+      };
+
+      final response = await _api.postJson('/onboarding/agent-configurations', payload);
+      return response;
+    } catch (e) {
+      AppLogger.log('saveAgentConfiguration error: $e');
+      return {'status': 'error', 'detail': e.toString()};
+    }
+  }
+
 }

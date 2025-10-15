@@ -7,6 +7,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../api/api.dart';
 import '../helper/utils/shared_preference.dart';
+import '../controller/onboarding_controller.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 
 class WhatsAppAgentScreen extends StatefulWidget {
   final Api api;
@@ -31,9 +34,6 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
 
   String? _selectedTone = 'Friendly';
   List<String> _selectedLanguages = ['English'];
-
-  File? _profileImage;
-  Uint8List? _webImageBytes;
 
   bool _enableOutgoingVoice = false;
   bool _enableIncomingVoice = false;
@@ -62,22 +62,70 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     'Friendly'
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchAndPrefillData(); // ✅ FETCH DATA ON INIT
+  }
+
+  Future<void> _fetchAndPrefillData() async {
+    setState(() => _loading = true);
+    try {
+      final tenantId = await StoreUserData().getTenantId();
+
+      final controller = Get.find<OnboardingController>();
+      await controller.fetchOnboardingData(tenantId);
+
+      // ✅ Use the typed AgentConfiguration object
+      final agent = controller.data?.agentConfiguration;
+      if (agent == null) return;
+
+      // Prefill text fields
+      _nameController.text = agent.agentName;
+      _statusController.text = agent.status;
+
+      // Prefill tone
+      _selectedTone = agent.conversationTone;
+
+      // Prefill languages
+      if (agent.preferredLanguages.isNotEmpty) {
+        _selectedLanguages = agent.preferredLanguages
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
+
+      // Prefill toggles
+      _enableIncomingVoice = agent.incomingVoiceMessageEnabled;
+      _enableOutgoingVoice = agent.outgoingVoiceMessageEnabled;
+      _enableIncomingMedia = agent.incomingMediaMessageEnabled;
+      _enableOutgoingMedia = agent.outgoingMediaMessageEnabled;
+      _enableAIImageAnalysis = agent.imageAnalyzerEnabled;
+
+      // Prefill image
+      _uploadedImagePath = agent.agentImage.trim();
+
+    } catch (e) {
+      debugPrint('Prefill error: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
+
     setState(() => _loading = true);
     try {
       final bytes = await image.readAsBytes();
       final filename = image.name;
       final uploadedPath = await widget.api.uploadImage(bytes, filename);
+
       setState(() {
-        if (kIsWeb) {
-          _webImageBytes = bytes;
-        } else {
-          _profileImage = File(image.path);
-        }
-        _uploadedImagePath = uploadedPath;
+        _uploadedImagePath = uploadedPath; // ✅ Only update URL
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,6 +144,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
 
     // if (image != null) {
     //   if (kIsWeb) {
@@ -105,7 +154,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
     //     setState(() => _profileImage = File(image.path));
     //   }
     // }
-  }
+
 
   Future<void> _saveAndContinue() async {
     if (_nameController.text.trim().isEmpty) {
@@ -113,7 +162,7 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
           const SnackBar(content: Text('Agent name is required')));
       return;
     }
-    if (_profileImage == null && _webImageBytes == null) {
+    if (_uploadedImagePath == null || _uploadedImagePath!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Avatar image is required')));
       return;
@@ -126,25 +175,25 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
 
     try {
       final tenantId = await StoreUserData().getTenantId();
-      // final String base64Image = kIsWeb
-      //     ? base64Encode(_webImageBytes!)
-      //     : base64Encode(await _profileImage!.readAsBytes());
+      final controller = Get.find<OnboardingController>();
 
-      final Map<String, dynamic> payload = {
-        "tenant_id": tenantId,
-        "agent_name": _nameController.text.trim(),
-        "status": _statusController.text.trim(),
-        "preferred_languages": _selectedLanguages.join(","),
-        "conversation_tone": _selectedTone ?? "Friendly",
-        "incoming_voice_message_enabled": _enableIncomingVoice,
-        "outgoing_voice_message_enabled": _enableOutgoingVoice,
-        "incoming_media_message_enabled": _enableIncomingMedia,
-        "outgoing_media_message_enabled": _enableOutgoingMedia,
-        "image_analyzer_enabled": _enableAIImageAnalysis,
-        "agent_image": _uploadedImagePath,
-      };
+      final response = await controller.saveAgentConfiguration(
+        tenantId: tenantId,
+        agentName: _nameController.text.trim(),
+        status: _statusController.text.trim(),
+        preferredLanguages: _selectedLanguages.join(","),
+        conversationTone: _selectedTone ?? "Friendly",
+        incomingVoiceMessageEnabled: _enableIncomingVoice,
+        outgoingVoiceMessageEnabled: _enableOutgoingVoice,
+        incomingMediaMessageEnabled: _enableIncomingMedia,
+        outgoingMediaMessageEnabled: _enableOutgoingMedia,
+        imageAnalyzerEnabled: _enableAIImageAnalysis,
+        agentImage: _uploadedImagePath!.trim(),
+      );
 
-      await widget.api.postJson('/onboarding/agent-configurations', payload);
+      if (response.containsKey('status') && response['status'] == 'error') {
+        throw Exception(response['detail'] ?? 'Unknown error');
+      }
 
       setState(() {
         _isSuccess = true;
@@ -360,21 +409,15 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
                 ),
-                child: _profileImage != null
-                    ? ClipOval(
-                        child: Image.file(_profileImage!, fit: BoxFit.cover))
-                    : _webImageBytes != null
-                        ? ClipOval(
-                            child: Image.memory(_webImageBytes!,
-                                fit: BoxFit.cover))
-                        : Container(
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFFF1F5F9),
-                            ),
-                            child: const Icon(Icons.photo_camera,
-                                color: Color(0xFF94A3B8), size: 40),
-                          ),
+                child: _uploadedImagePath != null && _uploadedImagePath!.isNotEmpty
+                          ? ClipOval(
+                        child: Image.network(
+                          _uploadedImagePath!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+                        ),
+                      )
+                    : _buildDefaultAvatar(),
               ),
             ),
           ),
@@ -590,4 +633,14 @@ class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
         activeColor: const Color(0xFF3B82F6),
         contentPadding: EdgeInsets.zero,
       );
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFFF1F5F9),
+      ),
+      child: const Icon(Icons.photo_camera, color: Color(0xFF94A3B8), size: 40),
+    );
+  }
 }
