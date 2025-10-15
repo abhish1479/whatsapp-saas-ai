@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
 from deps import get_db
-from services.rag import rag
+from services.rag import add_catalog_to_rag, rag
 from models import AgentConfiguration, BusinessCatalog, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
 from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
 from data_models.request_model import BusinessTypeRequest
@@ -345,6 +345,7 @@ async def get_review(
     db: Session = Depends(get_db),
 ):
     # Check if business profile exists
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     business_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
     if not business_profile:
         return ReviewResponse(
@@ -452,12 +453,21 @@ async def get_review(
             "created_at": agent_configuration.created_at.isoformat() if agent_configuration.created_at else None,
             "updated_at": agent_configuration.updated_at.isoformat() if agent_configuration.updated_at else None,
         } if agent_configuration else None,
+        tenant={
+            "id": tenant.id,
+            "name": tenant.name,
+            "plan": tenant.plan,
+            "rag_enabled": tenant.rag_enabled,
+            "rag_updated_at": tenant.rag_updated_at.isoformat() if tenant.rag_updated_at else None,
+            "created_at": tenant.created_at.isoformat() if tenant.created_at else None,
+        } if tenant else None,
     )
 
 
 @router.post("/agent-configurations", response_model=AgentConfigurationResponse)
 def upsert_agent_configuration(
     config: AgentConfigurationBase,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     # Validate tenant exists
@@ -477,7 +487,7 @@ def upsert_agent_configuration(
             setattr(existing, field, value)
         db.commit()
         db.refresh(existing)
-        return existing
+        result = existing
 
     else:
         # CREATE
@@ -485,4 +495,8 @@ def upsert_agent_configuration(
         db.add(new_config)
         db.commit()
         db.refresh(new_config)
-        return new_config
+        result = new_config
+    
+    background_tasks.add_task(add_catalog_to_rag, tenant_id=config.tenant_id)
+    
+    return result

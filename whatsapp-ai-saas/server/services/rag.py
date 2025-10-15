@@ -5,6 +5,11 @@ import os
 import uuid
 import logging
 
+from sqlalchemy import func
+from database import SessionLocal
+from sqlalchemy.orm import Session
+from models import BusinessCatalog, Tenant
+
 logger = logging.getLogger(__name__)
 
 
@@ -158,7 +163,66 @@ class RAGService:
         top_metas = metas[0] if metas and isinstance(metas[0], list) else metas
         merged = " ".join([d for d in top_docs if isinstance(d, str)])[:500]
         return {"answer": merged, "sources": top_metas}
-
+    
 
 # Singleton instance for imports like: from services.rag import rag
 rag = RAGService()
+
+async def add_catalog_to_rag(tenant_id: int):
+    db: Session = SessionLocal()
+    try:
+        print("Adding catalog to RAG for tenant:", tenant_id)
+        if not tenant_id:
+            return {"ok": False, "message": "tenant ID not provided"}
+
+        catalogs = db.query(BusinessCatalog).filter(
+            BusinessCatalog.tenant_id == tenant_id).all()
+        print(f"Found {len(catalogs)} catalogs for tenant {tenant_id}")
+        if not catalogs:
+            return {"ok": False, "message": "No catalogs found"}
+
+        # Prepare documents for RAG
+        documents = []
+        for catalog in catalogs:
+            txt = (
+                    f"Name: {catalog.name}\n"
+                    f"Description: {catalog.description or 'Not available'}\n"
+                    f"Category: {catalog.category or 'Uncategorized'}\n"
+                    f"Type: {catalog.item_type or 'Unknown'}\n"
+                    f"Price: {catalog.price if catalog.price is not None else 'N/A'} {catalog.currency or 'USD'}\n"
+                    f"Discount: {catalog.discount if catalog.discount is not None else '0%'}\n"
+                    f"Source URL: {catalog.source_url or 'N/A'}\n"
+                    f"Image URL: {catalog.image_url or 'N/A'}\n"
+                    f"Created: {catalog.created_at.strftime('%Y-%m-%d %H:%M') if catalog.created_at else 'Unknown'}\n"
+                    f"Updated: {catalog.updated_at.strftime('%Y-%m-%d %H:%M') if catalog.updated_at else 'Unknown'}"
+                )
+            
+            documents.append({
+                "id": str(catalog.id),  # RAG systems usually expect string IDs
+                "text": txt,
+                "source_url": catalog.source_url,
+                "version": "1.0",  # You can make this dynamic if needed
+                "language": "en",  # Adjust based on tenant or catalog metadata
+            })
+
+        # Add to RAG system
+        tenant_id = catalogs[0].tenant_id  # Assuming all have same tenant_id
+        await rag.add_documents(tenant_id, documents)
+        print(f"Added {len(documents)} documents to RAG for tenant {tenant_id}")
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        tenant.rag_enabled = True
+        tenant.rag_updated_at = func.now()
+        db.add(tenant)
+        db.commit()
+        return {
+            "ok": True,
+            "added_count": len(documents),
+            "tenant_id": tenant_id,
+        }
+
+    except Exception as e:
+        logger.exception("Error in add_catalog_to_rag for tenant %s: %s", tenant_id, str(e))
+        db.rollback()
+        return {"ok": False, "message": str(e)}
+    finally:
+        db.close() 

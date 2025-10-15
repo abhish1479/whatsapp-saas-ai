@@ -34,7 +34,7 @@ class ReviewResponse(BaseModel):
     kyc: Optional[dict] = None
     payment: Optional[dict] = None
     agent_configuration: Optional[dict] = None
-
+    tenant: Optional[dict] = None
 
 class AgentConfigurationBase(BaseModel):
     tenant_id: int

@@ -19,6 +19,8 @@ class Tenant(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     plan = Column(String, default="starter")
+    rag_enabled = Column(Boolean, default=False)
+    rag_updated_at = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
 
 class User(Base):

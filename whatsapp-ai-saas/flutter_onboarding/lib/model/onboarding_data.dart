@@ -22,6 +22,7 @@ class OnboardingData {
   final Workflow? workflow;
   final Payment? payment;
   final AgentConfiguration? agentConfiguration;
+  final Tenant? tenant;
 
   OnboardingData({
     required this.tenantId,
@@ -46,6 +47,7 @@ class OnboardingData {
     this.workflow,
     this.payment,
     this.agentConfiguration,
+    this.tenant
   });
 
   factory OnboardingData.fromJson(Map<String, dynamic> json) {
@@ -85,6 +87,9 @@ class OnboardingData {
           : null,
       agentConfiguration: json['agent_configuration'] != null
           ? AgentConfiguration.fromJson(json['agent_configuration'] as Map<String, dynamic>)
+          : null,
+      tenant: json['tenant'] != null
+          ? Tenant.fromJson(json['tenant'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -229,17 +234,55 @@ class AgentConfiguration {
   factory AgentConfiguration.fromJson(Map<String, dynamic> json) {
     return AgentConfiguration(
       agentName: json['agent_name'] ?? '',
-      agentImage: (json['agent_image'] is String) ? (json['agent_image'] as String).trim() : '',
+      agentImage: (json['agent_image'] is String)
+          ? (json['agent_image'] as String).trim()
+          : '',
       status: json['status'] ?? '',
       preferredLanguages: json['preferred_languages'] ?? 'English',
       conversationTone: json['conversation_tone'] ?? 'Friendly',
-      incomingVoiceMessageEnabled: json['incoming_voice_message_enabled'] ?? false,
-      outgoingVoiceMessageEnabled: json['outgoing_voice_message_enabled'] ?? false,
-      incomingMediaMessageEnabled: json['incoming_media_message_enabled'] ?? false,
-      outgoingMediaMessageEnabled: json['outgoing_media_message_enabled'] ?? false,
+      incomingVoiceMessageEnabled: json['incoming_voice_message_enabled'] ??
+          false,
+      outgoingVoiceMessageEnabled: json['outgoing_voice_message_enabled'] ??
+          false,
+      incomingMediaMessageEnabled: json['incoming_media_message_enabled'] ??
+          false,
+      outgoingMediaMessageEnabled: json['outgoing_media_message_enabled'] ??
+          false,
       imageAnalyzerEnabled: json['image_analyzer_enabled'] ?? false,
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
   }
+}
+
+class Tenant {
+    final int id;
+    final String name;
+    final String plan;
+    final bool ragEnabled;
+    final String? ragUpdatedAt;
+    final String createdAt;
+    final String updatedAt;
+
+      Tenant({
+        required this.id,
+        required this.name,
+        required this.plan,
+        required this.ragEnabled,
+        this.ragUpdatedAt,
+        required this.createdAt,
+        required this.updatedAt,
+        });
+
+      factory Tenant.fromJson(Map<String, dynamic> json) {
+        return Tenant(
+          id: json['id'] as int? ?? 0,
+          name: json['name'] ?? '',
+          plan: json['plan'] ?? '',
+          ragEnabled: json['rag_enabled'] ?? false,
+          ragUpdatedAt: json['rag_updated_at'] is String ? json['rag_updated_at'] : null,
+          createdAt: json['created_at'] is String ? json['created_at'] : '',
+          updatedAt: json['updated_at'] is String ? json['updated_at'] : '',
+          );
+      }
 }
