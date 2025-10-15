@@ -4,10 +4,10 @@ from fastapi import APIRouter, FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from data_models.social_auth_model import SocialLoginRequest
 from utils.google_jwt import verify_google_id_token
-from utils.enums import SocialProvider
+from utils.enums import Onboarding, SocialProvider
 from services.social_auth_service import SocialAuthService
 from utils.jwt_utils import create_access_token
-from models import Tenant, User, Identity  # Import your DB setup
+from models import BusinessProfile, Tenant, User, Identity  # Import your DB setup
 from pydantic import BaseModel
 from deps import get_db
 
@@ -208,7 +208,10 @@ async def oauth_callback(
         "iat": datetime.utcnow(),  # Optional: issued at
         "exp": datetime.utcnow() + timedelta(minutes=30)  # Optional: explicit expiry
     }
-
+    
+    if user.onboarding_process == Onboarding.COMPLETED:
+            bussiness_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == user.tenant_id).first()
+            is_active_bussiness_profile = bussiness_profile.is_active
     # Step 4: Generate JWT
     access_token_jwt = create_access_token(token_payload)
 
@@ -226,5 +229,6 @@ async def oauth_callback(
             "role": user.role,
         },
         "tenant_id": user.tenant_id,
-        "onboarding_process": user.onboarding_process
+        "onboarding_process": user.onboarding_process,
+        "is_active_bussiness_profile": is_active_bussiness_profile if is_active_bussiness_profile else False
     }
