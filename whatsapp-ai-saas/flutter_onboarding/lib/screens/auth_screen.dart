@@ -14,6 +14,7 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 import '../api/api.dart';
 import '../model/auth.dart';
+import '../theme/business_info_theme.dart';
 import 'leads/leads_list_screen.dart';
 import 'onboarding_wizard.dart';
 
@@ -49,6 +50,9 @@ class _SignupScreenState extends State<SignupScreen>
   List<Map<String, dynamic>> _plans = [];
   bool _isLoadingPlans = false;
   String? _planError;
+
+  BusinessInfoTheme get theme =>
+      Theme.of(context).extension<BusinessInfoTheme>() ?? BusinessInfoTheme.light;
 
   @override
   void initState() {
@@ -583,6 +587,7 @@ class _SignupScreenState extends State<SignupScreen>
     bool isWeb = MediaQuery.of(context).size.width > 800;
 
     return Container(
+      decoration: BoxDecoration(gradient: theme.formGradient),
       margin: EdgeInsets.symmetric(
         horizontal: isWeb ? 40 : 0,
       ),
@@ -601,14 +606,44 @@ class _SignupScreenState extends State<SignupScreen>
           const SizedBox(height: 16),
           Text(
             _isLogin
-                ? 'Choose your preferred login method'
-                : 'Choose your preferred sign-up method for the $_selectedPlan plan',
+                ? 'Sign in or create an account using your Google credentials'
+                : 'Sign in or create an account using your Google credentials',
             style: const TextStyle(
               fontSize: 16,
               color: Color(0xFF64748B),
               height: 1.5,
             ),
             textAlign: TextAlign.center,
+          ),
+
+          SizedBox(height: isWeb ? 40 : 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _isLogin
+                    ? ''
+                    : 'Selected Plan is ',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF64748B),
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                _isLogin
+                    ? ''
+                    : ' $_selectedPlan',
+                style:  TextStyle(
+                  fontSize: 16,
+                  color: Colors.blue[800],
+                  height: 1.5,
+                  fontWeight: FontWeight.bold
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
           SizedBox(height: isWeb ? 40 : 32),
           _buildSocialButton(
@@ -618,12 +653,12 @@ class _SignupScreenState extends State<SignupScreen>
             () => _handleSocialAuth('google'),
           ),
           const SizedBox(height: 16),
-          _buildSocialButton(
+          /*_buildSocialButton(
             'Facebook',
             Icons.facebook,
             const Color(0xFF4267B2),
             () => _handleSocialAuth('facebook'),
-          ),
+          ),*/
           const SizedBox(height: 32),
           OutlinedButton.icon(
             onPressed: _goBack,
