@@ -477,8 +477,8 @@ def upsert_agent_configuration(
 
     # Try to find existing config for this tenant + agent_name
     existing = db.query(AgentConfiguration).filter(
-        AgentConfiguration.tenant_id == config.tenant_id,
-        AgentConfiguration.agent_name == config.agent_name
+        AgentConfiguration.tenant_id == config.tenant_id
+       
     ).first()
 
     if existing:
@@ -497,6 +497,6 @@ def upsert_agent_configuration(
         db.refresh(new_config)
         result = new_config
     
-    background_tasks.add_task(add_catalog_to_rag, tenant_id=config.tenant_id)
+    #background_tasks.add_task(add_catalog_to_rag, tenant_id=config.tenant_id)
     
     return result

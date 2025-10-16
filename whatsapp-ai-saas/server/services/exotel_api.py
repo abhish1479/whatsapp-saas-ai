@@ -6,7 +6,7 @@ from requests import Session
 import requests
 from deps import get_db
 from dotenv import load_dotenv
-from models import BusinessProfile
+from models import AgentConfiguration, BusinessProfile
 
 
 load_dotenv()
@@ -251,8 +251,15 @@ async def whatsapp_msg_send_api_bulk(request: Request,
                 status_code=400,
                 content={"status": "error", "message": "business profile not found for this tenant"}
             )
-        paramsList.insert(0,business_profile.business_category)
-        paramsList.insert(1,business_profile.custom_business_type)
+        agentconfiguration = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
+        if not agentconfiguration:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "agent configuration not found for this tenant"}
+            )
+        
+        paramsList.insert(0,agentconfiguration.agent_name)
+        paramsList.insert(1,business_profile.business_name)
 
         for idx, recipient in enumerate(recipients):
             if not isinstance(recipient, dict):
