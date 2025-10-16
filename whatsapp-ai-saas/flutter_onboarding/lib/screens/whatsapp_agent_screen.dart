@@ -1,15 +1,9 @@
-import 'dart:io';
-import 'dart:convert';
-import 'package:flutter/services.dart';
-// import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api/api.dart';
-import '../helper/utils/shared_preference.dart';
 import '../controller/onboarding_controller.dart';
-import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
+import '../helper/utils/shared_preference.dart';
 
 class WhatsAppAgentScreen extends StatefulWidget {
   final Api api;
@@ -28,611 +22,325 @@ class WhatsAppAgentScreen extends StatefulWidget {
 }
 
 class _WhatsAppAgentScreenState extends State<WhatsAppAgentScreen> {
+  final controller = Get.find<OnboardingController>();
+
   final _nameController = TextEditingController();
   final _statusController = TextEditingController();
-  // Removed _testPhoneController as it's no longer needed here
+  final RxString selectedTone = 'Friendly'.obs;
+  final RxList<String> selectedLanguages = ['English'].obs;
+  final RxString uploadedImageUrl = ''.obs;
 
-  String? _selectedTone = 'Friendly';
-  List<String> _selectedLanguages = ['English'];
+  final RxBool enableIncomingVoice = false.obs;
+  final RxBool enableOutgoingVoice = false.obs;
+  final RxBool enableIncomingMedia = false.obs;
+  final RxBool enableOutgoingMedia = false.obs;
+  final RxBool enableAIImageAnalysis = false.obs;
+  final RxBool loading = false.obs;
 
-  bool _enableOutgoingVoice = false;
-  bool _enableIncomingVoice = false;
-  bool _enableIncomingMedia = false;
-  bool _enableOutgoingMedia = false;
-  bool _enableAIImageAnalysis = false;
-
-  bool _loading = false;
-  String? _saveMessage;
-  bool _isSuccess = false;
-  String? _uploadedImagePath;
-
-  static const List<String> _languages = [
-    'English',
-    'Hindi',
-    'Spanish',
-    'French',
-    'German',
-    'Urdu'
-  ];
-
-  static const List<String> _tones = [
-    'Casual',
-    'Realistic',
-    'Professional',
-    'Friendly'
-  ];
+  // For unsaved-change detection snapshot
+  late Map<String, dynamic> _initialValues;
 
   @override
   void initState() {
     super.initState();
-    _fetchAndPrefillData(); // ✅ FETCH DATA ON INIT
+    _prefillFromController();
   }
 
-  Future<void> _fetchAndPrefillData() async {
-    setState(() => _loading = true);
+  Future<void> _prefillFromController() async {
+    loading.value = true;
     try {
-      final tenantId = await StoreUserData().getTenantId();
+      final tid = await StoreUserData().getTenantId();
+      await controller.fetchOnboardingData(tid);
 
-      final controller = Get.find<OnboardingController>();
-      await controller.fetchOnboardingData(tenantId);
-
-      // ✅ Use the typed AgentConfiguration object
       final agent = controller.data?.agentConfiguration;
       if (agent == null) return;
 
-      // Prefill text fields
       _nameController.text = agent.agentName;
       _statusController.text = agent.status;
+      selectedTone.value = agent.conversationTone;
+      uploadedImageUrl.value = agent.agentImage;
+      selectedLanguages.value = agent.preferredLanguages
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
 
-      // Prefill tone
-      _selectedTone = agent.conversationTone;
+      enableIncomingVoice.value = agent.incomingVoiceMessageEnabled;
+      enableOutgoingVoice.value = agent.outgoingVoiceMessageEnabled;
+      enableIncomingMedia.value = agent.incomingMediaMessageEnabled;
+      enableOutgoingMedia.value = agent.outgoingMediaMessageEnabled;
+      enableAIImageAnalysis.value = agent.imageAnalyzerEnabled;
 
-      // Prefill languages
-      if (agent.preferredLanguages.isNotEmpty) {
-        _selectedLanguages = agent.preferredLanguages
-            .split(',')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-      }
-
-      // Prefill toggles
-      _enableIncomingVoice = agent.incomingVoiceMessageEnabled;
-      _enableOutgoingVoice = agent.outgoingVoiceMessageEnabled;
-      _enableIncomingMedia = agent.incomingMediaMessageEnabled;
-      _enableOutgoingMedia = agent.outgoingMediaMessageEnabled;
-      _enableAIImageAnalysis = agent.imageAnalyzerEnabled;
-
-      // Prefill image
-      _uploadedImagePath = agent.agentImage.trim();
-
-    } catch (e) {
-      debugPrint('Prefill error: $e');
+      // snapshot for back handling
+      _initialValues = _currentFormValues;
     } finally {
-      if (mounted) setState(() => _loading = false);
+      loading.value = false;
     }
   }
 
-  Future<void> _pickImage() async {
+  /// 🧠 Build a current snapshot of all editable fields
+  Map<String, dynamic> get _currentFormValues => {
+    'name': _nameController.text.trim(),
+    'status': _statusController.text.trim(),
+    'tone': selectedTone.value,
+    'langs': selectedLanguages.join(','),
+    'img': uploadedImageUrl.value,
+    'inV': enableIncomingVoice.value,
+    'outV': enableOutgoingVoice.value,
+    'inM': enableIncomingMedia.value,
+    'outM': enableOutgoingMedia.value,
+    'ai': enableAIImageAnalysis.value,
+  };
+
+  /// ⚙️ Compare current vs initial to detect unsaved changes
+  bool get _hasUnsavedChanges {
+    final curr = _currentFormValues;
+    return curr.toString() != _initialValues.toString();
+  }
+
+  Future<void> _saveAndContinue() async {
+    if (_nameController.text.trim().isEmpty) {
+      Get.snackbar('Validation', 'Agent name is required');
+      return;
+    }
+    if (uploadedImageUrl.value.isEmpty) {
+      Get.snackbar('Validation', 'Avatar image is required');
+      return;
+    }
+
+    loading.value = true;
+    try {
+      final tid = await StoreUserData().getTenantId();
+      final result = await controller.saveAgentConfiguration(
+        tenantId: tid,
+        agentName: _nameController.text.trim(),
+        status: _statusController.text.trim(),
+        preferredLanguages: selectedLanguages.join(','),
+        conversationTone: selectedTone.value,
+        incomingVoiceMessageEnabled: enableIncomingVoice.value,
+        outgoingVoiceMessageEnabled: enableOutgoingVoice.value,
+        incomingMediaMessageEnabled: enableIncomingMedia.value,
+        outgoingMediaMessageEnabled: enableOutgoingMedia.value,
+        imageAnalyzerEnabled: enableAIImageAnalysis.value,
+        agentImage: uploadedImageUrl.value,
+      );
+
+      if (result['status'] == 'error') {
+        Get.snackbar('Error', result['detail'] ?? 'Failed to save');
+        return;
+      }
+
+      _initialValues = _currentFormValues; // reset snapshot after save
+      Get.snackbar('Success', 'Agent configuration saved');
+      widget.onNext();
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /// 📸 Uploads image and sets only the URL (no bytes)
+  Future<void> _pickAndUploadImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
-    setState(() => _loading = true);
+    loading.value = true;
     try {
       final bytes = await image.readAsBytes();
-      final filename = image.name;
-      final uploadedPath = await widget.api.uploadImage(bytes, filename);
-
-      setState(() {
-        _uploadedImagePath = uploadedPath; // ✅ Only update URL
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Image uploaded successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      final url = await widget.api.uploadImage(bytes, image.name);
+      uploadedImageUrl.value = url;
+      Get.snackbar('Success', 'Image uploaded successfully');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Image upload failed: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      Get.snackbar('Error', 'Upload failed: $e');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      loading.value = false;
     }
   }
 
-    // if (image != null) {
-    //   if (kIsWeb) {
-    //     final bytes = await image.readAsBytes();
-    //     setState(() => _webImageBytes = bytes);
-    //   } else {
-    //     setState(() => _profileImage = File(image.path));
-    //   }
-    // }
-
-
-  Future<void> _saveAndContinue() async {
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Agent name is required')));
-      return;
-    }
-    if (_uploadedImagePath == null || _uploadedImagePath!.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Avatar image is required')));
-      return;
-    }
-
-    setState(() {
-      _loading = true;
-      _saveMessage = null;
-    });
-
-    try {
-      final tenantId = await StoreUserData().getTenantId();
-      final controller = Get.find<OnboardingController>();
-
-      final response = await controller.saveAgentConfiguration(
-        tenantId: tenantId,
-        agentName: _nameController.text.trim(),
-        status: _statusController.text.trim(),
-        preferredLanguages: _selectedLanguages.join(","),
-        conversationTone: _selectedTone ?? "Friendly",
-        incomingVoiceMessageEnabled: _enableIncomingVoice,
-        outgoingVoiceMessageEnabled: _enableOutgoingVoice,
-        incomingMediaMessageEnabled: _enableIncomingMedia,
-        outgoingMediaMessageEnabled: _enableOutgoingMedia,
-        imageAnalyzerEnabled: _enableAIImageAnalysis,
-        agentImage: _uploadedImagePath!.trim(),
-      );
-
-      if (response.containsKey('status') && response['status'] == 'error') {
-        throw Exception(response['detail'] ?? 'Unknown error');
-      }
-
-      setState(() {
-        _isSuccess = true;
-        _saveMessage = "Agent configuration saved!";
-      });
-
-      await Future.delayed(const Duration(milliseconds: 800));
-      widget.onNext();
-    } catch (e) {
-      setState(() {
-        _isSuccess = false;
-        _saveMessage = "Save failed: $e";
-      });
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  // ---------- NEW MULTISELECT MODAL ----------
-  Future<void> _showLanguageSelector(BuildContext context) async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Select up to 3 languages",
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
-                  ..._languages.map((lang) {
-                    bool selected = _selectedLanguages.contains(lang);
-                    bool canSelect = selected || _selectedLanguages.length < 3;
-                    return CheckboxListTile(
-                      title: Text(lang),
-                      value: selected,
-                      onChanged: canSelect
-                          ? (val) {
-                              setModalState(() {
-                                setState(() {
-                                  if (val == true) {
-                                    _selectedLanguages.add(lang);
-                                  } else {
-                                    _selectedLanguages.remove(lang);
-                                  }
-                                });
-                              });
-                            }
-                          : null,
-                      activeColor: const Color(0xFF3B82F6),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    );
-                  }).toList(),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text("Done"),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildMultiSelectDropdown() {
-    return GestureDetector(
-      onTap: () => _showLanguageSelector(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                _selectedLanguages.isEmpty
-                    ? "Select languages..."
-                    : _selectedLanguages.join(", "),
-                style: TextStyle(
-                  color: _selectedLanguages.isEmpty
-                      ? Colors.grey[600]
-                      : Colors.black87,
-                  fontSize: 16,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+  /// 🧭 Handle back press (warn if unsaved)
+  Future<bool> _onWillPop() async {
+    if (_hasUnsavedChanges) {
+      final shouldLeave = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Unsaved Changes'),
+          content: const Text('You have unsaved changes. Discard them?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
             ),
-            const Icon(Icons.arrow_drop_down, color: Color(0xFF64748B)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Discard'),
+            ),
           ],
         ),
-      ),
-    );
-  }
-  // -------------------------------------------
-
-  void _selectTone(String tone, bool selected) {
-    setState(() {
-      _selectedTone = selected ? tone : _selectedTone ?? 'Friendly';
-    });
+      );
+      if (shouldLeave != true) return false;
+    }
+    widget.onBack();
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
-          ),
-        ),
-        child: Center(
-          child: Scrollbar(
-            thumbVisibility: kIsWeb, // ✅ visible scrollbar on web
-            radius: const Radius.circular(12),
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: kIsWeb ? 1200 : 700, // ✅ stretch slightly on web
-                  minHeight:
-                      MediaQuery.of(context).size.height, // ✅ full height
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: SafeArea(
+          child: Obx(() {
+            if (loading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Configure WhatsApp Agent",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // --- Avatar ---
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickAndUploadImage,
+                      child: Obx(() {
+                        final img = uploadedImageUrl.value;
+                        return CircleAvatar(
+                          radius: 50,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          backgroundImage:
+                          img.isNotEmpty ? NetworkImage(img) : null,
+                          child: img.isEmpty
+                              ? const Icon(Icons.add_a_photo_outlined,
+                              color: Color(0xFF94A3B8), size: 36)
+                              : null,
+                        );
+                      }),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  _buildTextField("Agent Name *", _nameController,
+                      "e.g., Arjun - AI Support"),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                      "Status Message", _statusController, "Online • Ready"),
+                  const SizedBox(height: 16),
+
+                  // --- Tone ---
+                  const Text("Tone of Conversation",
+                      style:
+                      TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 10,
+                    children: ['Casual', 'Realistic', 'Professional', 'Friendly']
+                        .map((tone) => Obx(() {
+                      final selected = selectedTone.value == tone;
+                      return ChoiceChip(
+                        label: Text(tone),
+                        selected: selected,
+                        selectedColor: const Color(0xFF3B82F6),
+                        onSelected: (v) =>
+                        selectedTone.value = tone,
+                      );
+                    }))
+                        .toList(),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // --- Capabilities ---
+                  _buildSwitch("Incoming Voice Responses",
+                      enableIncomingVoice.value, (v) => enableIncomingVoice(v)),
+                  _buildSwitch("Outgoing Voice Responses",
+                      enableOutgoingVoice.value, (v) => enableOutgoingVoice(v)),
+                  _buildSwitch("Allow Incoming Media",
+                      enableIncomingMedia.value, (v) => enableIncomingMedia(v)),
+                  _buildSwitch("Allow Outgoing Media",
+                      enableOutgoingMedia.value, (v) => enableOutgoingMedia(v)),
+                  _buildSwitch(
+                      "AI Image Analysis (Complaints)",
+                      enableAIImageAnalysis.value,
+                          (v) => enableAIImageAnalysis(v)),
+
+                  const SizedBox(height: 30),
+
+                  // --- Buttons ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Configure WhatsApp Agent",
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF1E293B),
-                                  fontSize: 28,
-                                ),
+                      OutlinedButton.icon(
+                        onPressed: widget.onBack,
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('Back'),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Set up your AI agent's personality, language, and capabilities",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF64748B),
-                              fontSize: 16,
-                            ),
+                      ElevatedButton.icon(
+                        onPressed: _saveAndContinue,
+                        icon: const Icon(Icons.save),
+                        label: const Text('Save & Continue'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF3B82F6),
+                          foregroundColor: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      _buildMainCard(),
-                      const SizedBox(height: 24),
-                      _buildButtonsRow(),
                     ],
                   ),
-                ),
+                ],
               ),
-            ),
-          ),
+            );
+          }),
         ),
       ),
     );
   }
 
-  Widget _buildMainCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
-                ),
-                child: _uploadedImagePath != null && _uploadedImagePath!.isNotEmpty
-                          ? ClipOval(
-                        child: Image.network(
-                          _uploadedImagePath!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
-                        ),
-                      )
-                    : _buildDefaultAvatar(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildLabel("Agent Name *"),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nameController,
-            decoration: _inputDecoration("e.g., Arjun - AI Support"),
-          ),
-          const SizedBox(height: 20),
-          _buildLabel("Status Message"),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _statusController,
-            decoration: _inputDecoration("Online • Ready to help!"),
-          ),
-          const SizedBox(height: 20),
-          _buildLabel("Preferred Languages (Max 3)"),
-          const SizedBox(height: 8),
-          _buildMultiSelectDropdown(),
-          const SizedBox(height: 12),
-          if (_selectedLanguages.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _selectedLanguages.map((lang) {
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(lang,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 12)),
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedLanguages.remove(lang));
-                        },
-                        child: const Icon(Icons.close,
-                            size: 14, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          const SizedBox(height: 20),
-          _buildLabel("Tone of Conversation"),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _tones.map((tone) {
-              return FilterChip(
-                label: Text(tone),
-                selected: _selectedTone == tone,
-                onSelected: (selected) => _selectTone(tone, selected),
-                selectedColor: const Color(0xFF3B82F6),
-                backgroundColor: const Color(0xFFF1F5F9),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          _buildLabel("Agent Capabilities"),
-          const SizedBox(height: 12),
-          _buildToggle(
-              'Enable Incoming Voice Message Responses',
-              _enableIncomingVoice,
-              (v) => setState(() => _enableIncomingVoice = v)),
-          _buildToggle(
-              'Enable Outgoing Voice Message Responses',
-              _enableOutgoingVoice,
-              (v) => setState(() => _enableOutgoingVoice = v)),
-          _buildToggle('Allow Incoming Media Messages', _enableIncomingMedia,
-              (v) => setState(() => _enableIncomingMedia = v)),
-          _buildToggle('Allow Outgoing Media Messages', _enableOutgoingMedia,
-              (v) => setState(() => _enableOutgoingMedia = v)),
-          _buildToggle(
-              'Analyze User Images with AI (for complaints)',
-              _enableAIImageAnalysis,
-              (v) => setState(() => _enableAIImageAnalysis = v)),
-          if (_saveMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _isSuccess
-                      ? const Color(0xFFF0FDF4)
-                      : const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _isSuccess
-                        ? const Color(0xFF22C55E)
-                        : const Color(0xFFEF4444),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _isSuccess ? Icons.check_circle : Icons.error,
-                      color: _isSuccess
-                          ? const Color(0xFF22C55E)
-                          : const Color(0xFFEF4444),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _saveMessage!,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: _isSuccess
-                              ? const Color(0xFF166534)
-                              : const Color(0xFFDC2626),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButtonsRow() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      alignment: WrapAlignment.spaceBetween,
+  Widget _buildTextField(String label, TextEditingController ctrl, String hint) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        OutlinedButton.icon(
-          onPressed: widget.onBack,
-          icon: const Icon(Icons.arrow_back, size: 18),
-          label: const Text("Back"),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            side: const BorderSide(color: Color(0xFFE2E8F0)),
-            foregroundColor: const Color(0xFF64748B),
-          ),
-        ),
-        // Removed "Talk to Me" button
-        Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+        Text(label,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+        const SizedBox(height: 6),
+        TextField(
+          controller: ctrl,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ElevatedButton.icon(
-            onPressed: _loading ? null : _saveAndContinue,
-            icon: _loading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.save, size: 18),
-            label: Text(_loading ? "Saving..." : "Save & Continue"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1E293B),
-          fontSize: 16,
-        ),
-      );
-
-  InputDecoration _inputDecoration(String hint) => InputDecoration(
-        hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      );
-
-  Widget _buildToggle(String title, bool value, Function(bool) onChanged) =>
-      SwitchListTile.adaptive(
-        title: Text(title,
-            style: const TextStyle(
-                color: Color(0xFF1E293B), fontWeight: FontWeight.w500)),
-        value: value,
-        onChanged: onChanged,
-        activeColor: const Color(0xFF3B82F6),
-        contentPadding: EdgeInsets.zero,
-      );
+  Widget _buildSwitch(String label, bool value, Function(bool) onChanged) {
+    return SwitchListTile.adaptive(
+      title: Text(label),
+      value: value,
+      onChanged: (v) => setState(() => onChanged(v)),
+      activeColor: const Color(0xFF3B82F6),
+      contentPadding: EdgeInsets.zero,
+    );
+  }
 
   Widget _buildDefaultAvatar() {
     return Container(
