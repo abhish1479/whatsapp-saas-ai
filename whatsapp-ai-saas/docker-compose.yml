@@ -27,7 +27,7 @@ services:
   server:
       container_name: wa_server
       build:
-        context: .                   # build from project root
+        context: .                  # build from project root
         dockerfile: server/Dockerfile
       command: uvicorn main:app --host 0.0.0.0 --port 8000
       env_file:
@@ -69,6 +69,21 @@ services:
         condition: service_started
     volumes:
       - ./data/chroma:/data/chroma
+  
+  flutter_web:
+    build:
+      context: ./flutter_onboarding
+      dockerfile: Dockerfile
+      args:
+        API_HOST: server
+        API_PORT: 8000
+        API_BASE: https://api.whatsapp-saas.ai
+    container_name: flutter_web
+    ports:
+      - "8082:80"
+    depends_on:
+      - server
+    restart: unless-stopped
 
 
 volumes:
