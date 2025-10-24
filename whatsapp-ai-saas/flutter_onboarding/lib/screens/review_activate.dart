@@ -143,7 +143,7 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
 
                   // ✅ Proper payload structure
                   final Map<String, dynamic> payload = {
-                    "tenant_id": 2, // TODO: Replace with actual tenant ID
+                    "tenant_id": tenantId.toString(), // TODO: Replace with actual tenant ID
                     "recipients": [
                       {
                         "to": "+91$phone",
