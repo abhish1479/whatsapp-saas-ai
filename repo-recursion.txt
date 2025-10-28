@@ -1,7 +1,7 @@
 Get-ChildItem -Recurse -File | Select-Object FullName | Out-File -Encoding UTF8 repo_file_list.txt
 
 
-
+########################################
 #File to get github latest files
 
  % #!/bin/bash
@@ -40,75 +40,96 @@ curl -s "$API_URL" | jq -r '.tree[] | select(.type=="blob") | .path' | while rea
   echo "$BASE_RAW/$ENCODED_FILE"
 done
 
+#################################################
 
-## Query to access database locally
+
+🧭 📘 WhatsApp-AI-SaaS — Docker Developer Command Guide
+
+Project structure:
+
+whatsapp-ai-saas/
+├── docker-compose.yml
+├── server/               # FastAPI backend
+├── flutter_onboarding/   # Flutter Web build
+├── frontend/             # (optional React UI)
+├── data/chroma/          # persistent volume
+
+🚀 1️⃣ Start project (first time setup)
+
+Builds all services and runs them in background.
+
+docker compose up -d --build
+
+
+--build ensures images are rebuilt on first start.
+
+After first run, you can simply use ** docker compose up -d ** for normal starts.
+
+Access points:
+
+Backend → http://localhost:8000/docs
+
+Flutter Web → http://localhost:8082
+
+DB → port 5433 (Postgres)
+
+Redis → port 6379
+
+🔄 2️⃣ Rebuild after code changes
+🧩 A. When you change backend Python code
+
+FastAPI is baked into a Docker image, so rebuild that service only:
+
+docker compose build server
+docker compose up -d server
+
+
+or if you edited multiple services:
+
+docker compose up -d --build
+
+🧩 B. When you change Flutter Web UI
+docker compose build flutter_web
+docker compose up -d flutter_web
+
+
+If Flutter constants changed (API_BASE, etc.):
+
+docker compose build --no-cache flutter_web
+
+🧩 C. When you change Dockerfile or environment
+
+Always use:
+
+docker compose down -v --remove-orphans
+docker compose up -d --build
+
+
+📜 4️⃣ Logs
+Purpose	Command
+All services	docker compose logs -f
+Backend only	docker logs -f wa_server
+Worker logs	    docker logs -f wa_worker
+Flutter web (Nginx)	docker logs -f flutter_web Show last 50 lines	docker compose logs --tail=50 wa_server
+Filter errors	docker compose logs wa_server
+
+Press Ctrl +C to stop streaming logs.
+
+🧩 5️⃣ Database (PostgreSQL) operations
+🧠 Connect to Postgres shell inside container
 docker exec -it wa_db psql -U wa_saas_user -d whatsappdb
 
-## Query to insert in DB
-INSERT INTO subscription_plans (
-    name,
-    price,
-    price_per_month,
-    credits,
-    duration_days,
-    billing_cycle,
-    features,
-    is_popular
-) VALUES (
-    'Basic',
-    999.0,
-    999.0,
-    1000,
-    30,
-    'month',
-    '["Basic AI features", "Email support", "5 projects limit"]',
-    false
-);
 
--- Insert Premium Plan (Popular)
-INSERT INTO subscription_plans (
-    name,
-    price,
-    price_per_month,
-    credits,
-    duration_days,
-    billing_cycle,
-    features,
-    is_popular
-) VALUES (
-    'Premium',
-    1999.0,
-    1999.0,
-    5000,
-    30,
-    'month',
-    '["Advanced AI features", "Priority support", "Unlimited projects", "Analytics dashboard"]',
-    true
-);
+From there you can run SQL commands, e.g.:
 
--- Insert Mega Plan
-INSERT INTO subscription_plans (
-    name,
-    price,
-    price_per_month,
-    credits,
-    duration_days,
-    billing_cycle,
-    features,
-    is_popular
-) VALUES (
-    'Mega',
-    3999.0,
-    3999.0,
-    15000,
-    30,
-    'month',
-    '["All premium features", "24/7 phone support", "Custom integrations", "Dedicated account manager"]',
-    false
-);
+\dt         -- list tables
+SELECT * FROM users LIMIT 5;
+\q          -- quit
 
-UPDATE subscription_plans 
-SET updated_at = created_at 
-WHERE updated_at IS NULL;
+📦 Export / import database dump
+# Dump to file
+docker exec -t wa_db pg_dump -U wa_saas_user whatsappdb > backup.sql
 
-##
+# Restore from file
+cat backup.sql | docker exec -i wa_db psql -U wa_saas_user -d whatsappdb
+
