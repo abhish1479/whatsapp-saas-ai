@@ -12,6 +12,8 @@ from services import rag, llm
 from models import BusinessCatalog
 import logging
 from services.rag import rag
+from playwright.async_api import async_playwright
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +22,21 @@ LLM_BATCH_SIZE = 2000  # chars per chunk for LLM parsing
 CATALOG_LIMIT = 30  # max items to ingest per request
 
 async def fetch_html(url: str) -> str:
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        return resp.text
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ]
+        )
+        page = await browser.new_page()
+        await page.goto(url, wait_until="networkidle", timeout=30000)
+        html = await page.content()
+        await browser.close()
+        return html
 
 def extract_links(base_url: str, html: str) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
@@ -82,6 +95,15 @@ Return a JSON list of items. Each item must be a JSON object with EXACTLY these 
 
 If a field is unknown, use null (for price/discount) or a reasonable default (e.g., "other" for item_type).
 Only return valid JSON. Do not include any other text.
+
+Extract ONLY concrete, shoppable products that are the MAIN focus of this page.
+IGNORE:
+- Promotional offers (e.g., "30% off on shoes")
+- Coupons, discounts, or shipping offers
+- Logos, UI elements, or generic site banners
+- Items that appear only in headers, footers, or side banners
+
+Each item must represent a real product with a name and price that can be purchased.
 
 Text:
 {text[:LLM_BATCH_SIZE]}

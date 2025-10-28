@@ -208,7 +208,8 @@ async def oauth_callback(
         "iat": datetime.utcnow(),  # Optional: issued at
         "exp": datetime.utcnow() + timedelta(minutes=30)  # Optional: explicit expiry
     }
-    
+
+    is_active_bussiness_profile = False
     if user.onboarding_process == Onboarding.COMPLETED:
             bussiness_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == user.tenant_id).first()
             is_active_bussiness_profile = bussiness_profile.is_active

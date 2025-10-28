@@ -1,0 +1,13 @@
+.git
+.gitignore
+README.md
+*.md
+test/
+integration_test/
+ios/
+android/
+build/
+.env
+*.log
+*.tmp
+pubspec.lock  # ← Keep this if you want reproducible builds!
