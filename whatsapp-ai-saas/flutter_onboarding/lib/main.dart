@@ -6,14 +6,43 @@ import 'controller/catalog_controller.dart';
 import 'controller/onboarding_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/check_auth_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
+
+// String resolveApiBase() {
+//   const fromDefine = String.fromEnvironment('API_BASE');
+//   if (fromDefine.isNotEmpty) return fromDefine;
+//   // return 'https://diglottic-nondisingenuously-gordon.ngrok-free.dev'; // Azim URL
+//   return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Salman URL
+//   // return 'https://0b0d30716cca.ngrok-free.app'; // Ensure no trailing space
+// }
 
 String resolveApiBase() {
-  const fromDefine = String.fromEnvironment('API_BASE');
-  if (fromDefine.isNotEmpty) return fromDefine;
-  // return 'https://diglottic-nondisingenuously-gordon.ngrok-free.dev'; // Azim URL
-  return 'https://depictive-expiringly-jazmin.ngrok-free.dev'; // Salman URL
-  // return 'https://0b0d30716cca.ngrok-free.app'; // Ensure no trailing space
+  // Detect if running on web
+  if (kIsWeb) {
+    // Use build-time environment vars if available
+    const host = String.fromEnvironment('API_HOST', defaultValue: '');
+    const port = int.fromEnvironment('API_PORT', defaultValue: 8000);
+
+    // If host not defined, use current browser host
+    final uri = Uri.base;
+    final baseUri = Uri(
+      scheme: uri.scheme,
+      host: host.isNotEmpty ? host : uri.host,
+      port: port,
+    );
+    return baseUri.toString();
+  } else {
+    // Native (mobile or desktop)
+    if (kDebugMode) {
+      return 'http://localhost:8000';
+    } else {
+      const apiBase = String.fromEnvironment(
+        'API_BASE',
+        defaultValue: 'https://api.whatsapp-saas.ai',
+      );
+      return apiBase;
+    }
+  }
 }
 
 void main() async {

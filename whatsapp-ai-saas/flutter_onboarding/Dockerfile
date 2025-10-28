@@ -4,18 +4,22 @@ FROM ghcr.io/cirruslabs/flutter:stable as build
 WORKDIR /app
 COPY . .
 
-# Accept build-time args from Compose or Azure
-ARG API_HOST=localhost
-ARG API_PORT=8000
-ARG API_BASE=https://api.whatsapp-saas.ai
+# Define build args
+ARG API_HOST
+ARG API_PORT
+ARG API_BASE
 
-# Enable web and build with injected envs
+# Print them to confirm at build time
+RUN echo "Building with API_HOST=$API_HOST, API_PORT=$API_PORT, API_BASE=$API_BASE"
+
 RUN flutter config --enable-web
 RUN flutter pub get
+
+# 👇 Here we expand ARGs into actual Flutter --dart-define flags
 RUN flutter build web --release \
-  --dart-define=API_HOST=$API_HOST \
-  --dart-define=API_PORT=$API_PORT \
-  --dart-define=API_BASE=$API_BASE
+    --dart-define=API_HOST=${API_HOST:-server} \
+    --dart-define=API_PORT=${API_PORT:-8000} \
+    --dart-define=API_BASE=${API_BASE:-http://server:8000}
 
 # Stage 2: Serve via Nginx
 FROM nginx:alpine
