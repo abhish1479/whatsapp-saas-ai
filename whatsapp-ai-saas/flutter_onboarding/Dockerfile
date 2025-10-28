@@ -17,9 +17,9 @@ RUN flutter pub get
 
 # 👇 Here we expand ARGs into actual Flutter --dart-define flags
 RUN flutter build web --release \
-    --dart-define=API_HOST=${API_HOST:-server} \
+    --dart-define=API_HOST=${API_HOST:-localhost} \
     --dart-define=API_PORT=${API_PORT:-8000} \
-    --dart-define=API_BASE=${API_BASE:-http://server:8000}
+    --dart-define=API_BASE=${API_BASE:-http://localhost:8000}
 
 # Stage 2: Serve via Nginx
 FROM nginx:alpine
