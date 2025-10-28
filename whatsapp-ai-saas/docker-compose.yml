@@ -75,9 +75,9 @@ services:
       context: ./flutter_onboarding
       dockerfile: Dockerfile
       args:
-        API_HOST: server
+        API_HOST: localhost
         API_PORT: 8000
-        API_BASE: http://server:8000
+        API_BASE: http://localhost:8000
     container_name: flutter_web
     ports:
       - "8082:80"
