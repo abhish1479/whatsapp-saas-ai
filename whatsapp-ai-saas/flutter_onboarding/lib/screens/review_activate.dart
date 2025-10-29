@@ -29,8 +29,9 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
   Future<void> _activate() async {
     setState(() => _loading = true);
     try {
-      final res = await widget.api.postForm('/onboarding/activate',
-          {'tenant_id': await StoreUserData().getTenantId()});
+      final tenantId = await StoreUserData().getTenantId();
+      final res = await widget.api
+          .postForm('/onboarding/activate', {'tenant_id': tenantId.toString()});
       setState(() {
         _msg = res['activated'] == true
             ? "Agent Activated & Test Message Sent!"
@@ -143,7 +144,8 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
 
                   // ✅ Proper payload structure
                   final Map<String, dynamic> payload = {
-                    "tenant_id": tenantId.toString(), // TODO: Replace with actual tenant ID
+                    "tenant_id": tenantId
+                        .toString(), // TODO: Replace with actual tenant ID
                     "recipients": [
                       {
                         "to": "+91$phone",
