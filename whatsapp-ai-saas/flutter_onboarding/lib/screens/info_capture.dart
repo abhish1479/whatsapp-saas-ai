@@ -14,6 +14,8 @@ import '../helper/image_constant.dart';
 import '../helper/utils/shared_preference.dart';
 import '../theme/business_info_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html;
+import 'dart:convert';
 
 class InfoCaptureScreen extends StatefulWidget {
   final Api api;
@@ -312,25 +314,35 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
     try {
       final bytes = await widget.api.downloadCsvTemplate();
 
-      // ✅ Pass bytes directly to saveFile (required on mobile)
-      final String? path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save CSV Template',
-        fileName: 'business_catalog_template.csv',
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-        bytes: bytes, // 👈 REQUIRED for Android/iOS
-      );
-
-      if (path == null) {
-        // User canceled
-        return;
+      if (kIsWeb) {
+        // Web: Use HTML <a> download trick
+        await _downloadOnWeb(bytes, 'business_catalog_template.csv');
+      } else {
+        // Mobile: Use FilePicker
+        final String? path = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save CSV Template',
+          fileName: 'business_catalog_template.csv',
+          type: FileType.custom,
+          allowedExtensions: ['csv'],
+          bytes: bytes,
+        );
+        if (path != null) {
+          AppUtils.showSuccess('Downloaded', 'Template saved successfully!');
+        }
       }
-
-      // ✅ On web/desktop, you can optionally verify, but not needed
-      AppUtils.showSuccess('Downloaded', 'Template saved successfully!');
     } catch (e) {
       AppUtils.showError('Error', 'Download failed: $e');
     }
+  }
+
+  Future<void> _downloadOnWeb(Uint8List bytes, String filename) async {
+    final blob = html.Blob([bytes], 'text/csv');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute('download', filename)
+      ..click();
+    html.Url.revokeObjectUrl(url); // Clean up
+    AppUtils.showSuccess('Downloaded', 'Template downloaded!');
   }
 
   Future<void> _pickAndImport() async {
@@ -1442,10 +1454,8 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                                         ),
                                         SizedBox(width: 15),
                                       ],
-
                                       if (discount.isNotEmpty &&
                                           discount != '0') ...[
-
                                         Text(
                                           '$discount% off',
                                           style: const TextStyle(
@@ -1459,7 +1469,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                                   ),
 
                                   SizedBox(height: 5),
-                                  if (description.isNotEmpty)...[
+                                  if (description.isNotEmpty) ...[
                                     Text(
                                       '$description',
                                       maxLines: 2,
@@ -1472,7 +1482,6 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                                     ),
                                     SizedBox(height: 5),
                                   ]
-
                                 ],
                               ),
                             ),
@@ -1565,14 +1574,12 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            icon:
-                const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
             label: const Text(
               'Continue',
               style: TextStyle(
