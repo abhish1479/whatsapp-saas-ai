@@ -155,7 +155,7 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
                   };
 
                   await widget.api.postJson(
-                      '/conversation/conversations/talk_to_me', payload);
+                      '/conversations/talk_to_me', payload);
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

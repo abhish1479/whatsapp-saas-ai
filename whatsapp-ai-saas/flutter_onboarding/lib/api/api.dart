@@ -439,4 +439,39 @@ class Api {
     }
     throw Exception('Bulk upload failed: ${resp.body}');
   }
+
+  Future<String> improveWorkflowTemplate(String query) async {
+    final tid = await StoreUserData().getTenantId(); // or pass it as param if preferred
+    if (tid == null) throw Exception("Tenant ID not found");
+
+    final url = Uri.parse(
+      '$baseUrl/conversations/workflow_optimizer?tenant_id=$tid&query=${Uri.encodeComponent(query)}',
+    );
+
+    final response = await http.post(
+      url,
+      headers: {'accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+        String raw = response.body;
+
+        // 🔧 Unescape common JSON string artifacts
+        String cleaned = raw
+            .replaceAll(r'\\n', '\n')
+            .replaceAll(r'\\t', '\t')
+            .replaceAll(r'\"', '"');
+
+        // Remove surrounding quotes if present
+        if (cleaned.length >= 2 && cleaned.startsWith('"') && cleaned.endsWith('"')) {
+          cleaned = cleaned.substring(1, cleaned.length - 1);
+          // One more pass in case inner quotes were escaped
+          cleaned = cleaned.replaceAll(r'\\n', '\n').replaceAll(r'\"', '"');
+        }
+
+        return cleaned.trim();
+    } else {
+      throw Exception('API failed with status ${response.statusCode}: ${response.body}');
+    }
+  }
 }

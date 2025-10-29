@@ -24,13 +24,47 @@ class WorkflowSetupScreen extends StatefulWidget {
 class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
   final controller = Get.find<OnboardingController>();
   bool askName = true, askLocation = false, offerPayment = false;
-  String template = "Lead capture → Qualification → Payment";
+  String template = "";
   bool _isLoading = false;
 
   // Payment state (saved when user confirms the modal)
   String upiId = '';
   Uint8List? qrCodeBytes;
   String qrCodeUrl = '';
+
+  final Map<String, String> workflowExamples = {
+    "Appointment Booking":
+    "Start: Hi! How can I assist you with booking an appointment today?\n"
+        "What type of appointment do you need?\n"
+        "If you need a specific date: Please provide the date you prefer.\n"
+        "If you need a specific time: What time works best for you?\n"
+        "If you want to know availability: I can check available slots for you.\n"
+        "End: Let me know your preferences, and I'll help you book it!",
+
+    "Product Sales":
+    "Start: Hello! 👋 Welcome to our store. What product are you looking for today?\n"
+        "If they mention a product: Great! Would you like details or pricing?\n"
+        "If they ask about offers: We have a 10% discount on your first order!\n"
+        "If ready to buy: Shall I add this to your cart and proceed to checkout?\n"
+        "If unsure: I can share customer reviews or compare similar items.\n"
+        "End: Thanks for shopping! Your order confirmation will be sent shortly.",
+
+    "Service Booking":
+    "Start: Hi there! Ready to book a service with us?\n"
+        "What service would you like to schedule? (e.g., cleaning, repair, consultation)\n"
+        "When would you like it done? Please share your preferred date & time.\n"
+        "Do you have any special requirements or instructions?\n"
+        "I’ll confirm availability and send a booking summary.\n"
+        "End: Your service is booked! We’ll see you soon.",
+
+    "Lead Qualification":
+    "Start: Thanks for reaching out! How can I help you today?\n"
+        "Are you looking for a solution to a specific problem?\n"
+        "What’s your timeline for making a decision?\n"
+        "Do you have a budget in mind for this?\n"
+        "Would you be open to a quick demo or call with our team?\n"
+        "End: I’ll connect you with the right person based on your needs!",
+  };
 
   @override
   void initState() {
@@ -49,8 +83,36 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
         offerPayment = data.offerPayment ?? false;
         upiId = data.upiId ?? '';
         qrCodeUrl = data.qrImageUrl ?? '';
-        template = data.template ?? template;
+        template = data.template ?? "";
       });
+    }
+  }
+
+  Future<void> _improveTemplate() async {
+    if (template.trim().isEmpty) {
+      AppUtils.showError('Input Required', 'Please enter a workflow template.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final improved = await widget.api.improveWorkflowTemplate(template);
+
+      // ✅ CRITICAL: Convert escaped \n to real newlines
+      final cleaned = improved.replaceAll(r'\n', '\n').trim();
+
+      if (cleaned.isNotEmpty) {
+        setState(() => template = cleaned);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Template improved!')),
+        );
+      } else {
+        AppUtils.showError('No Improvement', 'The AI returned an empty suggestion.');
+      }
+    } catch (e) {
+      AppUtils.showError('Error', 'Failed to improve template: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -385,8 +447,8 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
       
                   // Offer payment: open modal on ON, revert to OFF if cancelled
                   _buildEnhancedSwitchTile(
-                    "Offer Payment Link",
-                    "Do you want to offer payment link if conversion happens?",
+                    "Payment Receive Link",
+                    "Do you want to receive payment link if conversion happens?",
                     offerPayment,
                     (v) async {
                       if (v == true) {
@@ -580,7 +642,7 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                 ],
               ),
             ),
-            // Card: Template
+            // Card: Template (Free Text + Magic + Examples)
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -620,83 +682,74 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        "Conversation Template",
+                        "Conversation Flow",
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1E293B),
-                              fontSize: 18,
-                            ),
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B),
+                          fontSize: 18,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+
+                  // Free text input
+                  TextField(
+                    maxLines: 8,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      hintText: "e.g. Greet → Ask needs → Offer demo → Schedule call",
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFE2E8F0),
-                          width: 1,
-                        ),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                       ),
-                      child: DropdownButtonFormField<String>(
-                        value: template,
-                        isExpanded: true,
-                        items: const [
-                          "Lead capture → Qualification → Payment",
-                          "Product Q&A → Cart → Payment",
-                          "Service booking → Confirmation → Reminder",
-                        ]
-                            .map((e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Text(
-                                    e,
-                                    overflow: kIsWeb
-                                        ? TextOverflow.visible
-                                        : TextOverflow.ellipsis,
-                                    softWrap: false,
-                                    maxLines: 1,
-                                    style: const TextStyle(
-                                      color: Color(0xFF1E293B),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => template = v ?? template),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onChanged: (value) => setState(() => template = value),
+                    controller: TextEditingController.fromValue(
+                      TextEditingValue(
+                        text: template,
+                        selection: TextSelection.collapsed(offset: template.length),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Magic Button
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _improveTemplate,
+                      icon: Icon(
+                        Icons.auto_awesome,
+                        color: const Color(0xFF3B82F6),
+                        size: 18,
+                      ),
+                      label: const Text("Improve with AI"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF3B82F6),
+                        side: const BorderSide(color: Color(0xFF3B82F6)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                            color: Color(0xFF64748B)),
-      
-                        // 👇 Add this
-                        selectedItemBuilder: (context) {
-                          return [
-                            "Lead capture → Qualification → Payment",
-                            "Product Q&A → Cart → Payment",
-                            "Service booking → Confirmation → Reminder",
-                          ].map((e) {
-                            return Text(
-                              e,
-                              overflow: kIsWeb
-                                  ? TextOverflow.visible
-                                  : TextOverflow.ellipsis,
-                              softWrap: false,
-                              maxLines: 1,
-                              style: const TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            );
-                          }).toList();
-                        },
-                      )),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Example buttons
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: workflowExamples.keys.map((label) => _buildExampleButton(label)).toList(),
+                  ),
                 ],
               ),
             ),
@@ -831,6 +884,29 @@ class _WorkflowSetupScreenState extends State<WorkflowSetupScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildExampleButton(String label) {
+    final workflow = workflowExamples[label]!;
+    return ElevatedButton(
+      onPressed: () {
+        // ✅ Automatically converts \n to real line breaks in TextField
+        setState(() => template = workflow);
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFF1F5F9),
+        foregroundColor: const Color(0xFF3B82F6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        elevation: 0,
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+      ),
     );
   }
 

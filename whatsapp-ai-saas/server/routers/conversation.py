@@ -6,7 +6,8 @@ from deps import get_db
 from services.exotel_api import whatsapp_msg_send_api_bulk
 from services import llm
 
-router = APIRouter(prefix="/conversations", tags=["conversations"])
+router = APIRouter(tags=["conversations"])
+
 
 @router.get("/{conversation_id}")
 async def get_conversation(conversation_id: str, db: AsyncSession = Depends(get_db)):
@@ -40,25 +41,22 @@ async def workflow_optimizer(
     tenant_id: int ,
     query: str = None,
 ):
-    query_prompt = query_prompt = f"""
-            You are an expert conversational workflow designer for WhatsApp-based AI agents. Your goal is to create a highly effective, human-like, and conversion-optimized dialogue flow tailored to the business context.
+    query_prompt = f"""
+            You are a WhatsApp AI workflow optimizer. Given the owner's goal: "{query or 'general assistance'}", create a minimal, practical conversation flow for a WhatsApp agent.
 
-            Given the owner's intent: "{query or 'No specific query provided'}", design a step-by-step WhatsApp agent workflow that:
+            Rules:
+            - Use plain text and next line — no markdown, no headings, no bullet symbols.
+            - Keep every message under 15 words.
+            - Ask at most few short qualifying questions if owner specify in gole.
+            - Use simple "if-then" logic (e.g., "If X, say Y").
+            - End with one clear closing or handoff line.
 
-            1. **Initiates the conversation** in a warm, non-intrusive, and value-driven way (e.g., personalized greeting referencing user context if available).
-            2. **Identifies user intent early** by asking 1–2 smart, open-ended but focused qualifying questions.
-            3. **Adapts dynamically** based on user responses—route to onboarding, support, sales, or information delivery as needed.
-            4. **Minimizes friction**: use short messages, buttons (if supported), and clear next steps.
-            5. **Drives toward a clear goal** (e.g., booking a demo, answering FAQs, collecting lead info, or completing onboarding).
-            6. **Handles objections or silence gracefully** with fallback messages or gentle nudges.
-            7. **Maintains brand tone**—professional yet friendly, concise, and helpful.
-
-            Output only the optimized workflow as a structured plan with:
-            - Opening message
-            - Key qualifying questions (max 2–3)
-            - Decision logic (e.g., “If user mentions pricing → share plans + CTA”)
-            - Closing or handoff strategy (e.g., to human agent or confirmation)
-
-            Do not include explanations—just the workflow.
+            Output format:
+            Start: [opening message]
+            optional second question if any needed
+            If [condition]: [reply]
+            If [condition]: [reply]
+            ...
+            End: [final message or handoff]
             """
     return await llm.analysis(tenant_id, query_prompt)
