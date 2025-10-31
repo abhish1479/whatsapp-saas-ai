@@ -17,12 +17,20 @@ app = FastAPI(title="WhatsApp AI Agent SaaS", version="1.0")
 Instrumentator().instrument(app).expose(app)
 
 
+origins = [
+    "http://localhost:8082",   # Flutter web dev server
+    "http://127.0.0.1:8082",
+    "http://localhost:3000",   # (if using Vite/React)
+    "http://localhost",        # fallback
+]
+
+
 app.add_middleware(RequestLoggingMiddleware)
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins= ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

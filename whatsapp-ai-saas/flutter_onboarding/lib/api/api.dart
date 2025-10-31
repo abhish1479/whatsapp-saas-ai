@@ -442,7 +442,7 @@ class Api {
 
   Future<String> improveWorkflowTemplate(String query) async {
     final tid = await StoreUserData().getTenantId(); // or pass it as param if preferred
-    if (tid == null) throw Exception("Tenant ID not found");
+    // if (tid == null) throw Exception("Tenant ID not found");
 
     final url = Uri.parse(
       '$baseUrl/conversations/workflow_optimizer?tenant_id=$tid&query=${Uri.encodeComponent(query)}',
@@ -474,4 +474,41 @@ class Api {
       throw Exception('API failed with status ${response.statusCode}: ${response.body}');
     }
   }
+
+   Future<List<dynamic>> listLeads(int tenantId) async {
+    final res = await http.get(Uri.parse('$baseUrl/leads?tenant_id=$tenantId'));
+    if (res.statusCode != 200) throw Exception('Failed to list leads');
+    return json.decode(res.body) as List<dynamic>;
+  }
+
+   Future<Map<String, dynamic>> createLead(Map<String, dynamic> lead) async {
+    final res = await http.post(Uri.parse('$baseUrl/leads'), body: json.encode(lead));
+    if (res.statusCode != 201) throw Exception('Failed to create lead');
+    return json.decode(res.body) as Map<String, dynamic>;
+  }
+
+   Future<Map<String, dynamic>> createCampaign(Map<String, dynamic> campaign) async {
+    final res = await http.post(Uri.parse('$baseUrl/campaigns'), body: json.encode(campaign));
+    if (res.statusCode != 201) throw Exception('Failed to create campaign');
+    return json.decode(res.body) as Map<String, dynamic>;
+  }
+
+   Future<Map<String, dynamic>> launchCampaign(int id) async {
+    final res = await http.post(Uri.parse('$baseUrl/campaigns/$id/launch'), body: json.encode({"send_now": true}));
+    if (res.statusCode != 200) throw Exception('Failed to launch');
+    return json.decode(res.body) as Map<String, dynamic>;
+  }
+
+   Future<List<dynamic>> recipients(int id) async {
+    final res = await http.get(Uri.parse('$baseUrl/campaigns/$id/recipients'));
+    if (res.statusCode != 200) throw Exception('Failed to recipients');
+    return json.decode(res.body) as List<dynamic>;
+  }
+
+   Future<List<dynamic>> liveBoard(int tenantId) async {
+    final res = await http.get(Uri.parse('$baseUrl/monitor/live?tenant_id=$tenantId'));
+    if (res.statusCode != 200) throw Exception('Failed to live board');
+    return json.decode(res.body) as List<dynamic>;
+  }
+
 }

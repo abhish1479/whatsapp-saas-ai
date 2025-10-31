@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
+import 'package:leadbot_client/screens/dashboard_root.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -270,7 +271,7 @@ class _SignupScreenState extends State<SignupScreen>
     }
   }
 
-  void _handleAuthResponse(http.Response response) {
+  Future<void> _handleAuthResponse(http.Response response) async {
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -289,7 +290,7 @@ class _SignupScreenState extends State<SignupScreen>
       store.setUserName(authResponse.user.name);
       store.setEmail(authResponse.user.email);
       store.setProfilePic(authResponse.user.picture);
-
+      final isActive = await store.isUserActive();
       String message = _isLogin
           ? "Login successful!"
           : "Welcome ${authResponse.user.name}! Please complete onboarding process.";
@@ -302,8 +303,8 @@ class _SignupScreenState extends State<SignupScreen>
       );
 
       Widget nextScreen;
-      if (authResponse.onboardingProcess.toLowerCase() == 'completed') {
-        nextScreen = HomeScreen(/*api: widget.api*/);
+      if (authResponse.onboardingProcess.toLowerCase() == 'completed' && isActive) {
+        nextScreen = LeadsListScreen(/*api: widget.api*/);
       } else {
         nextScreen = OnboardingWizard(api: widget.api);
       }
