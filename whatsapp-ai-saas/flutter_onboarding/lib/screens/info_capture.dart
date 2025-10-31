@@ -387,7 +387,7 @@ class _InfoCaptureScreenState extends State<InfoCaptureScreen> {
                   _textField(_name, 'Name *', "Enter service name"),
                   _textField(_cat, 'Category *', "Enter service category"),
                   _textField(_price, 'Price *', "Enter service price",
-                      numeric: true, maxLength: 5),
+                      numeric: true, maxLength: 10),
                   _textField(_discount, 'Discount %', "Enter discount on price",
                       numeric: true, maxLength: 2),
                   _textField(_desc, 'Description', "Enter service description"),

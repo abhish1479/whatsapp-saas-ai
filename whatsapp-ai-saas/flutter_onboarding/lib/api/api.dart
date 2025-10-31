@@ -482,19 +482,19 @@ class Api {
   }
 
    Future<Map<String, dynamic>> createLead(Map<String, dynamic> lead) async {
-    final res = await http.post(Uri.parse('$baseUrl/leads'), body: json.encode(lead));
+    final res = await http.post(Uri.parse('$baseUrl/leads'), headers: {'Content-Type': 'application/json'}, body: json.encode(lead));
     if (res.statusCode != 201) throw Exception('Failed to create lead');
     return json.decode(res.body) as Map<String, dynamic>;
   }
 
    Future<Map<String, dynamic>> createCampaign(Map<String, dynamic> campaign) async {
-    final res = await http.post(Uri.parse('$baseUrl/campaigns'), body: json.encode(campaign));
+    final res = await http.post(Uri.parse('$baseUrl/campaigns'), headers: {'Content-Type': 'application/json'}, body: json.encode(campaign));
     if (res.statusCode != 201) throw Exception('Failed to create campaign');
     return json.decode(res.body) as Map<String, dynamic>;
   }
 
    Future<Map<String, dynamic>> launchCampaign(int id) async {
-    final res = await http.post(Uri.parse('$baseUrl/campaigns/$id/launch'), body: json.encode({"send_now": true}));
+    final res = await http.post(Uri.parse('$baseUrl/campaigns/$id/launch'), headers: {'Content-Type': 'application/json'}, body: json.encode({"send_now": true}));
     if (res.statusCode != 200) throw Exception('Failed to launch');
     return json.decode(res.body) as Map<String, dynamic>;
   }
