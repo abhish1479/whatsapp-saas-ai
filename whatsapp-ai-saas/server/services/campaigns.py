@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime
 from typing import List, Optional
-from ..models import Campaign, CampaignRecipient, Lead
-from .metrics import campaign_sends_total
+from models import Campaign, CampaignRecipient, Lead
+from services.metrics import campaign_sends_total
 
 class CampaignService:
     @staticmethod
