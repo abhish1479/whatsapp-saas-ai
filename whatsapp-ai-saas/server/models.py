@@ -1,6 +1,6 @@
 
 import uuid
-from sqlalchemy import UUID, Column, Float, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint
+from sqlalchemy import UUID, Column, Float, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint,BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -64,16 +64,16 @@ class Number(Base):
     status = Column(String, default="pending")
     created_at = Column(DateTime, server_default=func.now())
 
-class Lead(Base):
-    __tablename__ = "leads"
-    id = Column(Integer, primary_key=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-    name = Column(String)
-    phone = Column(String, index=True)
-    source = Column(String)
-    notes = Column(Text)
-    status = Column(String, default="new")
-    created_at = Column(DateTime, server_default=func.now())
+# class Lead(Base):
+#     __tablename__ = "leads"
+#     id = Column(Integer, primary_key=True)
+#     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+#     name = Column(String)
+#     phone = Column(String, index=True)
+#     source = Column(String)
+#     notes = Column(Text)
+#     status = Column(String, default="new")
+#     created_at = Column(DateTime, server_default=func.now())
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -162,7 +162,8 @@ class Item(Base):
 class Workflow(Base):
     __tablename__ = "workflows"
 
-    tenant_id = Column(Integer,ForeignKey("tenants.id", ondelete="CASCADE"),primary_key=True, unique=True  )
+    id = Column(BigInteger, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     template = Column(Text, nullable=False)
     ask_name = Column(Boolean, nullable=False, default=True)
     ask_location = Column(Boolean, nullable=False, default=False)
@@ -291,3 +292,67 @@ class BusinessCatalog(Base):
     image_url = Column(Text)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+## Added Leads, Campaign and related models
+class Lead(Base):
+    __tablename__ = "leads"
+    id = Column(BigInteger, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(Text, nullable=True)
+    phone = Column(Text, nullable=False)
+    email = Column(Text, nullable=True)
+    tags = Column(JSON, default=list)
+    product_service = Column(Text, nullable=True)
+    pitch = Column(Text, nullable=True)
+    workflow_id = Column(BigInteger, ForeignKey("workflows.id"), nullable=True)
+    status = Column(Text, default="New")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    recipients = relationship("CampaignRecipient", back_populates="lead", lazy="selectin")
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "phone", name="uq_tenant_phone"),
+    )
+
+# class Workflow(Base):
+#     __tablename__ = "workflows"
+#     id = Column(BigInteger, primary_key=True, index=True)
+#     tenant_id = Column(BigInteger, index=True, nullable=False)
+#     name = Column(Text, nullable=False)
+#     json = Column(JSON, nullable=False, default=dict)
+#     is_default = Column(Boolean, default=False)
+
+class Campaign(Base):
+    __tablename__ = "campaigns"
+    id = Column(BigInteger, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(Text, nullable=False)
+    status = Column(Text, default="Draft")
+    schedule_at = Column(DateTime(timezone=True), nullable=True)
+    auto_schedule_json = Column(JSON, nullable=True)
+    audience_filter_json = Column(JSON, nullable=True)
+    template_id = Column(BigInteger, nullable=True)
+    default_pitch = Column(Text, nullable=True)
+    default_workflow_id = Column(BigInteger, ForeignKey("workflows.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    recipients = relationship("CampaignRecipient", back_populates="campaign", lazy="selectin")
+
+class CampaignRecipient(Base):
+    __tablename__ = "campaign_recipients"
+    id = Column(BigInteger, primary_key=True, index=True)
+    campaign_id = Column(BigInteger, ForeignKey("campaigns.id"), index=True, nullable=False)
+    lead_id = Column(BigInteger, ForeignKey("leads.id"), index=True, nullable=False)
+    send_status = Column(Text, default="Pending")
+    send_at = Column(DateTime(timezone=True), nullable=True)
+    deliver_at = Column(DateTime(timezone=True), nullable=True)
+    read_at = Column(DateTime(timezone=True), nullable=True)
+    reply_at = Column(DateTime(timezone=True), nullable=True)
+    converted_at = Column(DateTime(timezone=True), nullable=True)
+    error_code = Column(Text, nullable=True)
+    credit_units = Column(Integer, default=0)
+    meta = Column(JSON, default=dict)
+
+    campaign = relationship("Campaign", back_populates="recipients")
+    lead = relationship("Lead", back_populates="recipients")

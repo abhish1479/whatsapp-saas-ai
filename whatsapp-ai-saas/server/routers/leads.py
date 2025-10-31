@@ -1,39 +1,29 @@
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..data_models.schemas import LeadCreate, LeadUpdate, LeadOut
+from ..services.leads import LeadsService
 
-from fastapi import APIRouter, Depends, UploadFile, File
-from pydantic import BaseModel
-from database import SessionLocal
-from models import Lead
-from deps import get_current
-import csv, io
+router = APIRouter(prefix="/leads", tags=["Leads"])
 
-router = APIRouter()
+@router.post("", response_model=LeadOut, status_code=201)
+def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
+    return LeadsService.create(db, payload)
 
-class LeadReq(BaseModel):
-    name:str|None=None
-    phone:str
-    notes:str|None=None
+@router.get("", response_model=list[LeadOut])
+def list_leads(tenant_id: int = Query(...), q: str | None = None, status: str | None = None, db: Session = Depends(get_db)):
+    return LeadsService.list(db, tenant_id=tenant_id, q=q, status=status)
 
-@router.post("/add")
-def add_lead(body:LeadReq, ident=Depends(get_current)):
-    db = SessionLocal()
-    try:
-        lead = Lead(tenant_id=ident['tid'], name=body.name, phone=body.phone, notes=body.notes, source="manual")
-        db.add(lead); db.commit()
-        return {"id": lead.id}
-    finally:
-        db.close()
+@router.get("/{lead_id}", response_model=LeadOut)
+def get_lead(lead_id: int, db: Session = Depends(get_db)):
+    lead = LeadsService.get(db, lead_id)
+    if not lead:
+        raise HTTPException(404, "Lead not found")
+    return lead
 
-@router.post("/upload_csv")
-async def upload_csv(file:UploadFile = File(...), ident=Depends(get_current)):
-    db = SessionLocal()
-    try:
-        content = await file.read()
-        reader = csv.DictReader(io.StringIO(content.decode()))
-        count=0
-        for row in reader:
-            lead = Lead(tenant_id=ident['tid'], name=row.get('name'), phone=row.get('phone'), notes=row.get('notes'), source="csv")
-            db.add(lead); count+=1
-        db.commit()
-        return {"imported": count}
-    finally:
-        db.close()
+@router.patch("/{lead_id}", response_model=LeadOut)
+def update_lead(lead_id: int, payload: LeadUpdate, db: Session = Depends(get_db)):
+    lead = LeadsService.get(db, lead_id)
+    if not lead:
+        raise HTTPException(404, "Lead not found")
+    return LeadsService.update(db, lead, payload)
