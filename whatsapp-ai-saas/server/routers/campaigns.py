@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from rq import Queue
 from redis import Redis
-from ..database import get_db
-from ..data_models.schemas import CampaignCreate, CampaignOut, LaunchRequest, RecipientOut
-from ..services.campaigns import CampaignService
-from ..services.campaign_executor import execute_batch
-from ..settings import settings
+from deps import get_db
+from data_models.schemas import CampaignCreate, CampaignOut, LaunchRequest, RecipientOut
+from services.campaigns import CampaignService
+from services.campaign_executor import execute_batch
+from settings import settings
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 

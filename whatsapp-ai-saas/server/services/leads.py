@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from ..models import Lead
-from ..services.metrics import leads_ingested_total
+from models import Lead
+from services.metrics import leads_ingested_total
 
 class LeadsService:
     @staticmethod

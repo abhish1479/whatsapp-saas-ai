@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..data_models.schemas import LeadCreate, LeadUpdate, LeadOut
-from ..services.leads import LeadsService
+from deps import get_db
+from data_models.schemas import LeadCreate, LeadUpdate, LeadOut
+from services.leads import LeadsService
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
 

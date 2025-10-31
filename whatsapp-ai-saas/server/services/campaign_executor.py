@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
-from ..models import Campaign, CampaignRecipient, Lead
-from .whatsapp import WhatsAppProvider
-from .credits import CreditsService
-from .metrics import campaign_sends_total
-from .scheduling import within_quiet_hours, next_allowed_time
+from models import Campaign, CampaignRecipient, Lead
+from services.whatsapp import WhatsAppProvider
+from services.credits import CreditsService
+from services.metrics import campaign_sends_total
+from services.scheduling import within_quiet_hours, next_allowed_time
 
 provider = WhatsAppProvider()
 credits = CreditsService()

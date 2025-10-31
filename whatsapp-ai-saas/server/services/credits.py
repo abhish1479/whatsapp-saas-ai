@@ -249,3 +249,14 @@ async def refund_finalized(db: AsyncSession, tenant_id: str, event_id: str) -> b
 
     inc_credits(tenant_id=tenant_id, reason_code=f"{entry['reason_code']}:refund", units=int(entry["units"]))
     return True
+
+class CreditsService:
+    def reserve(self, tenant_id: int, units: int, reason: str, key: str) -> bool:
+        # TODO: integrate with real ledger; idempotent by key
+        return True
+
+    def refund(self, tenant_id: int, units: int, reason: str, key: str) -> None:
+        pass
+
+    def debit_finalize(self, tenant_id: int, units: int, reason: str, key: str) -> None:
+        pass
