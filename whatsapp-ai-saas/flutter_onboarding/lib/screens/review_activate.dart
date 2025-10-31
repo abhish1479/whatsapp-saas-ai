@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:leadbot_client/screens/dashboard_root.dart';
+import 'package:leadbot_client/screens/leads/leads_list_screen.dart';
 import '../api/api.dart';
 import '../helper/utils/shared_preference.dart';
 
@@ -38,6 +40,15 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
             : "Activation done";
         _isSuccess = true;
       });
+      if (_isSuccess) {
+        StoreUserData().setUserStatus("completed");
+        StoreUserData().setUserActive(true);
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LeadsListScreen()),
+          (Route<dynamic> route) => false,
+        );
+      }
     } catch (e) {
       setState(() {
         _msg = "Activation failed: $e";
@@ -154,8 +165,8 @@ class _ReviewActivateScreenState extends State<ReviewActivateScreen> {
                     ]
                   };
 
-                  await widget.api.postJson(
-                      '/conversations/talk_to_me', payload);
+                  await widget.api
+                      .postJson('/conversations/talk_to_me', payload);
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

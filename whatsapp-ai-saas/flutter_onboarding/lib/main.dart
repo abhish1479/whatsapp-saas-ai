@@ -1,8 +1,11 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leadbot_client/controller/campaign_controller.dart';
+import 'package:leadbot_client/controller/monitoring_controller.dart';
 import 'api/api.dart';
 import 'controller/catalog_controller.dart';
+import 'controller/leads_controller.dart';
 import 'controller/onboarding_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/check_auth_screen.dart';
@@ -77,6 +80,9 @@ class MyApp extends StatelessWidget {
         Get.put(api);
         Get.put(OnboardingController(api));
         Get.put(CatalogController(api));
+        Get.put(LeadsController(api));
+        Get.put(CampaignController(api));
+        Get.put(MonitoringController(api));
       }),
     );
   }

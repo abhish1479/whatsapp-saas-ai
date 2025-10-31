@@ -6,7 +6,7 @@ import '../helper/utils/shared_preference.dart';
 import 'leads/leads_list_screen.dart';
 import 'onboarding_wizard.dart'; // Assuming SignupScreen is part of this
 import 'auth_screen.dart'; // Import your auth screen (SignupScreen)
-
+import 'dashboard_root.dart';
 class CheckAuthScreen extends StatefulWidget {
   final Api api;
 
@@ -33,11 +33,12 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
 
     if (isLoggedIn) {
       // User is logged in, check onboarding status
-      if (userStatus.toLowerCase() == 'Completed') {
+      if (userStatus.toLowerCase() == 'completed') {
         // Navigate to Home Screen
         if (mounted) {
           Get.offAll(() =>
-              HomeScreen());
+              // DashboardRoot());
+              LeadsListScreen());
         }
       } else {
         // User is logged in but onboarding is not complete, go to onboarding

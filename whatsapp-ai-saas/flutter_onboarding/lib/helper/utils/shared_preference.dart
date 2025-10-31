@@ -24,6 +24,17 @@ class StoreUserData {
     return prefs.getBool('LoggedIn') ?? false;
   }
 
+  Future<void> setUserActive(bool value) async {
+    final SharedPreferences prefs = await _prefs;
+    prefs.setBool('UserActive', value);
+  }
+
+  // Retrieve a boolean value from shared preferences
+  Future<bool> isUserActive() async {
+    final SharedPreferences prefs = await _prefs;
+    return prefs.getBool('UserActive') ?? false;
+  }
+
   Future<void> clear() async {
     final SharedPreferences prefs = await _prefs;
     await prefs.clear();
