@@ -11,6 +11,7 @@ from database import Base, engine
 import os
 from fastapi.staticfiles import StaticFiles
 from settings import settings
+from routers.whatsapp_webhook import whatsapp_webhook
 
 
 app = FastAPI(title="WhatsApp AI Agent SaaS", version="1.0")
@@ -60,6 +61,7 @@ app.include_router(leads.router)
 app.include_router(campaigns.router)
 app.include_router(monitoring.router)
 app.include_router(metrics.router)
+app.add_api_route("/webhook", whatsapp_webhook, methods=["POST"])
 
 @app.get("/healthz")
 def healthz():
