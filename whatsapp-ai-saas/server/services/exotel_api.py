@@ -139,7 +139,7 @@ def send_reply_via_exotel_api_template(
                     -No obligation
                     - Instant benefit
             Are you available to learn more or get started today? Reply YES or NO."""
-        #append_user(to_number,msg)
+        #await append_user(to_number,msg)
         print(f"[EXOTEL WA] Status: {resp.status_code}")
         print(f"[EXOTEL WA] Body: {resp.text}")
 

@@ -120,10 +120,11 @@ class RAGService:
             return {"documents": []}
         return res
 
-    async def search(self, tenant_id: str, query: str, k: int = 6) -> List[Dict[str, Any]]:
+    async def search(self, tenant_id: int, query: str, k: int = 6) -> List[Dict[str, Any]]:
         """
         Convenience: returns a simplified list of {text, metadata, score} for top-k.
         """
+        tenant_id = str(tenant_id)
         raw = await self.query(tenant_id, query, n=k)
         docs = raw.get("documents") or []
         metas = raw.get("metadatas") or []

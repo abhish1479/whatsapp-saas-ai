@@ -497,6 +497,14 @@ def upsert_agent_configuration(
         db.refresh(new_config)
         result = new_config
     
-    #background_tasks.add_task(add_catalog_to_rag, tenant_id=config.tenant_id)
+    background_tasks.add_task(add_catalog_to_rag, tenant_id=config.tenant_id)
     
     return result
+
+
+def get_tanant_id_from_receiver(receiver: str) -> int:
+    # business_profile = db.query(BusinessProfile).filter(BusinessProfile.business_whatsapp == receiver).first()
+    # if business_profile:
+    #     return business_profile.tenant_id
+    # else: return 1
+    return 1

@@ -10,3 +10,6 @@ class SocialProvider(str, Enum):
     GOOGLE = "google"
     FACEBOOK = "facebook"
     LINKEDIN = "linkedin"
+
+class Role(str, Enum):
+    TECHNICAN = "Field Engineer"  

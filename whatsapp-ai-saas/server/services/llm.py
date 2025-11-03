@@ -142,3 +142,48 @@ async def analysis(tenant_id: str, query: str) -> str:
     except Exception as e:
         logger.exception(f"[LLM] Failed for tenant={tenant_id}: {e}")
         return "Sorry, I'm facing issues. Please contact the business owner directly."
+
+
+
+async def llm_model_reply(tenant_id: str, message_obj: any) -> str:
+    try:
+        if PROVIDER == "openai":
+            resp = await client.chat.completions.create(
+                model=MODEL,
+                messages=message_obj,
+                temperature=TEMPERATURE,
+                max_tokens=2000,
+            )
+            return resp.choices[0].message.content.strip() 
+
+        elif PROVIDER == "anthropic":
+            resp = await anthropic_client.messages.create(
+                model=MODEL,
+                max_tokens=300,
+                temperature=TEMPERATURE,
+                messages=message_obj,
+            )
+            return resp.content[0].text.strip()
+
+        elif PROVIDER == "gemini":
+            model = genai.GenerativeModel(MODEL)
+            resp = model.generate_content(message_obj)
+            return resp.text.strip()
+
+        elif PROVIDER == "ollama":
+            async with httpx.AsyncClient() as http_client:
+                r = await http_client.post(f"{OLLAMA_URL}/api/chat", json={
+                    "model": MODEL,
+                    "messages":message_obj,
+                    "options": {"temperature": TEMPERATURE},
+                }, timeout=60)
+                data = r.json()
+                return data.get("message", {}).get("content", "No response").strip()
+
+        else:
+            return "No LLM provider configured."
+
+    except Exception as e:
+        logger.exception(f"[LLM] Failed for tenant={tenant_id}: {e}")
+        return "Sorry, I'm facing issues. Please contact the business owner directly."
+    
