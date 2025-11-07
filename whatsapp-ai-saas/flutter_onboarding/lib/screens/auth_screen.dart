@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
+import 'package:leadbot_client/screens/dashboard/views/dashboard_home_view.dart';
 import 'package:leadbot_client/screens/dashboard_root.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
@@ -53,7 +54,8 @@ class _SignupScreenState extends State<SignupScreen>
   String? _planError;
 
   BusinessInfoTheme get theme =>
-      Theme.of(context).extension<BusinessInfoTheme>() ?? BusinessInfoTheme.light;
+      Theme.of(context).extension<BusinessInfoTheme>() ??
+      BusinessInfoTheme.light;
 
   @override
   void initState() {
@@ -182,7 +184,6 @@ class _SignupScreenState extends State<SignupScreen>
 
     try {
       if (provider == "google") {
-
         var idToken = '';
         if (kIsWeb) {
           // For Web
@@ -303,10 +304,13 @@ class _SignupScreenState extends State<SignupScreen>
       );
 
       Widget nextScreen;
-      if (authResponse.onboardingProcess.toLowerCase() == 'completed' && isActive) {
-        nextScreen = LeadsListScreen(/*api: widget.api*/);
+      if (authResponse.onboardingProcess.toLowerCase() == 'completed' &&
+          isActive) {
+        nextScreen = nextScreen = DashboardLayout();
+        (/*api: widget.api*/);
       } else {
-        nextScreen = OnboardingWizard(api: widget.api);
+        // nextScreen = OnboardingWizard(api: widget.api);
+        nextScreen = DashboardLayout();
       }
 
       if (mounted) {
@@ -616,15 +620,12 @@ class _SignupScreenState extends State<SignupScreen>
             ),
             textAlign: TextAlign.center,
           ),
-
           SizedBox(height: isWeb ? 40 : 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                _isLogin
-                    ? ''
-                    : 'Selected Plan is ',
+                _isLogin ? '' : 'Selected Plan is ',
                 style: const TextStyle(
                   fontSize: 16,
                   color: Color(0xFF64748B),
@@ -633,15 +634,12 @@ class _SignupScreenState extends State<SignupScreen>
                 textAlign: TextAlign.center,
               ),
               Text(
-                _isLogin
-                    ? ''
-                    : ' $_selectedPlan',
-                style:  TextStyle(
-                  fontSize: 16,
-                  color: Colors.blue[800],
-                  height: 1.5,
-                  fontWeight: FontWeight.bold
-                ),
+                _isLogin ? '' : ' $_selectedPlan',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.blue[800],
+                    height: 1.5,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -724,9 +722,8 @@ class _SignupScreenState extends State<SignupScreen>
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF3B82F6)
-                : const Color(0xFFE2E8F0),
+            color:
+                isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(20),

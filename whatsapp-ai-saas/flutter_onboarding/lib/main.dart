@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leadbot_client/controller/campaign_controller.dart';
 import 'package:leadbot_client/controller/monitoring_controller.dart';
+import 'package:leadbot_client/screens/dashboard/controller/dashboard_controller.dart';
 import 'api/api.dart';
 import 'controller/catalog_controller.dart';
 import 'controller/leads_controller.dart';
@@ -70,10 +71,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB));
     final api = Api(resolveApiBase());
     return GetMaterialApp(
-      title: 'WhatsApp AI Onboarding',
-      theme: ThemeData(useMaterial3: true),
+      title: 'WhatsApp AI SaaS',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: scheme,
+        scaffoldBackgroundColor: scheme.surface,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       // Change the home to the new check screen
       home: CheckAuthScreen(api: api),
       initialBinding: BindingsBuilder(() {
@@ -83,6 +90,7 @@ class MyApp extends StatelessWidget {
         Get.put(LeadsController(api));
         Get.put(CampaignController(api));
         Get.put(MonitoringController(api));
+        Get.put(DashboardController(api));
       }),
     );
   }

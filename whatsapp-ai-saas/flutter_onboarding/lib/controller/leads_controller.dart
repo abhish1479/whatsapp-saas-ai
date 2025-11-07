@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:leadbot_client/helper/utils/shared_preference.dart';
 import '../api/api.dart';
@@ -39,6 +41,29 @@ class LeadsController extends GetxController {
       leads.insert(0, created);
     } finally {
       loading.value = false;
+    }
+  }
+
+  // ✅ 1️⃣ Download Sample CSV
+  Future<void> getSampleCsv() async {
+    try {
+      final file = await api.downloadSampleCsv();
+      Get.snackbar("Downloaded", "Sample CSV saved at: ${file.path}");
+    } catch (e) {
+      Get.snackbar("Error", "Failed to download sample CSV: $e");
+    }
+  }
+
+  // ✅ 2️⃣ Import CSV leads
+  Future<void> importCsvLeads(File csvFile) async {
+    final tenantId = await StoreUserData().getTenantId();
+    try {
+      Get.snackbar("Uploading", "Importing leads from CSV...");
+      await api.uploadLeadsCsv(csvFile, tenantId);
+      Get.snackbar("Success", "Bulk leads imported successfully");
+      await fetch();
+    } catch (e) {
+      Get.snackbar("Error", "Failed to upload CSV: $e");
     }
   }
 }

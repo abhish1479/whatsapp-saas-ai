@@ -1,12 +1,11 @@
-// lib/screens/check_auth_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leadbot_client/screens/dashboard/views/dashboard_home_view.dart';
+import 'package:leadbot_client/screens/onboarding_wizard.dart';
 import '../api/api.dart';
 import '../helper/utils/shared_preference.dart';
-import 'leads/leads_list_screen.dart';
-import 'onboarding_wizard.dart'; // Assuming SignupScreen is part of this
-import 'auth_screen.dart'; // Import your auth screen (SignupScreen)
-import 'dashboard_root.dart';
+import 'auth_screen.dart';
+
 class CheckAuthScreen extends StatefulWidget {
   final Api api;
 
@@ -29,7 +28,8 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
 
     // Use your StoreUserData class to check login status
     bool isLoggedIn = await StoreUserData().isLoggedIn();
-    String userStatus = await StoreUserData().getUserStatus(); // Check onboarding status
+    String userStatus =
+        await StoreUserData().getUserStatus(); // Check onboarding status
 
     if (isLoggedIn) {
       // User is logged in, check onboarding status
@@ -38,18 +38,19 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
         if (mounted) {
           Get.offAll(() =>
               // DashboardRoot());
-              LeadsListScreen());
+              DashboardLayout());
         }
       } else {
         // User is logged in but onboarding is not complete, go to onboarding
         if (mounted) {
-          Get.offAll(() => OnboardingWizard(api: widget.api));
+          // Get.offAll(() => OnboardingWizard(api: widget.api));
+          Get.offAll(() => DashboardLayout());
         }
       }
     } else {
       // User is not logged in, go to Auth Screen (SignupScreen)
       if (mounted) {
-        Get.offAll(() => SignupScreen( api: widget.api));
+        Get.offAll(() => SignupScreen(api: widget.api));
       }
     }
   }

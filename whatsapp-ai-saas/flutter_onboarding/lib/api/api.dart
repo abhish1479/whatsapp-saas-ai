@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
@@ -9,6 +10,7 @@ import '../helper/utils/app_loger.dart';
 class Api {
   final String baseUrl;
   final Duration timeout;
+  final StoreUserData _prefs = StoreUserData();
   Api(this.baseUrl, {this.timeout = const Duration(seconds: 20)});
 
   Uri _u(String path) => Uri.parse('$baseUrl$path');
@@ -194,11 +196,11 @@ class Api {
 
   /// CSV upload using multipart/form-data
   Future<Map<String, dynamic>> uploadCsv1(
-      String path, {
-        required String filename,
-        required List<int> bytes,
-        Map<String, String>? fields,
-      }) async {
+    String path, {
+    required String filename,
+    required List<int> bytes,
+    Map<String, String>? fields,
+  }) async {
     final tid = await StoreUserData().getTenantId();
     final allFields = Map<String, String>.from(fields ?? {});
     if (tid != null && !allFields.containsKey('tenant_id')) {
@@ -247,7 +249,6 @@ class Api {
     );
   }
 
-
   Future<List<dynamic>> getCatalog({
     required int tenantId,
     String? query,
@@ -256,11 +257,14 @@ class Api {
   }) async {
     final uri = Uri.parse(
       '$baseUrl/catalog/get_catalog?tenant_id=$tenantId'
-          '${query != null ? "&q=$query" : ""}'
-          '&limit=$limit&offset=$offset',
+      '${query != null ? "&q=$query" : ""}'
+      '&limit=$limit&offset=$offset',
     );
 
-    final resp = await http.get(uri, headers: {'Accept': 'application/json','ngrok-skip-browser-warning': 'true',});
+    final resp = await http.get(uri, headers: {
+      'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+    });
     if (resp.statusCode == 200) return jsonDecode(resp.body);
     throw Exception('getCatalog failed: ${resp.body}');
   }
@@ -343,7 +347,8 @@ class Api {
     if (discount != null) req.fields['discount'] = discount;
     if (sourceUrl != null) req.fields['source_url'] = sourceUrl;
     if (imageBytes != null && imageName != null) {
-      req.files.add(http.MultipartFile.fromBytes('image', imageBytes, filename: imageName));
+      req.files.add(http.MultipartFile.fromBytes('image', imageBytes,
+          filename: imageName));
     }
 
     final resp = await http.Response.fromStream(await req.send());
@@ -351,7 +356,8 @@ class Api {
     throw Exception('Add with media failed: ${resp.body}');
   }
 
-  Future<Map<String, dynamic>> updateCatalogItem(Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> updateCatalogItem(
+      Map<String, dynamic> body) async {
     final uri = Uri.parse('$baseUrl/catalog/update');
     final resp = await http.put(
       uri,
@@ -387,7 +393,8 @@ class Api {
     final uri = Uri.parse('$baseUrl/catalog/CSV_upload');
     final req = http.MultipartRequest('POST', uri);
     req.fields['tenant_id'] = tenantId.toString();
-    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    req.files
+        .add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
 
     final resp = await http.Response.fromStream(await req.send());
     if (resp.statusCode == 200) return jsonDecode(resp.body);
@@ -397,7 +404,8 @@ class Api {
   Future<String> uploadImage(Uint8List bytes, String filename) async {
     final uri = Uri.parse('$baseUrl/catalog/image_upload');
     final req = http.MultipartRequest('POST', uri);
-    req.files.add(http.MultipartFile.fromBytes('payload', bytes, filename: filename));
+    req.files.add(
+        http.MultipartFile.fromBytes('payload', bytes, filename: filename));
 
     final resp = await http.Response.fromStream(await req.send());
     if (resp.statusCode == 200) {
@@ -425,7 +433,8 @@ class Api {
   }
 
 // --- Bulk upload catalog items (for saving selected/edited items)
-  Future<Map<String, dynamic>> bulkUploadCatalog(List<Map<String, dynamic>> items) async {
+  Future<Map<String, dynamic>> bulkUploadCatalog(
+      List<Map<String, dynamic>> items) async {
     final uri = Uri.parse('$baseUrl/catalog/bulk-upload');
     final body = jsonEncode({'items': items});
     final resp = await http.post(
@@ -441,7 +450,8 @@ class Api {
   }
 
   Future<String> improveWorkflowTemplate(String query) async {
-    final tid = await StoreUserData().getTenantId(); // or pass it as param if preferred
+    final tid =
+        await StoreUserData().getTenantId(); // or pass it as param if preferred
     // if (tid == null) throw Exception("Tenant ID not found");
 
     final url = Uri.parse(
@@ -454,61 +464,129 @@ class Api {
     );
 
     if (response.statusCode == 200) {
-        String raw = response.body;
+      String raw = response.body;
 
-        // 🔧 Unescape common JSON string artifacts
-        String cleaned = raw
-            .replaceAll(r'\\n', '\n')
-            .replaceAll(r'\\t', '\t')
-            .replaceAll(r'\"', '"');
+      // 🔧 Unescape common JSON string artifacts
+      String cleaned = raw
+          .replaceAll(r'\\n', '\n')
+          .replaceAll(r'\\t', '\t')
+          .replaceAll(r'\"', '"');
 
-        // Remove surrounding quotes if present
-        if (cleaned.length >= 2 && cleaned.startsWith('"') && cleaned.endsWith('"')) {
-          cleaned = cleaned.substring(1, cleaned.length - 1);
-          // One more pass in case inner quotes were escaped
-          cleaned = cleaned.replaceAll(r'\\n', '\n').replaceAll(r'\"', '"');
-        }
+      // Remove surrounding quotes if present
+      if (cleaned.length >= 2 &&
+          cleaned.startsWith('"') &&
+          cleaned.endsWith('"')) {
+        cleaned = cleaned.substring(1, cleaned.length - 1);
+        // One more pass in case inner quotes were escaped
+        cleaned = cleaned.replaceAll(r'\\n', '\n').replaceAll(r'\"', '"');
+      }
 
-        return cleaned.trim();
+      return cleaned.trim();
     } else {
-      throw Exception('API failed with status ${response.statusCode}: ${response.body}');
+      throw Exception(
+          'API failed with status ${response.statusCode}: ${response.body}');
     }
   }
 
-   Future<List<dynamic>> listLeads(int tenantId) async {
-    final res = await http.get(Uri.parse('$baseUrl/leads?tenant_id=$tenantId'));
-    if (res.statusCode != 200) throw Exception('Failed to list leads');
-    return json.decode(res.body) as List<dynamic>;
+  Future<List<dynamic>> listLeads(int tenantId) async {
+    final token = await _prefs.getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/leads?tenant_id=$tenantId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to fetch leads: ${response.body}');
+    }
   }
 
-   Future<Map<String, dynamic>> createLead(Map<String, dynamic> lead) async {
-    final res = await http.post(Uri.parse('$baseUrl/leads'), headers: {'Content-Type': 'application/json'}, body: json.encode(lead));
-    if (res.statusCode != 201) throw Exception('Failed to create lead');
-    return json.decode(res.body) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> createLead(Map<String, dynamic> data) async {
+    final token = await _prefs.getToken();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to create lead: ${response.body}');
+    }
   }
 
-   Future<Map<String, dynamic>> createCampaign(Map<String, dynamic> campaign) async {
-    final res = await http.post(Uri.parse('$baseUrl/campaigns'), headers: {'Content-Type': 'application/json'}, body: json.encode(campaign));
+  Future<File> downloadSampleCsv() async {
+    final token = await _prefs.getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/sample-csv'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final directory = Directory.systemTemp;
+      final file = File('${directory.path}/sample_leads.csv');
+      await file.writeAsBytes(response.bodyBytes);
+      AppLogger.log("Sample CSV downloaded to: ${file.path}");
+      return file;
+    } else {
+      throw Exception("Failed to download sample CSV: ${response.body}");
+    }
+  }
+
+  // 2️⃣ Upload CSV for bulk lead import
+  Future<void> uploadLeadsCsv(File csvFile, int tenantId) async {
+    final token = await _prefs.getToken();
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/upload'),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['tenant_id'] = tenantId.toString();
+    request.files.add(await http.MultipartFile.fromPath('file', csvFile.path));
+
+    final response = await request.send();
+    final resp = await http.Response.fromStream(response);
+
+    if (resp.statusCode != 202) {
+      throw Exception("Bulk lead upload failed: ${resp.body}");
+    }
+    AppLogger.log("CSV Upload Success: ${resp.body}");
+  }
+
+  Future<Map<String, dynamic>> createCampaign(
+      Map<String, dynamic> campaign) async {
+    final res = await http.post(Uri.parse('$baseUrl/campaigns'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(campaign));
     if (res.statusCode != 201) throw Exception('Failed to create campaign');
     return json.decode(res.body) as Map<String, dynamic>;
   }
 
-   Future<Map<String, dynamic>> launchCampaign(int id) async {
-    final res = await http.post(Uri.parse('$baseUrl/campaigns/$id/launch'), headers: {'Content-Type': 'application/json'}, body: json.encode({"send_now": true}));
+  Future<Map<String, dynamic>> launchCampaign(int id) async {
+    final res = await http.post(Uri.parse('$baseUrl/campaigns/$id/launch'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({"send_now": true}));
     if (res.statusCode != 200) throw Exception('Failed to launch');
     return json.decode(res.body) as Map<String, dynamic>;
   }
 
-   Future<List<dynamic>> recipients(int id) async {
+  Future<List<dynamic>> recipients(int id) async {
     final res = await http.get(Uri.parse('$baseUrl/campaigns/$id/recipients'));
     if (res.statusCode != 200) throw Exception('Failed to recipients');
     return json.decode(res.body) as List<dynamic>;
   }
 
-   Future<List<dynamic>> liveBoard(int tenantId) async {
-    final res = await http.get(Uri.parse('$baseUrl/monitor/live?tenant_id=$tenantId'));
+  Future<List<dynamic>> liveBoard(int tenantId) async {
+    final res =
+        await http.get(Uri.parse('$baseUrl/monitor/live?tenant_id=$tenantId'));
     if (res.statusCode != 200) throw Exception('Failed to live board');
     return json.decode(res.body) as List<dynamic>;
   }
-
 }
