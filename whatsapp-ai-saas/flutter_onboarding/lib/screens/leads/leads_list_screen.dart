@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controller/leads_controller.dart';
@@ -10,7 +13,6 @@ class LeadsListScreen extends StatefulWidget {
 }
 
 class _LeadsListScreenState extends State<LeadsListScreen> {
-  // final ctrl = Get.put(LeadsController());
   final ctrl = Get.find<LeadsController>();
   final name = TextEditingController();
   final phone = TextEditingController();
@@ -29,8 +31,33 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
       appBar: AppBar(
         title: const Text('Leads Hub'),
         actions: [
-          IconButton(onPressed: () => Get.toNamed('/campaigns/create'), icon: const Icon(Icons.campaign)),
-          IconButton(onPressed: () => Get.toNamed('/monitor/live'), icon: const Icon(Icons.monitor)),
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: "Download Sample CSV",
+            onPressed: ctrl.getSampleCsv,
+          ),
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: "Import CSV",
+            onPressed: () async {
+              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['csv'],
+              );
+              if (result != null && result.files.single.path != null) {
+                File file = File(result.files.single.path!);
+                ctrl.importCsvLeads(file);
+              } else {
+                Get.snackbar("No File", "Please select a CSV file");
+              }
+            },
+          ),
+          IconButton(
+              onPressed: () => Get.toNamed('/campaigns/create'),
+              icon: const Icon(Icons.campaign)),
+          IconButton(
+              onPressed: () => Get.toNamed('/monitor/live'),
+              icon: const Icon(Icons.monitor)),
         ],
       ),
       body: Obx(() {
@@ -62,27 +89,43 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
       context: context,
       isScrollControlled: true,
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-            TextField(controller: phone, decoration: const InputDecoration(labelText: 'Phone*')),
-            TextField(controller: email, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: product, decoration: const InputDecoration(labelText: 'Product/Service')),
+            TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Name')),
+            TextField(
+                controller: phone,
+                decoration: const InputDecoration(labelText: 'Phone*')),
+            TextField(
+                controller: email,
+                decoration: const InputDecoration(labelText: 'Email')),
+            TextField(
+                controller: product,
+                decoration:
+                    const InputDecoration(labelText: 'Product/Service')),
             const SizedBox(height: 12),
             Row(
               children: [
                 const Spacer(),
-                ElevatedButton(onPressed: () {
-                  ctrl.addLead({
-                    "name": name.text.isEmpty ? null : name.text,
-                    "phone": phone.text,
-                    "email": email.text.isEmpty ? null : email.text,
-                    "product_service": product.text.isEmpty ? null : product.text,
-                  });
-                  Get.back();
-                }, child: const Text("Save"))
+                ElevatedButton(
+                    onPressed: () {
+                      ctrl.addLead({
+                        "name": name.text.isEmpty ? null : name.text,
+                        "phone": phone.text,
+                        "email": email.text.isEmpty ? null : email.text,
+                        "product_service":
+                            product.text.isEmpty ? null : product.text,
+                      });
+                      Get.back();
+                    },
+                    child: const Text("Save"))
               ],
             ),
             const SizedBox(height: 20),
