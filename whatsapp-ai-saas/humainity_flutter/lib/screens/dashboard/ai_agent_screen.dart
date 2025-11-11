@@ -9,7 +9,6 @@ import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:humainity_flutter/widgets/ui/app_card.dart';
 import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
-import 'package:humainity_flutter/widgets/ui/app_switch.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
