@@ -11,25 +11,29 @@ class WhyHumainitySection extends StatelessWidget {
     {
       "icon": LucideIcons.bot,
       "title": "Conversational AI",
-      "description": "Handles FAQs, service requests, and lead nurturing naturally with context-aware responses.",
+      "description":
+          "Handles FAQs, service requests, and lead nurturing naturally with context-aware responses.",
       "color": AppColors.primary,
     },
     {
       "icon": LucideIcons.messageSquare,
       "title": "Voice + WhatsApp Integration",
-      "description": "Unified dashboard for inbound and outbound interactions across all your communication channels.",
+      "description":
+          "Unified dashboard for inbound and outbound interactions across all your communication channels.",
       "color": AppColors.success,
     },
     {
       "icon": LucideIcons.link2,
       "title": "Universal Integrator Layer",
-      "description": "Connects with any CRM, ERP, or payment system through natural-language API configuration.",
+      "description":
+          "Connects with any CRM, ERP, or payment system through natural-language API configuration.",
       "color": AppColors.warning,
     },
     {
       "icon": LucideIcons.heart,
       "title": "Human + AI Synergy",
-      "description": "Your agents focus on empathy while AI handles efficiency, creating the perfect balance.",
+      "description":
+          "Your agents focus on empathy while AI handles efficiency, creating the perfect balance.",
       "color": AppColors.destructive,
     },
   ];
@@ -99,12 +103,22 @@ class WhyHumainitySection extends StatelessWidget {
               color: (value['color'] as Color).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(value['icon'] as IconData, color: value['color'] as Color, size: 32),
+            child: Icon(value['icon'] as IconData,
+                color: value['color'] as Color, size: 32),
           ),
           const SizedBox(height: 16),
-          Text(value['title'] as String, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+          Text(value['title'] as String,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Text(value['description'] as String, style: const TextStyle(color: AppColors.mutedForeground)),
+          // FIX: Wrap the description text in an Expanded widget.
+          // This forces the column to only take the necessary space and ensures the text flexes correctly within the limited card height.
+          Expanded(
+            child: Text(
+              value['description'] as String,
+              style: const TextStyle(color: AppColors.mutedForeground),
+            ),
+          ),
         ],
       ),
     );

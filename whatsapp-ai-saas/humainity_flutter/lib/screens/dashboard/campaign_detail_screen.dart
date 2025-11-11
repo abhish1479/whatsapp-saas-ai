@@ -17,7 +17,8 @@ class CampaignDetailScreen extends ConsumerWidget {
   const CampaignDetailScreen({super.key, required this.campaignId});
 
   @override
-  Widget build(BuildContext c, WidgetRef ref) { // <-- The context is 'c'
+  Widget build(BuildContext c, WidgetRef ref) {
+    // <-- The context is 'c'
     final state = ref.watch(campaignDetailProvider(campaignId));
 
     if (state.isLoading) {
@@ -25,7 +26,8 @@ class CampaignDetailScreen extends ConsumerWidget {
     }
 
     if (state.error != null || state.campaign == null) {
-      return Center(child: Text('Error: ${state.error ?? "Campaign not found"}'));
+      return Center(
+          child: Text('Error: ${state.error ?? "Campaign not found"}'));
     }
 
     final campaign = state.campaign!;
@@ -62,7 +64,8 @@ class CampaignDetailScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Text(
                     campaign.name,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 12),
                   AppBadge(
@@ -94,24 +97,32 @@ class CampaignDetailScreen extends ConsumerWidget {
           AppButton(
             text: 'Pause',
             icon: const Icon(LucideIcons.pause),
-            variant: AppButtonVariant.outline,
+            // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+            style: AppButtonStyle.tertiary,
             // *** FIX: Call correct notifier method ***
-            onPressed: () => ref.read(campaignDetailProvider(campaign.id).notifier).updateStatus('paused'),
+            onPressed: () => ref
+                .read(campaignDetailProvider(campaign.id).notifier)
+                .updateStatus('paused'),
           ),
         if (campaign.status == 'draft' || campaign.status == 'paused')
           AppButton(
             text: 'Run Campaign',
             icon: const Icon(LucideIcons.play),
             // *** FIX: Call correct notifier method ***
-            onPressed: () => ref.read(campaignDetailProvider(campaign.id).notifier).updateStatus('running'),
+            onPressed: () => ref
+                .read(campaignDetailProvider(campaign.id).notifier)
+                .updateStatus('running'),
           ),
         const SizedBox(width: 8),
         AppButton(
           text: 'Refresh Data',
           icon: const Icon(LucideIcons.refreshCw),
-          variant: AppButtonVariant.ghost,
+          // FIX: Replaced variant: AppButtonVariant.ghost with style: AppButtonStyle.tertiary
+          style: AppButtonStyle.tertiary,
           // *** FIX: Call correct notifier method ***
-          onPressed: () => ref.read(campaignDetailProvider(campaign.id).notifier).refreshData(),
+          onPressed: () => ref
+              .read(campaignDetailProvider(campaign.id).notifier)
+              .refreshData(),
         ),
       ],
     );
@@ -130,10 +141,13 @@ class CampaignDetailScreen extends ConsumerWidget {
       children: [
         _buildStatCard('Total Contacts', campaign.totalContacts.toString()),
         _buildStatCard('Contacts Reached', campaign.contactsReached.toString()),
-        _buildStatCard('Successful', campaign.successfulDeliveries.toString(), Colors.green),
-        _buildStatCard('Failed', campaign.failedDeliveries.toString(), Colors.red),
+        _buildStatCard('Successful', campaign.successfulDeliveries.toString(),
+            Colors.green),
+        _buildStatCard(
+            'Failed', campaign.failedDeliveries.toString(), Colors.red),
         // *** FIX: Use getter 'engagementRate' from fixed model ***
-        _buildStatCard('Engagement Rate', '${campaign.engagementRate.toStringAsFixed(1)}%'),
+        _buildStatCard('Engagement Rate',
+            '${campaign.engagementRate.toStringAsFixed(1)}%'),
       ],
     );
   }
@@ -144,7 +158,9 @@ class CampaignDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+          Text(title,
+              style: const TextStyle(
+                  color: AppColors.mutedForeground, fontSize: 14)),
           const SizedBox(height: 8),
           Text(
             value,
@@ -164,13 +180,15 @@ class CampaignDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Campaign Logs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Campaign Logs',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           if (logs.isEmpty)
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(32.0),
-                child: Text('No logs yet. Run the campaign to see activity.', style: TextStyle(color: AppColors.mutedForeground)),
+                child: Text('No logs yet. Run the campaign to see activity.',
+                    style: TextStyle(color: AppColors.mutedForeground)),
               ),
             )
           else
@@ -182,16 +200,21 @@ class CampaignDetailScreen extends ConsumerWidget {
                   final log = logs[index];
                   return ListTile(
                     leading: Icon(
-                      log.status == 'success' ? LucideIcons.checkCircle2 : LucideIcons.xCircle,
-                      color: log.status == 'success' ? Colors.green : Colors.red,
+                      log.status == 'success'
+                          ? LucideIcons.checkCircle2
+                          : LucideIcons.xCircle,
+                      color:
+                          log.status == 'success' ? Colors.green : Colors.red,
                     ),
                     // *** FIX: Use 'message' field from fixed model ***
                     title: Text(log.message),
                     // *** FIX: Use 'contactIdentifier' from fixed model ***
-                    subtitle: Text('Contact: ${log.contactIdentifier ?? "N/A"}'),
+                    subtitle:
+                        Text('Contact: ${log.contactIdentifier ?? "N/A"}'),
                     trailing: Text(
                       '${log.createdAt.toLocal().hour}:${log.createdAt.toLocal().minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                      style: const TextStyle(
+                          color: AppColors.mutedForeground, fontSize: 12),
                     ),
                   );
                 },

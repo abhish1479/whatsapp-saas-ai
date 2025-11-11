@@ -17,7 +17,7 @@ class IndustryDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final industry = industries.firstWhere(
-          (i) => i.id == industryId,
+      (i) => i.id == industryId,
       orElse: () => industries.first, // Fallback, consider a 404
     );
 
@@ -37,7 +37,8 @@ class IndustryDetailScreen extends StatelessWidget {
                     AppButton(
                       text: 'Back to Industries',
                       icon: const Icon(LucideIcons.arrowLeft),
-                      variant: AppButtonVariant.ghost,
+                      // FIX: Replaced variant: AppButtonVariant.ghost with style: AppButtonStyle.tertiary
+                      style: AppButtonStyle.tertiary,
                       textColor: Colors.white,
                       onPressed: () => context.go('/industries'),
                     ),
@@ -52,18 +53,29 @@ class IndustryDetailScreen extends StatelessWidget {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(industry.icon, color: Colors.white, size: 32),
+                          child: Icon(industry.icon,
+                              color: Colors.white, size: 32),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(industry.name, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
+                              Text(industry.name,
+                                  style: const TextStyle(
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white)),
                               const SizedBox(height: 8),
-                              Text(industry.tagline, style: TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9))),
+                              Text(industry.tagline,
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white.withOpacity(0.9))),
                               const SizedBox(height: 16),
-                              Text(industry.description, style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.8))),
+                              Text(industry.description,
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white.withOpacity(0.8))),
                             ],
                           ),
                         ),
@@ -72,9 +84,19 @@ class IndustryDetailScreen extends StatelessWidget {
                     const SizedBox(height: 32),
                     Row(
                       children: [
-                        AppButton(text: 'Start Free Trial', onPressed: () => context.go('/dashboard'), variant: AppButtonVariant.secondary),
+                        // FIX: Replaced variant: AppButtonVariant.secondary with style: AppButtonStyle.secondary
+                        AppButton(
+                            text: 'Start Free Trial',
+                            onPressed: () => context.go('/dashboard'),
+                            style: AppButtonStyle.secondary),
                         const SizedBox(width: 16),
-                        AppButton(text: 'Book a Demo', variant: AppButtonVariant.outline, onPressed: () => context.go('/auth'), textColor: Colors.white, borderColor: Colors.white),
+                        // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                        AppButton(
+                            text: 'Book a Demo',
+                            style: AppButtonStyle.tertiary,
+                            onPressed: () => context.go('/auth'),
+                            textColor: Colors.white,
+                            borderColor: Colors.white),
                       ],
                     ),
                   ],
@@ -88,7 +110,10 @@ class IndustryDetailScreen extends StatelessWidget {
               child: WebContainer(
                 child: Column(
                   children: [
-                    Text('Key Challenges in ${industry.name}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                    Text('Key Challenges in ${industry.name}',
+                        style: const TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 48),
                     GridView.builder(
                       shrinkWrap: true,
@@ -105,10 +130,15 @@ class IndustryDetailScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: AppColors.destructive.withOpacity(0.05),
-                            border: Border.all(color: AppColors.destructive.withOpacity(0.5)),
+                            border: Border.all(
+                                color: AppColors.destructive.withOpacity(0.5)),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Center(child: Text(industry.challenges[index], textAlign: TextAlign.center,)),
+                          child: Center(
+                              child: Text(
+                            industry.challenges[index],
+                            textAlign: TextAlign.center,
+                          )),
                         );
                       },
                     ),
@@ -124,28 +154,62 @@ class IndustryDetailScreen extends StatelessWidget {
               child: WebContainer(
                 child: Column(
                   children: [
-                    const Text('How HumAInity.AI Helps', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                    const Text('How HumAInity.AI Helps',
+                        style: TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    const Text('Automate with empathy using our three-pillar approach', style: TextStyle(fontSize: 18, color: AppColors.mutedForeground), textAlign: TextAlign.center),
+                    const Text(
+                        'Automate with empathy using our three-pillar approach',
+                        style: TextStyle(
+                            fontSize: 18, color: AppColors.mutedForeground),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 48),
                     ResponsiveLayout(
                       mobile: Column(
                         children: [
-                          _buildSolutionCard('WhatsApp Automation', LucideIcons.messageSquare, AppColors.success, industry.solutions['whatsapp']!),
+                          _buildSolutionCard(
+                              'WhatsApp Automation',
+                              LucideIcons.messageSquare,
+                              AppColors.success,
+                              industry.solutions['whatsapp']!),
                           const SizedBox(height: 16),
-                          _buildSolutionCard('Voice Automation', LucideIcons.phone, AppColors.primary, industry.solutions['voice']!),
+                          _buildSolutionCard(
+                              'Voice Automation',
+                              LucideIcons.phone,
+                              AppColors.primary,
+                              industry.solutions['voice']!),
                           const SizedBox(height: 16),
-                          _buildSolutionCard('Campaign Automation', LucideIcons.megaphone, AppColors.warning, industry.solutions['campaigns']!),
+                          _buildSolutionCard(
+                              'Campaign Automation',
+                              LucideIcons.megaphone,
+                              AppColors.warning,
+                              industry.solutions['campaigns']!),
                         ],
                       ),
                       desktop: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _buildSolutionCard('WhatsApp Automation', LucideIcons.messageSquare, AppColors.success, industry.solutions['whatsapp']!)),
+                          Expanded(
+                              child: _buildSolutionCard(
+                                  'WhatsApp Automation',
+                                  LucideIcons.messageSquare,
+                                  AppColors.success,
+                                  industry.solutions['whatsapp']!)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildSolutionCard('Voice Automation', LucideIcons.phone, AppColors.primary, industry.solutions['voice']!)),
+                          Expanded(
+                              child: _buildSolutionCard(
+                                  'Voice Automation',
+                                  LucideIcons.phone,
+                                  AppColors.primary,
+                                  industry.solutions['voice']!)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildSolutionCard('Campaign Automation', LucideIcons.megaphone, AppColors.warning, industry.solutions['campaigns']!)),
+                          Expanded(
+                              child: _buildSolutionCard(
+                                  'Campaign Automation',
+                                  LucideIcons.megaphone,
+                                  AppColors.warning,
+                                  industry.solutions['campaigns']!)),
                         ],
                       ),
                     ),
@@ -163,11 +227,20 @@ class IndustryDetailScreen extends StatelessWidget {
                   children: [
                     const AppBadge(text: 'Sample Conversational Flow'),
                     const SizedBox(height: 16),
-                    const Text('See It In Action', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                    const Text('See It In Action',
+                        style: TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    Text('Here\'s how a typical AI conversation works for ${industry.name}', style: const TextStyle(fontSize: 18, color: AppColors.mutedForeground), textAlign: TextAlign.center),
+                    Text(
+                        'Here\'s how a typical AI conversation works for ${industry.name}',
+                        style: const TextStyle(
+                            fontSize: 18, color: AppColors.mutedForeground),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 48),
-                    ...industry.conversationFlow.map((step) => _buildFlowStep(step)).toList(),
+                    ...industry.conversationFlow
+                        .map((step) => _buildFlowStep(step))
+                        .toList(),
                   ],
                 ),
               ),
@@ -180,24 +253,26 @@ class IndustryDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSolutionCard(String title, IconData icon, Color color, List<String> solutions) {
+  Widget _buildSolutionCard(
+      String title, IconData icon, Color color, List<String> solutions) {
     return AppCard(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 16),
-            ...solutions.map((s) => Padding(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 16),
+        Text(title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 16),
+        ...solutions.map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,9 +283,8 @@ class IndustryDetailScreen extends StatelessWidget {
                 ],
               ),
             )),
-          ],
-        )
-    );
+      ],
+    ));
   }
 
   Widget _buildFlowStep(Map<String, dynamic> step) {
@@ -226,7 +300,10 @@ class IndustryDetailScreen extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: AppColors.gradientPrimary,
             ),
-            child: Center(child: Text(step['step'].toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            child: Center(
+                child: Text(step['step'].toString(),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold))),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -243,7 +320,8 @@ class IndustryDetailScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8.0, left: 32.0),
                     child: AppCard(
                       color: AppColors.muted,
-                      child: Text(step['response'], style: const TextStyle(fontWeight: FontWeight.w500)),
+                      child: Text(step['response'],
+                          style: const TextStyle(fontWeight: FontWeight.w500)),
                     ),
                   ),
               ],

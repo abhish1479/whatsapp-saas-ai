@@ -1,113 +1,177 @@
 import 'package:flutter/material.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
-import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-// This is a STATIC preview, as seen in AIAgent.tsx
+/// A mock widget to display a live preview of the AI agent's branding
+/// and appearance within a chat interface.
 class ChatPreview extends StatelessWidget {
   final String agentName;
-  final String agentImagePath;
-  final String greetingMessage;
+  final String agentImage;
+  final Color primaryColor;
 
   const ChatPreview({
-    this.agentName = "OmniBot",
-    this.agentImagePath = 'assets/images/agent-sarah.jpg', // Default
-    this.greetingMessage = "Hi! I'm your virtual assistant. How can I assist you today?",
     super.key,
+    required this.agentName,
+    required this.agentImage,
+    required this.primaryColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: EdgeInsets.zero,
+    // Determine a text color that contrasts with the primary color
+    final double luminance = primaryColor.computeLuminance();
+    final Color headerTextColor =
+        luminance > 0.5 ? Colors.black87 : Colors.white;
+
+    return Container(
+      // Removed fixed height here, as the parent (AIAgentScreen) is now managing height via Expanded/SizedBox,
+      // allowing the widget to correctly fill the space provided by the outer Expanded.
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
-            ),
-            child: Row(
-              children: [
-                AppAvatar(
-                  imageUrl: agentImagePath,
-                  fallbackText: agentName,
-                  radius: 16,
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(agentName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: AppColors.primaryForeground)),
-                    const Text("Online",
-                        style: TextStyle(
-                            color: AppColors.primaryForeground, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Messages
-          Container(
-            height: 400,
-            padding: const EdgeInsets.all(16.0),
-            child: ListView(
-              children: [
-                ChatMessageBubble(
-                  message: greetingMessage,
-                  isUser: false,
-                  timestamp: DateTime.now(),
-                ),
-                const SizedBox(height: 16),
-                ChatMessageBubble(
-                  message: "I need help with my order",
-                  isUser: true,
-                  timestamp: DateTime.now(),
-                ),
-                const SizedBox(height: 16),
-                ChatMessageBubble(
-                  message: "I'd be happy to help you with your order! Could you please share your order number?",
-                  isUser: false,
-                  timestamp: DateTime.now(),
-                ),
-              ],
-            ),
-          ),
-          // Input
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              border: Border(top: BorderSide(color: AppColors.border)),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-                bottomRight: Radius.circular(8),
-              ),
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Type your message...",
-                filled: true,
-                fillColor: AppColors.muted,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          // 1. Header (Branding Preview)
+          _buildHeader(headerTextColor),
+
+          // 2. Mock Chat Messages
+          Expanded(
+            // FIX: Ensures the chat area takes up all remaining vertical space
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildAgentMessage(context),
+                  const SizedBox(height: 12),
+                  _buildUserMessage(context),
+                ],
               ),
             ),
           ),
+
+          // 3. Input Mock
+          _buildInputMock(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(Color headerTextColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: primaryColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundImage: AssetImage(agentImage),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              agentName,
+              style: TextStyle(
+                color: headerTextColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          Icon(LucideIcons.x, size: 20, color: headerTextColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAgentMessage(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundImage: AssetImage(agentImage),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius:
+                  BorderRadius.circular(12).copyWith(topLeft: Radius.zero),
+            ),
+            child: const Text(
+              'Hello! How can I help you find the perfect AI solution for your business today?',
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserMessage(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Flexible(
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: primaryColor
+                  .withOpacity(0.8), // User message bubble uses the brand color
+              borderRadius:
+                  BorderRadius.circular(12).copyWith(topRight: Radius.zero),
+            ),
+            child: const Text(
+              'I\'m looking for a tool to handle lead qualification via WhatsApp.',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputMock(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.input),
+              ),
+              child: const Text(
+                'Type a message...',
+                style: TextStyle(color: AppColors.mutedForeground),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(LucideIcons.send, color: primaryColor, size: 24),
         ],
       ),
     );

@@ -7,7 +7,7 @@ class AppDropdown<T> extends StatelessWidget {
   final T? value;
   final void Function(T?) onChanged;
   final String? Function(T?)? validator;
-  // FIX: Retaining 'hint' as the actual parameter for a DropdownButtonFormField
+  // This is the actual Widget used as the hint in the DropdownButtonFormField
   final Widget? hint;
 
   const AppDropdown({
@@ -17,6 +17,7 @@ class AppDropdown<T> extends StatelessWidget {
     this.value,
     required this.onChanged,
     this.validator,
+    // FIX: Added 'hint' to the constructor
     this.hint,
   });
 
@@ -38,13 +39,13 @@ class AppDropdown<T> extends StatelessWidget {
           items: items,
           onChanged: onChanged,
           validator: validator,
-          // Use the correct parameter name
+          // FIX: Pass the 'hint' property directly to the DropdownButtonFormField
           hint: hint,
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.background,
             contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.0),
               borderSide: const BorderSide(color: AppColors.border),
@@ -55,7 +56,8 @@ class AppDropdown<T> extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.0),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 2.0),
             ),
           ),
         ),

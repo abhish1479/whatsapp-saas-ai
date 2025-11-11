@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:humainity_flutter/models/ai_agent.dart';
 
+/// A card widget to display and allow selection of a pre-configured AI agent.
 class PresetAgentCard extends StatelessWidget {
-  final String name;
-  final String description;
-  final String imagePath;
+  final AiAgent agent;
   final bool isSelected;
   final VoidCallback onTap;
 
   const PresetAgentCard({
-    required this.name,
-    required this.description,
-    required this.imagePath,
+    super.key,
+    required this.agent,
     required this.isSelected,
     required this.onTap,
-    super.key,
   });
 
   @override
@@ -24,66 +21,60 @@ class PresetAgentCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8.0),
       child: Container(
+        padding: const EdgeInsets.all(12.0),
         decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: 2.0,
+            // Highlight border based on selection and agent color
+            color: isSelected ? agent.primaryColor : AppColors.border,
+            width: isSelected ? 3.0 : 1.0,
           ),
           boxShadow: isSelected
               ? [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 2,
-            )
-          ]
-              : [],
+                  BoxShadow(
+                    color: agent.primaryColor.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6.0),
-          child: Column(
-            children: [
-              AspectRatio(
-                aspectRatio: 1.0,
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Agent Avatar (using AssetImage since you provided local paths)
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: agent.primaryColor.withOpacity(0.1),
+              backgroundImage: AssetImage(agent.imagePath),
+              // Use a placeholder icon for the "Custom" agent
+              child: agent.id == 'custom'
+                  ? const Icon(Icons.palette,
+                      color: AppColors.mutedForeground, size: 28)
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            // Agent Name
+            Text(
+              agent.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
-              Container(
-                padding: const EdgeInsets.all(12.0),
-                color: AppColors.card,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 14)),
-                    const SizedBox(height: 2),
-                    Text(description,
-                        style: const TextStyle(
-                            color: AppColors.mutedForeground, fontSize: 12)),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 4),
+            // Agent Persona
+            Text(
+              agent.persona,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                fontSize: 12,
               ),
-              if (isSelected)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(LucideIcons.check,
-                        color: AppColors.primaryForeground, size: 16),
-                  ),
-                ),
-            ],
-          ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

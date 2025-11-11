@@ -36,7 +36,6 @@ final customerStatusCountsProvider = Provider<Map<String, int>>((ref) {
   return counts;
 });
 
-
 class CRMScreen extends ConsumerStatefulWidget {
   const CRMScreen({super.key});
 
@@ -54,7 +53,8 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
   @override
   Widget build(BuildContext context) {
     final crmState = ref.watch(crmProvider);
-    final statusCounts = ref.watch(customerStatusCountsProvider); // FIX: Used new provider
+    final statusCounts =
+        ref.watch(customerStatusCountsProvider); // FIX: Used new provider
     final filteredCustomers = _filterCustomers(crmState.customers);
 
     return SingleChildScrollView(
@@ -140,15 +140,23 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+            Text(title,
+                style: const TextStyle(
+                    color: AppColors.mutedForeground, fontSize: 12)),
             const SizedBox(height: 4),
             Row(
               children: [
                 if (statusKey != 'all') ...[
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  Container(
+                      width: 8,
+                      height: 8,
+                      decoration:
+                          BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
                 ],
-                Text('$count', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text('$count',
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold)),
               ],
             ),
           ],
@@ -185,7 +193,8 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
                 DropdownMenuItem(value: 'new', child: Text('New')),
                 DropdownMenuItem(value: 'contacted', child: Text('Contacted')),
                 DropdownMenuItem(value: 'qualified', child: Text('Qualified')),
-                DropdownMenuItem(value: 'negotiating', child: Text('Negotiating')),
+                DropdownMenuItem(
+                    value: 'negotiating', child: Text('Negotiating')),
                 DropdownMenuItem(value: 'converted', child: Text('Converted')),
                 DropdownMenuItem(value: 'lost', child: Text('Lost')),
               ],
@@ -199,8 +208,10 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
               onChanged: (val) => setState(() => _campaignFilter = val!),
               items: const [
                 DropdownMenuItem(value: 'all', child: Text('All Customers')),
-                DropdownMenuItem(value: 'has_campaigns', child: Text('In Campaigns')),
-                DropdownMenuItem(value: 'no_campaigns', child: Text('Not in Campaigns')),
+                DropdownMenuItem(
+                    value: 'has_campaigns', child: Text('In Campaigns')),
+                DropdownMenuItem(
+                    value: 'no_campaigns', child: Text('Not in Campaigns')),
               ],
             ),
           ),
@@ -214,14 +225,17 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    bool showPreview = _previewCustomer != null && !isMobile(context); // FIX: isMobile defined
+    bool showPreview =
+        _previewCustomer != null && !isMobile(context); // FIX: isMobile defined
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: showPreview ? 320 : MediaQuery.of(context).size.width - 32, // Adjust width
+          width: showPreview
+              ? 320
+              : MediaQuery.of(context).size.width - 32, // Adjust width
           child: _buildCustomerList(filteredCustomers),
         ),
         if (showPreview) ...[
@@ -229,9 +243,11 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
           Expanded(
             child: _buildCustomerPreview(
                 _previewCustomer!,
-                crmState.previewEngagements[_previewCustomer!.id] ?? [], // FIX: Used previewEngagements
-                crmState.previewPayments[_previewCustomer!.id] ?? [] // FIX: Used previewPayments
-            ),
+                crmState.previewEngagements[_previewCustomer!.id] ??
+                    [], // FIX: Used previewEngagements
+                crmState.previewPayments[_previewCustomer!.id] ??
+                    [] // FIX: Used previewPayments
+                ),
           ),
         ],
       ],
@@ -242,9 +258,10 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Customers (${filteredCustomers.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        Text('Customers (${filteredCustomers.length})',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Container(
+        SizedBox(
           height: 600, // Fixed height for scrollable list
           child: ListView.builder(
             itemCount: filteredCustomers.length,
@@ -256,14 +273,19 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
                 padding: const EdgeInsets.all(12.0),
                 borderColor: isSelected ? AppColors.primary : AppColors.border,
                 // FIX: Removed borderWidth
-                color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.card,
+                color: isSelected
+                    ? AppColors.primary.withOpacity(0.05)
+                    : AppColors.card,
                 child: InkWell(
                   onTap: () {
                     setState(() => _previewCustomer = customer);
                     // FIX: Renamed provider method
-                    ref.read(crmProvider.notifier).fetchCustomerPreviewDetails(customer.id);
+                    ref
+                        .read(crmProvider.notifier)
+                        .fetchCustomerPreviewDetails(customer.id);
                   },
-                  onDoubleTap: () => context.push('/dashboard/crm/${customer.id}'),
+                  onDoubleTap: () =>
+                      context.push('/dashboard/crm/${customer.id}'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -272,30 +294,50 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(customer.source == 'inbound' ? LucideIcons.arrowDownToLine : LucideIcons.arrowUpFromLine, size: 14, color: customer.source == 'inbound' ? Colors.blue : Colors.purple),
+                              Icon(
+                                  customer.source == 'inbound'
+                                      ? LucideIcons.arrowDownToLine
+                                      : LucideIcons.arrowUpFromLine,
+                                  size: 14,
+                                  color: customer.source == 'inbound'
+                                      ? Colors.blue
+                                      : Colors.purple),
                               const SizedBox(width: 8),
-                              Text(customer.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text(customer.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
-                          AppBadge(text: customer.status, color: getStatusColor(customer.status)),
+                          AppBadge(
+                              text: customer.status,
+                              color: getStatusColor(customer.status)),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      if (customer.company != null && customer.company!.isNotEmpty) ...[
+                      if (customer.company != null &&
+                          customer.company!.isNotEmpty) ...[
                         Row(
                           children: [
-                            const Icon(LucideIcons.building, size: 12, color: AppColors.mutedForeground),
+                            const Icon(LucideIcons.building,
+                                size: 12, color: AppColors.mutedForeground),
                             const SizedBox(width: 4),
-                            Text(customer.company!, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                            Text(customer.company!,
+                                style: const TextStyle(
+                                    color: AppColors.mutedForeground,
+                                    fontSize: 12)),
                           ],
                         ),
                         const SizedBox(height: 4),
                       ],
                       Row(
                         children: [
-                          const Icon(LucideIcons.phone, size: 12, color: AppColors.mutedForeground),
+                          const Icon(LucideIcons.phone,
+                              size: 12, color: AppColors.mutedForeground),
                           const SizedBox(width: 4),
-                          Text(customer.phone, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                          Text(customer.phone,
+                              style: const TextStyle(
+                                  color: AppColors.mutedForeground,
+                                  fontSize: 12)),
                         ],
                       ),
                     ],
@@ -309,7 +351,8 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
     );
   }
 
-  Widget _buildCustomerPreview(Customer customer, List<Engagement> engagements, List<Payment> payments) {
+  Widget _buildCustomerPreview(
+      Customer customer, List<Engagement> engagements, List<Payment> payments) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,13 +365,18 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(customer.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text(customer.name,
+                          style: const TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 8),
-                      AppBadge(text: customer.status, color: getStatusColor(customer.status)),
+                      AppBadge(
+                          text: customer.status,
+                          color: getStatusColor(customer.status)),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(customer.phone, style: const TextStyle(color: AppColors.mutedForeground)),
+                  Text(customer.phone,
+                      style: const TextStyle(color: AppColors.mutedForeground)),
                 ],
               ),
               IconButton(
@@ -340,15 +388,19 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
           const SizedBox(height: 16),
           AppButton(
             text: 'View Full Details',
-            icon: const Icon(LucideIcons.externalLink), // FIX: Wrapped in Icon()
-            variant: AppButtonVariant.outline,
+            icon:
+                const Icon(LucideIcons.externalLink), // FIX: Wrapped in Icon()
+            // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+            style: AppButtonStyle.tertiary,
             onPressed: () => context.push('/dashboard/crm/${customer.id}'),
           ),
           const SizedBox(height: 16),
           // Simplified tab view
-          Text('Activity (${engagements.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text('Activity (${engagements.length})',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Container(
+          SizedBox(
             height: 300,
             child: ListView.builder(
               shrinkWrap: true,
@@ -363,13 +415,17 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(getEngagementIcon(engagement.engagementType), size: 14),
+                          Icon(getEngagementIcon(engagement.engagementType),
+                              size: 14),
                           const SizedBox(width: 8),
-                          Text(engagement.engagementType.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          Text(engagement.engagementType.toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w500)),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(engagement.content, style: const TextStyle(fontSize: 14)),
+                      Text(engagement.content,
+                          style: const TextStyle(fontSize: 14)),
                     ],
                   ),
                 );
@@ -397,8 +453,11 @@ class _CRMScreenState extends ConsumerState<CRMScreen> {
       if (_sourceFilter != "all" && c.source != _sourceFilter) return false;
       if (_statusFilter != "all" && c.status != _statusFilter) return false;
       if (_campaignFilter != "all") {
-        if (_campaignFilter == "has_campaigns" && (c.campaignCount == null || c.campaignCount == 0)) return false;
-        if (_campaignFilter == "no_campaigns" && c.campaignCount != null && c.campaignCount! > 0) return false;
+        if (_campaignFilter == "has_campaigns" &&
+            (c.campaignCount == null || c.campaignCount == 0)) return false;
+        if (_campaignFilter == "no_campaigns" &&
+            c.campaignCount != null &&
+            c.campaignCount! > 0) return false;
       }
       return true;
     }).toList();
@@ -443,7 +502,8 @@ class _AddCustomerFormState extends ConsumerState<AddCustomerForm> {
       'name': _nameController.text,
       'email': _emailController.text.isEmpty ? null : _emailController.text,
       'phone': _phoneController.text,
-      'company': _companyController.text.isEmpty ? null : _companyController.text,
+      'company':
+          _companyController.text.isEmpty ? null : _companyController.text,
       'source': _source,
       'status': _status,
       'notes': _notesController.text.isEmpty ? null : _notesController.text,
@@ -458,7 +518,8 @@ class _AddCustomerFormState extends ConsumerState<AddCustomerForm> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.destructive),
+        SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppColors.destructive),
       );
     }
   }
@@ -479,13 +540,24 @@ class _AddCustomerFormState extends ConsumerState<AddCustomerForm> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: AppTextField(labelText: 'Email', controller: _emailController)), // FIX: Added controller
+              Expanded(
+                  child: AppTextField(
+                      labelText: 'Email',
+                      controller: _emailController)), // FIX: Added controller
               const SizedBox(width: 16),
-              Expanded(child: AppTextField(labelText: 'Phone', controller: _phoneController, validator: (val) => val!.isEmpty ? 'Phone is required' : null)), // FIX: Added controller
+              Expanded(
+                  child: AppTextField(
+                      labelText: 'Phone',
+                      controller: _phoneController,
+                      validator: (val) => val!.isEmpty
+                          ? 'Phone is required'
+                          : null)), // FIX: Added controller
             ],
           ),
           const SizedBox(height: 16),
-          AppTextField(labelText: 'Company', controller: _companyController), // FIX: Added controller
+          AppTextField(
+              labelText: 'Company',
+              controller: _companyController), // FIX: Added controller
           const SizedBox(height: 16),
           AppDropdown<String>(
             labelText: 'Source',
@@ -497,14 +569,18 @@ class _AddCustomerFormState extends ConsumerState<AddCustomerForm> {
             ],
           ),
           const SizedBox(height: 16),
-          AppTextField(labelText: 'Notes', maxLines: 3, controller: _notesController), // FIX: Added controller
+          AppTextField(
+              labelText: 'Notes',
+              maxLines: 3,
+              controller: _notesController), // FIX: Added controller
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               AppButton(
                 text: 'Cancel',
-                variant: AppButtonVariant.outline,
+                // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                style: AppButtonStyle.tertiary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),

@@ -27,10 +27,13 @@ class HeroSection extends StatelessWidget {
                 Container(
                   constraints: const BoxConstraints(maxWidth: 500),
                   child: Column(
-                    crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                    crossAxisAlignment: isMobile
+                        ? CrossAxisAlignment.center
+                        : CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.secondary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
@@ -67,7 +70,9 @@ class HeroSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
                       Row(
-                        mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+                        mainAxisAlignment: isMobile
+                            ? MainAxisAlignment.center
+                            : MainAxisAlignment.start,
                         children: [
                           AppButton(
                             text: 'Start Free Trial',
@@ -76,7 +81,8 @@ class HeroSection extends StatelessWidget {
                           const SizedBox(width: 16),
                           AppButton(
                             text: 'Book a Demo',
-                            variant: AppButtonVariant.outline,
+                            // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                            style: AppButtonStyle.tertiary,
                             icon: const Icon(LucideIcons.calendar),
                             onPressed: () {},
                           ),
@@ -84,11 +90,16 @@ class HeroSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                       Row(
-                        mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+                        mainAxisAlignment: isMobile
+                            ? MainAxisAlignment.center
+                            : MainAxisAlignment.start,
                         children: [
-                          const Icon(LucideIcons.check, size: 18, color: AppColors.success),
+                          const Icon(LucideIcons.check,
+                              size: 18, color: AppColors.success),
                           const SizedBox(width: 8),
-                          Text('No Credit Card Required', style: TextStyle(color: AppColors.mutedForeground)),
+                          Text('No Credit Card Required',
+                              style:
+                                  TextStyle(color: AppColors.mutedForeground)),
                         ],
                       ),
                     ],

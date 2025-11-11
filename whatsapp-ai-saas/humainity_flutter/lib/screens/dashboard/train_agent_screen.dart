@@ -24,7 +24,8 @@ class GuardrailsNotifier extends StateNotifier<List<Guardrail>> {
 
   Future<void> fetchGuardrails() async {
     try {
-      final data = await _ref.read(supabaseClientProvider)
+      final data = await _ref
+          .read(supabaseClientProvider)
           .from('guardrails')
           .select()
           .order('created_at', ascending: false);
@@ -41,14 +42,17 @@ class GuardrailsNotifier extends StateNotifier<List<Guardrail>> {
     required String redirectMessage,
   }) async {
     try {
-      final data = await _ref.read(supabaseClientProvider)
+      final data = await _ref
+          .read(supabaseClientProvider)
           .from('guardrails')
           .insert({
-        'guardrail_type': type,
-        'description': description,
-        'keywords': keywords,
-        'redirect_message': redirectMessage.isEmpty ? null : redirectMessage,
-      }).select()
+            'guardrail_type': type,
+            'description': description,
+            'keywords': keywords,
+            'redirect_message':
+                redirectMessage.isEmpty ? null : redirectMessage,
+          })
+          .select()
           .single();
       state = [Guardrail.fromJson(data), ...state];
     } catch (e) {
@@ -58,21 +62,24 @@ class GuardrailsNotifier extends StateNotifier<List<Guardrail>> {
   }
 
   Future<void> updateGuardrail(
-      String id, {
-        required String type,
-        required String description,
-        required List<String> keywords,
-        required String redirectMessage,
-      }) async {
+    String id, {
+    required String type,
+    required String description,
+    required List<String> keywords,
+    required String redirectMessage,
+  }) async {
     try {
-      final data = await _ref.read(supabaseClientProvider)
+      final data = await _ref
+          .read(supabaseClientProvider)
           .from('guardrails')
           .update({
-        'guardrail_type': type,
-        'description': description,
-        'keywords': keywords,
-        'redirect_message': redirectMessage.isEmpty ? null : redirectMessage,
-      }).eq('id', id)
+            'guardrail_type': type,
+            'description': description,
+            'keywords': keywords,
+            'redirect_message':
+                redirectMessage.isEmpty ? null : redirectMessage,
+          })
+          .eq('id', id)
           .select()
           .single();
       final updatedGuardrail = Guardrail.fromJson(data);
@@ -85,7 +92,11 @@ class GuardrailsNotifier extends StateNotifier<List<Guardrail>> {
 
   Future<void> deleteGuardrail(String id) async {
     try {
-      await _ref.read(supabaseClientProvider).from('guardrails').delete().eq('id', id);
+      await _ref
+          .read(supabaseClientProvider)
+          .from('guardrails')
+          .delete()
+          .eq('id', id);
       state = state.where((g) => g.id != id).toList();
     } catch (e) {
       print('Error deleting guardrail: $e');
@@ -93,8 +104,8 @@ class GuardrailsNotifier extends StateNotifier<List<Guardrail>> {
   }
 }
 
-
-final guardrailsProvider = StateNotifierProvider<GuardrailsNotifier, List<Guardrail>>((ref) {
+final guardrailsProvider =
+    StateNotifierProvider<GuardrailsNotifier, List<Guardrail>>((ref) {
   return GuardrailsNotifier(ref);
 });
 
@@ -114,8 +125,9 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
   void initState() {
     super.initState();
     _sessionNameController.text =
-    "Training Session ${DateFormat.yMd().format(DateTime.now())}";
-    Future.microtask(() => ref.read(guardrailsProvider.notifier).fetchGuardrails());
+        "Training Session ${DateFormat.yMd().format(DateTime.now())}";
+    Future.microtask(
+        () => ref.read(guardrailsProvider.notifier).fetchGuardrails());
   }
 
   @override
@@ -154,7 +166,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: ResponsiveLayout( // FIX: ResponsiveLayout is now defined
+      child: ResponsiveLayout(
+        // FIX: ResponsiveLayout is now defined
         mobile: _buildMobileLayout(chatState),
         desktop: _buildDesktopLayout(chatState),
       ),
@@ -204,22 +217,30 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Messages:", style: TextStyle(color: AppColors.mutedForeground)),
-              Text("${chatState.messages.length}", style: const TextStyle(fontWeight: FontWeight.w500)),
+              const Text("Messages:",
+                  style: TextStyle(color: AppColors.mutedForeground)),
+              Text("${chatState.messages.length}",
+                  style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Your messages:", style: TextStyle(color: AppColors.mutedForeground)),
-              Text("${chatState.messages.where((m) => m.role == 'user').length}", style: const TextStyle(fontWeight: FontWeight.w500)),
+              const Text("Your messages:",
+                  style: TextStyle(color: AppColors.mutedForeground)),
+              Text(
+                  "${chatState.messages.where((m) => m.role == 'user').length}",
+                  style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Agent responses:", style: TextStyle(color: AppColors.mutedForeground)),
-              Text("${chatState.messages.where((m) => m.role == 'assistant').length}", style: const TextStyle(fontWeight: FontWeight.w500)),
+              const Text("Agent responses:",
+                  style: TextStyle(color: AppColors.mutedForeground)),
+              Text(
+                  "${chatState.messages.where((m) => m.role == 'assistant').length}",
+                  style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
           const Divider(height: 32),
@@ -230,13 +251,16 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
           const Text("Training Tips",
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           const SizedBox(height: 8),
-          const Text("• Test edge cases and difficult scenarios\n• Provide feedback on responses\n• Try different conversation styles\n• Save successful interactions", style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+          const Text(
+              "• Test edge cases and difficult scenarios\n• Provide feedback on responses\n• Try different conversation styles\n• Save successful interactions",
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: AppButton(
               text: "Clear Chat",
-              variant: AppButtonVariant.destructive,
+              // FIX: Replaced variant: AppButtonVariant.destructive with setting the destructive color
+              color: AppColors.destructive,
               icon: const Icon(LucideIcons.trash2), // FIX: Wrapped in Icon()
               onPressed: () => ref.read(chatProvider.notifier).clearChat(),
             ),
@@ -258,7 +282,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                 Icon(LucideIcons.shield, size: 16),
                 SizedBox(width: 8),
                 Text("Guardrails",
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
               ],
             ),
             IconButton(
@@ -301,9 +326,12 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(LucideIcons.alertTriangle, size: 12, color: AppColors.destructive),
+                      const Icon(LucideIcons.alertTriangle,
+                          size: 12, color: AppColors.destructive),
                       const SizedBox(width: 4),
-                      Text(guardrail.description, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      Text(guardrail.description,
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w500)),
                     ],
                   ),
                   if (guardrail.keywords.isNotEmpty) ...[
@@ -313,7 +341,9 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                       runSpacing: 4,
                       children: guardrail.keywords
                           .take(2)
-                          .map((kw) => AppBadge(text: kw, color: AppColors.muted)) // FIX: Removed variant
+                          .map((kw) => AppBadge(
+                              text: kw,
+                              color: AppColors.muted)) // FIX: Removed variant
                           .toList(),
                     ),
                   ],
@@ -326,7 +356,9 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
             ),
             IconButton(
               icon: const Icon(LucideIcons.x, size: 14),
-              onPressed: () => ref.read(guardrailsProvider.notifier).deleteGuardrail(guardrail.id),
+              onPressed: () => ref
+                  .read(guardrailsProvider.notifier)
+                  .deleteGuardrail(guardrail.id),
             ),
           ],
         ),
@@ -341,9 +373,13 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
         const Text("Guardrail Examples",
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
         const SizedBox(height: 8),
-        _buildExampleCard("Medical Advice", "I'm not qualified to provide medical advice...", ["diagnosis", "prescription"]),
+        _buildExampleCard(
+            "Medical Advice",
+            "I'm not qualified to provide medical advice...",
+            ["diagnosis", "prescription"]),
         const SizedBox(height: 8),
-        _buildExampleCard("Pricing Inquiries", "Let me connect you with our sales team...", ["price", "cost"]),
+        _buildExampleCard("Pricing Inquiries",
+            "Let me connect you with our sales team...", ["price", "cost"]),
       ],
     );
   }
@@ -361,15 +397,26 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary)),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primary)),
             const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground)),
+            Text(subtitle,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.mutedForeground)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 4,
               runSpacing: 4,
               // FIX: Removed variant, specified colors
-              children: tags.map((tag) => AppBadge(text: tag, color: AppColors.muted, textColor: AppColors.mutedForeground)).toList(),
+              children: tags
+                  .map((tag) => AppBadge(
+                      text: tag,
+                      color: AppColors.muted,
+                      textColor: AppColors.mutedForeground))
+                  .toList(),
             ),
           ],
         ),
@@ -381,7 +428,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
     showAppDialog(
       context: context,
       title: guardrail == null ? "Add Guardrail" : "Edit Guardrail",
-      description: const Text("Set boundaries for what your agent should never answer."),
+      description:
+          const Text("Set boundaries for what your agent should never answer."),
       content: GuardrailForm(
         guardrail: guardrail,
         onSubmit: () => Navigator.of(context).pop(),
@@ -420,8 +468,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                         style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 16)),
                     Text("Test and improve your agent's capabilities",
-                        style:
-                        TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                        style: TextStyle(
+                            color: AppColors.mutedForeground, fontSize: 12)),
                   ],
                 ),
               ],
@@ -458,7 +506,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2)),
                   SizedBox(width: 8),
-                  Text("Agent is typing...", style: TextStyle(color: AppColors.mutedForeground)),
+                  Text("Agent is typing...",
+                      style: TextStyle(color: AppColors.mutedForeground)),
                 ],
               ),
             ),
@@ -486,7 +535,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                 const SizedBox(width: 8),
                 AppButton(
                   text: 'Send',
-                  onPressed: _messageController.text.trim().isEmpty || chatState.isLoading
+                  onPressed: _messageController.text.trim().isEmpty ||
+                          chatState.isLoading
                       ? null
                       : _sendMessage,
                   icon: const Icon(LucideIcons.send), // FIX: Wrapped in Icon()
@@ -524,8 +574,8 @@ class _GuardrailFormState extends ConsumerState<GuardrailForm> {
     _type = widget.guardrail?.guardrailType ?? 'never_answer';
     _descriptionController =
         TextEditingController(text: widget.guardrail?.description ?? '');
-    _keywordsController =
-        TextEditingController(text: widget.guardrail?.keywords.join(', ') ?? '');
+    _keywordsController = TextEditingController(
+        text: widget.guardrail?.keywords.join(', ') ?? '');
     _redirectMessageController =
         TextEditingController(text: widget.guardrail?.redirectMessage ?? '');
   }
@@ -542,7 +592,11 @@ class _GuardrailFormState extends ConsumerState<GuardrailForm> {
     if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(guardrailsProvider.notifier);
-    final keywords = _keywordsController.text.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
+    final keywords = _keywordsController.text
+        .split(',')
+        .map((k) => k.trim())
+        .where((k) => k.isNotEmpty)
+        .toList();
 
     try {
       if (widget.guardrail == null) {
@@ -564,7 +618,8 @@ class _GuardrailFormState extends ConsumerState<GuardrailForm> {
       widget.onSubmit();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.destructive),
+        SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppColors.destructive),
       );
     }
   }
@@ -581,9 +636,12 @@ class _GuardrailFormState extends ConsumerState<GuardrailForm> {
             value: _type,
             onChanged: (val) => setState(() => _type = val!),
             items: const [
-              DropdownMenuItem(value: 'never_answer', child: Text('Never Answer')),
-              DropdownMenuItem(value: 'always_redirect', child: Text('Always Redirect')),
-              DropdownMenuItem(value: 'sensitive_topic', child: Text('Sensitive Topic')),
+              DropdownMenuItem(
+                  value: 'never_answer', child: Text('Never Answer')),
+              DropdownMenuItem(
+                  value: 'always_redirect', child: Text('Always Redirect')),
+              DropdownMenuItem(
+                  value: 'sensitive_topic', child: Text('Sensitive Topic')),
             ],
           ),
           const SizedBox(height: 16),
@@ -614,7 +672,8 @@ class _GuardrailFormState extends ConsumerState<GuardrailForm> {
             children: [
               AppButton(
                 text: 'Cancel',
-                variant: AppButtonVariant.outline,
+                // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                style: AppButtonStyle.tertiary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),
@@ -647,12 +706,15 @@ class ChatMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alignment = isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final alignment =
+        isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final color = isUser ? AppColors.primary : AppColors.card;
-    final textColor = isUser ? AppColors.primaryForeground : AppColors.cardForeground;
+    final textColor =
+        isUser ? AppColors.primaryForeground : AppColors.cardForeground;
 
     return Row(
-      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment:
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!isUser) ...[
@@ -668,14 +730,19 @@ class ChatMessageBubble extends StatelessWidget {
             crossAxisAlignment: alignment,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(12),
                     topRight: const Radius.circular(12),
-                    bottomLeft: isUser ? const Radius.circular(12) : const Radius.circular(0),
-                    bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(12),
+                    bottomLeft: isUser
+                        ? const Radius.circular(12)
+                        : const Radius.circular(0),
+                    bottomRight: isUser
+                        ? const Radius.circular(0)
+                        : const Radius.circular(12),
                   ),
                   border: isUser ? null : Border.all(color: AppColors.border),
                 ),
@@ -687,7 +754,8 @@ class ChatMessageBubble extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 DateFormat.jm().format(timestamp),
-                style: const TextStyle(color: AppColors.mutedForeground, fontSize: 10),
+                style: const TextStyle(
+                    color: AppColors.mutedForeground, fontSize: 10),
               ),
             ],
           ),

@@ -61,21 +61,38 @@ class ActionsScreen extends StatelessWidget {
   Widget _buildWorkflowVisualization() {
     return AppCard(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Response Workflow', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 16),
-            _buildWorkflowStep('1', 'Defined Actions', 'Match user query with pre-configured actions and triggers', AppColors.primary),
-            const Center(child: Icon(LucideIcons.arrowDown, color: AppColors.mutedForeground)),
-            _buildWorkflowStep('2', 'Universal API', 'Query organizational systems for real-time data and answers', Colors.blue.shade500),
-            const Center(child: Icon(LucideIcons.arrowDown, color: AppColors.mutedForeground)),
-            _buildWorkflowStep('3', 'Fallback Handling', 'Switch to human agent or send standard closure message', Colors.orange.shade500),
-          ],
-        )
-    );
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Response Workflow',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 16),
+        _buildWorkflowStep(
+            '1',
+            'Defined Actions',
+            'Match user query with pre-configured actions and triggers',
+            AppColors.primary),
+        const Center(
+            child:
+                Icon(LucideIcons.arrowDown, color: AppColors.mutedForeground)),
+        _buildWorkflowStep(
+            '2',
+            'Universal API',
+            'Query organizational systems for real-time data and answers',
+            Colors.blue.shade500),
+        const Center(
+            child:
+                Icon(LucideIcons.arrowDown, color: AppColors.mutedForeground)),
+        _buildWorkflowStep(
+            '3',
+            'Fallback Handling',
+            'Switch to human agent or send standard closure message',
+            Colors.orange.shade500),
+      ],
+    ));
   }
 
-  Widget _buildWorkflowStep(String step, String title, String description, Color color) {
+  Widget _buildWorkflowStep(
+      String step, String title, String description, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -93,15 +110,21 @@ class ActionsScreen extends StatelessWidget {
               color: color,
               shape: BoxShape.circle,
             ),
-            child: Center(child: Text(step, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            child: Center(
+                child: Text(step,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold))),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(description, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(description,
+                    style: const TextStyle(
+                        color: AppColors.mutedForeground, fontSize: 14)),
               ],
             ),
           ),
@@ -119,20 +142,26 @@ class ActionsScreen extends StatelessWidget {
             children: const [
               Icon(LucideIcons.zap, color: AppColors.primary),
               SizedBox(width: 8),
-              Text('Tier 1: Defined Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              Text('Tier 1: Defined Actions',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
-          _buildActionItem('Share Brochure', "user asks for 'brochure'", 'Send PDF Document', 'Active'),
-          _buildActionItem('Book Appointment', "intent = 'book_appointment'", 'Show Appointment Form', 'Active'),
-          _buildActionItem('Payment Link', "user says 'pay' or 'payment'", 'Send Payment Link', 'Active'),
-          _buildActionItem('Forward to Agent', "user says 'speak to human'", 'Transfer to Live Agent', 'Inactive'),
+          _buildActionItem('Share Brochure', "user asks for 'brochure'",
+              'Send PDF Document', 'Active'),
+          _buildActionItem('Book Appointment', "intent = 'book_appointment'",
+              'Show Appointment Form', 'Active'),
+          _buildActionItem('Payment Link', "user says 'pay' or 'payment'",
+              'Send Payment Link', 'Active'),
+          _buildActionItem('Forward to Agent', "user says 'speak to human'",
+              'Transfer to Live Agent', 'Inactive'),
         ],
       ),
     );
   }
 
-  Widget _buildActionItem(String name, String trigger, String action, String status) {
+  Widget _buildActionItem(
+      String name, String trigger, String action, String status) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 8),
@@ -159,13 +188,18 @@ class ActionsScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text('When: $trigger → Then: $action', style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                  Text(name,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text('When: $trigger → Then: $action',
+                      style: const TextStyle(
+                          color: AppColors.mutedForeground, fontSize: 12)),
                 ],
               ),
             ],
           ),
-          AppBadge(text: status, color: status == 'Active' ? AppColors.success : AppColors.muted),
+          AppBadge(
+              text: status,
+              color: status == 'Active' ? AppColors.success : AppColors.muted),
         ],
       ),
     );
@@ -180,15 +214,22 @@ class ActionsScreen extends StatelessWidget {
             children: [
               Icon(LucideIcons.database, color: Colors.blue.shade500),
               const SizedBox(width: 8),
-              const Text('Tier 2: Universal API', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const Text('Tier 2: Universal API',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 8),
-          const Text('Query organizational systems for real-time data.', style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+          const Text('Query organizational systems for real-time data.',
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
           const SizedBox(height: 16),
-          AppTextField(labelText: 'API Endpoint URL', hintText: 'https://api.yourorg.com/query'),
+          AppTextField(
+              labelText: 'API Endpoint URL',
+              hintText: 'https://api.yourorg.com/query'),
           const SizedBox(height: 16),
-          AppTextField(labelText: 'API Authentication Key', hintText: 'Enter your API key', obscureText: true),
+          AppTextField(
+              labelText: 'API Authentication Key',
+              hintText: 'Enter your API key',
+              obscureText: true),
           const SizedBox(height: 16),
           AppDropdown(
             labelText: 'Request Method',
@@ -200,7 +241,10 @@ class ActionsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          AppButton(text: 'Save API Configuration', onPressed: () {}, icon: const Icon(LucideIcons.database)), // FIX: Wrapped in Icon()
+          AppButton(
+              text: 'Save API Configuration',
+              onPressed: () {},
+              icon: const Icon(LucideIcons.database)), // FIX: Wrapped in Icon()
         ],
       ),
     );
@@ -216,19 +260,23 @@ class ActionsScreen extends StatelessWidget {
             children: [
               Icon(LucideIcons.messageSquare, color: Colors.orange.shade500),
               const SizedBox(width: 8),
-              const Text('Tier 3: Fallback Handling', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const Text('Tier 3: Fallback Handling',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 8),
-          const Text('Configure what happens when AI cannot handle the query.', style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+          const Text('Configure what happens when AI cannot handle the query.',
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
           const SizedBox(height: 16),
           AppDropdown(
             labelText: 'Fallback Action',
             value: 'human',
             onChanged: (val) {},
             items: const [
-              DropdownMenuItem(value: 'human', child: Text('Transfer to Live Agent')),
-              DropdownMenuItem(value: 'message', child: Text('Send Closure Message')),
+              DropdownMenuItem(
+                  value: 'human', child: Text('Transfer to Live Agent')),
+              DropdownMenuItem(
+                  value: 'message', child: Text('Send Closure Message')),
               DropdownMenuItem(value: 'form', child: Text('Show Contact Form')),
             ],
           ),

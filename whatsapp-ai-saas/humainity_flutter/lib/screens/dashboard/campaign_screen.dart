@@ -90,7 +90,10 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             child: AppButton(
               text: 'WhatsApp',
               icon: const Icon(LucideIcons.messageCircle),
-              variant: _selectedTab == 'whatsapp' ? AppButtonVariant.primary : AppButtonVariant.ghost,
+              // FIX: Replaced 'variant' with 'style' and used ternary logic with AppButtonStyle.tertiary for ghost
+              style: _selectedTab == 'whatsapp'
+                  ? AppButtonStyle.primary
+                  : AppButtonStyle.tertiary,
               onPressed: () => setState(() => _selectedTab = 'whatsapp'),
             ),
           ),
@@ -99,7 +102,10 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             child: AppButton(
               text: 'Voice',
               icon: const Icon(LucideIcons.phone),
-              variant: _selectedTab == 'voice' ? AppButtonVariant.primary : AppButtonVariant.ghost,
+              // FIX: Replaced 'variant' with 'style' and used ternary logic with AppButtonStyle.tertiary for ghost
+              style: _selectedTab == 'voice'
+                  ? AppButtonStyle.primary
+                  : AppButtonStyle.tertiary,
               onPressed: () => setState(() => _selectedTab = 'voice'),
             ),
           ),
@@ -135,7 +141,9 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(campaign.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                    Text(campaign.name,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
                     AppBadge(
                       text: campaign.status,
                       color: getStatusColor(campaign.status),
@@ -144,17 +152,24 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                 ),
                 const SizedBox(height: 8),
                 // *** FIX: Use 'description' field from fixed model ***
-                Text(campaign.description ?? 'No description', style: const TextStyle(color: AppColors.mutedForeground)),
+                Text(campaign.description ?? 'No description',
+                    style: const TextStyle(color: AppColors.mutedForeground)),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildStat(LucideIcons.users, 'Total', campaign.totalContacts),
-                    _buildStat(LucideIcons.send, 'Reached', campaign.contactsReached),
-                    _buildStat(LucideIcons.check, 'Successful', campaign.successfulDeliveries),
-                    _buildStat(LucideIcons.x, 'Failed', campaign.failedDeliveries),
+                    _buildStat(
+                        LucideIcons.users, 'Total', campaign.totalContacts),
+                    _buildStat(
+                        LucideIcons.send, 'Reached', campaign.contactsReached),
+                    _buildStat(LucideIcons.check, 'Successful',
+                        campaign.successfulDeliveries),
+                    _buildStat(
+                        LucideIcons.x, 'Failed', campaign.failedDeliveries),
                     // *** FIX: Use 'engagementRate' getter from fixed model ***
-                    _buildStat(LucideIcons.activity, 'Engagement', campaign.engagementRate, isPercent: true),
+                    _buildStat(LucideIcons.activity, 'Engagement',
+                        campaign.engagementRate,
+                        isPercent: true),
                   ],
                 ),
               ],
@@ -165,14 +180,16 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
     );
   }
 
-  Widget _buildStat(IconData icon, String label, num value, {bool isPercent = false}) {
+  Widget _buildStat(IconData icon, String label, num value,
+      {bool isPercent = false}) {
     return Row(
       children: [
         Icon(icon, size: 14, color: AppColors.mutedForeground),
         const SizedBox(width: 4),
         Text(
           '$label: ${isPercent ? '${value.toStringAsFixed(1)}%' : value}',
-          style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+          style:
+              const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
       ],
     );
@@ -228,7 +245,8 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.destructive),
+        SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppColors.destructive),
       );
     }
   }
@@ -246,7 +264,8 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start, // Align labels to the left
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // Align labels to the left
         children: [
           AppTextField(
             labelText: 'Campaign Name',
@@ -264,7 +283,9 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Channel', style: TextStyle(fontSize: 12, color: AppColors.mutedForeground)),
+              const Text('Channel',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.mutedForeground)),
               const SizedBox(height: 8),
               AppRadioGroup<String>(
                 groupValue: _channel,
@@ -293,7 +314,8 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
             onChanged: (val) => setState(() => _status = val!),
             items: const [
               DropdownMenuItem(value: 'draft', child: Text('Draft')),
-              DropdownMenuItem(value: 'running', child: Text('Run Immediately')),
+              DropdownMenuItem(
+                  value: 'running', child: Text('Run Immediately')),
             ],
           ),
           const SizedBox(height: 24),
@@ -302,7 +324,8 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
             children: [
               AppButton(
                 text: 'Cancel',
-                variant: AppButtonVariant.outline,
+                // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                style: AppButtonStyle.tertiary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),

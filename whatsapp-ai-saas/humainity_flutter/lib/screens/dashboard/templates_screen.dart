@@ -27,8 +27,10 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
 
     // *** FIX: Filter the list of templates from the main provider ***
     final allTemplates = state.templates;
-    final inboundTemplates = allTemplates.where((t) => t.type == 'inbound').toList();
-    final outboundTemplates = allTemplates.where((t) => t.type == 'outbound').toList();
+    final inboundTemplates =
+        allTemplates.where((t) => t.type == 'inbound').toList();
+    final outboundTemplates =
+        allTemplates.where((t) => t.type == 'outbound').toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -89,7 +91,10 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
             child: AppButton(
               text: 'Inbound (AI Agent)',
               icon: const Icon(LucideIcons.arrowDownToLine),
-              variant: _selectedTab == 'inbound' ? AppButtonVariant.primary : AppButtonVariant.ghost,
+              // FIX: Replaced 'variant' with 'style' and used tertiary for ghost
+              style: _selectedTab == 'inbound'
+                  ? AppButtonStyle.primary
+                  : AppButtonStyle.tertiary,
               onPressed: () => setState(() => _selectedTab = 'inbound'),
             ),
           ),
@@ -98,7 +103,10 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
             child: AppButton(
               text: 'Outbound (Campaigns)',
               icon: const Icon(LucideIcons.arrowUpFromLine),
-              variant: _selectedTab == 'outbound' ? AppButtonVariant.primary : AppButtonVariant.ghost,
+              // FIX: Replaced 'variant' with 'style' and used tertiary for ghost
+              style: _selectedTab == 'outbound'
+                  ? AppButtonStyle.primary
+                  : AppButtonStyle.tertiary,
               onPressed: () => setState(() => _selectedTab = 'outbound'),
             ),
           ),
@@ -132,23 +140,29 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(template.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text(template.name,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600)),
                   Row(
                     children: [
                       IconButton(
                         icon: const Icon(LucideIcons.edit, size: 18),
-                        onPressed: () => _showTemplateDialog(context, template: template),
+                        onPressed: () =>
+                            _showTemplateDialog(context, template: template),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.trash2, size: 18, color: AppColors.destructive),
-                        onPressed: () => _showDeleteConfirmation(context, template),
+                        icon: const Icon(LucideIcons.trash2,
+                            size: 18, color: AppColors.destructive),
+                        onPressed: () =>
+                            _showDeleteConfirmation(context, template),
                       ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(template.messageText, style: const TextStyle(color: AppColors.mutedForeground)),
+              Text(template.messageText,
+                  style: const TextStyle(color: AppColors.mutedForeground)),
             ],
           ),
         );
@@ -160,19 +174,22 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
     showAppDialog(
       context: context,
       title: 'Delete Template',
-      description: Text('Are you sure you want to delete "${template.name}"? This action cannot be undone.'),
+      description: Text(
+          'Are you sure you want to delete "${template.name}"? This action cannot be undone.'),
       content: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           AppButton(
             text: 'Cancel',
-            variant: AppButtonVariant.outline,
+            // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+            style: AppButtonStyle.tertiary,
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: 8),
           AppButton(
             text: 'Delete',
-            variant: AppButtonVariant.destructive,
+            // FIX: Replaced variant: AppButtonVariant.destructive with setting the destructive color
+            color: AppColors.destructive,
             onPressed: () {
               // *** FIX: Call correct notifier method ***
               ref.read(templatesProvider.notifier).deleteTemplate(template.id);
@@ -236,14 +253,19 @@ class _TemplateFormState extends ConsumerState<TemplateForm> {
 
     try {
       // *** FIX: Call correct notifier method ***
-      await ref.read(templatesProvider.notifier).saveTemplate(formData, widget.template?.id);
+      await ref
+          .read(templatesProvider.notifier)
+          .saveTemplate(formData, widget.template?.id);
       widget.onSubmit();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Template ${widget.template == null ? 'created' : 'updated'} successfully')),
+        SnackBar(
+            content: Text(
+                'Template ${widget.template == null ? 'created' : 'updated'} successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.destructive),
+        SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppColors.destructive),
       );
     }
   }
@@ -254,7 +276,8 @@ class _TemplateFormState extends ConsumerState<TemplateForm> {
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start, // Align labels to the left
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // Align labels to the left
         children: [
           AppTextField(
             labelText: 'Template Name',
@@ -268,22 +291,28 @@ class _TemplateFormState extends ConsumerState<TemplateForm> {
             initialValue: _messageText,
             maxLines: 5,
             onSaved: (val) => _messageText = val!,
-            validator: (val) => val!.isEmpty ? 'Message text is required' : null,
+            validator: (val) =>
+                val!.isEmpty ? 'Message text is required' : null,
           ),
           const SizedBox(height: 16),
           // *** FIX: Removed 'labelText' and wrapped in a Column ***
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Template Type', style: TextStyle(fontSize: 12, color: AppColors.mutedForeground)),
+              const Text('Template Type',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.mutedForeground)),
               const SizedBox(height: 8),
               AppRadioGroup<String>(
                 groupValue: _type,
                 onChanged: (val) => setState(() => _type = val!),
                 // *** FIX: Must be a List<AppRadioItem> ***
                 items: const [
-                  AppRadioItem(value: 'inbound', label: Text('Inbound (For AI Agent)')),
-                  AppRadioItem(value: 'outbound', label: Text('Outbound (For Campaigns)')),
+                  AppRadioItem(
+                      value: 'inbound', label: Text('Inbound (For AI Agent)')),
+                  AppRadioItem(
+                      value: 'outbound',
+                      label: Text('Outbound (For Campaigns)')),
                 ],
               ),
             ],
@@ -294,7 +323,8 @@ class _TemplateFormState extends ConsumerState<TemplateForm> {
             children: [
               AppButton(
                 text: 'Cancel',
-                variant: AppButtonVariant.outline,
+                // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                style: AppButtonStyle.tertiary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),

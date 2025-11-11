@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
 
 class AppTextField extends StatelessWidget {
   final String labelText;
@@ -8,10 +7,11 @@ class AppTextField extends StatelessWidget {
   final TextEditingController? controller;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
-  final FormFieldSetter<String>? onSaved; // ADDED
+  final FormFieldSetter<String>? onSaved;
   final TextInputType? keyboardType;
   final int maxLines;
-  final Widget? icon;
+  final Widget? icon; // This is typically for suffixIcon or old style icon
+  final Widget? prefixIcon; // <--- ADDED: Dedicated prefix icon
   final String? initialValue;
 
   const AppTextField({
@@ -22,10 +22,11 @@ class AppTextField extends StatelessWidget {
     this.controller,
     this.validator,
     this.onChanged,
-    this.onSaved, // ADDED
+    this.onSaved,
     this.keyboardType,
     this.maxLines = 1,
     this.icon,
+    this.prefixIcon, // <--- ADDED to constructor
     this.initialValue,
   });
 
@@ -37,18 +38,21 @@ class AppTextField extends StatelessWidget {
       obscureText: obscureText,
       validator: validator,
       onChanged: onChanged,
-      onSaved: onSaved, // ADDED
+      onSaved: onSaved,
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: labelText,
-        hintText: hintText, // FIX: Use hintText property
-        prefixIcon: icon != null
+        hintText: hintText,
+        // Using prefixIcon property of InputDecoration directly
+        prefixIcon: prefixIcon != null
             ? Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: icon,
-        )
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: prefixIcon,
+              )
             : null,
+        // The existing 'icon' property is likely intended for the suffix/end
+        suffixIcon: icon,
       ),
     );
   }

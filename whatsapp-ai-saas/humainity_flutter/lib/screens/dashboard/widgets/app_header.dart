@@ -30,7 +30,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           AppButton(
             text: 'Test Agent',
             onPressed: () => context.go('/dashboard/agent-preview'),
-            variant: AppButtonVariant.outline,
+            // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+            style: AppButtonStyle.tertiary,
           ),
           const SizedBox(width: 8),
           AppButton(

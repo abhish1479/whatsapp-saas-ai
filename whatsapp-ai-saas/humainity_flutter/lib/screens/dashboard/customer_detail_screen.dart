@@ -11,7 +11,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
   final String customerId;
-  const CustomerDetailScreen({Key? key, required this.customerId}) : super(key: key);
+  const CustomerDetailScreen({Key? key, required this.customerId})
+      : super(key: key);
 
   @override
   _CustomerDetailScreenState createState() => _CustomerDetailScreenState();
@@ -33,7 +34,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     }
 
     if (customerState.error != null) {
-      return Scaffold(body: Center(child: Text('Error: ${customerState.error}')));
+      return Scaffold(
+          body: Center(child: Text('Error: ${customerState.error}')));
     }
 
     if (customerState.customer == null) {
@@ -72,7 +74,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
       return [
         AppButton(
           text: 'Cancel',
-          variant: AppButtonVariant.ghost,
+          // FIX: Replaced variant: AppButtonVariant.ghost with style: AppButtonStyle.tertiary
+          style: AppButtonStyle.tertiary,
           onPressed: () => setState(() {
             _isEditing = false;
             _editedCustomer = customer; // Reset changes
@@ -108,7 +111,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // FIX: .headline6 is obsolete. Use .titleLarge instead
-          Text('Customer Details', style: Theme.of(context).textTheme.titleLarge),
+          Text('Customer Details',
+              style: Theme.of(context).textTheme.titleLarge),
           const Divider(height: 24),
           Row(
             children: [
@@ -119,7 +123,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   LucideIcons.phone,
                   isEditing: _isEditing,
                   initialValue: _editedCustomer.phone,
-                  onChanged: (val) => _editedCustomer = _editedCustomer.copyWith(phone: val),
+                  onChanged: (val) =>
+                      _editedCustomer = _editedCustomer.copyWith(phone: val),
                 ),
               ),
               const SizedBox(width: 16),
@@ -130,7 +135,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   LucideIcons.mail,
                   isEditing: _isEditing,
                   initialValue: _editedCustomer.email,
-                  onChanged: (val) => _editedCustomer = _editedCustomer.copyWith(email: val),
+                  onChanged: (val) =>
+                      _editedCustomer = _editedCustomer.copyWith(email: val),
                 ),
               ),
             ],
@@ -145,7 +151,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   LucideIcons.building2,
                   isEditing: _isEditing,
                   initialValue: _editedCustomer.company,
-                  onChanged: (val) => _editedCustomer = _editedCustomer.copyWith(company: val),
+                  onChanged: (val) =>
+                      _editedCustomer = _editedCustomer.copyWith(company: val),
                 ),
               ),
               const SizedBox(width: 16),
@@ -156,7 +163,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   LucideIcons.users,
                   isEditing: _isEditing,
                   initialValue: _editedCustomer.assignedTo,
-                  onChanged: (val) => _editedCustomer = _editedCustomer.copyWith(assignedTo: val),
+                  onChanged: (val) => _editedCustomer =
+                      _editedCustomer.copyWith(assignedTo: val),
                 ),
               ),
             ],
@@ -169,7 +177,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
             maxLines: 3,
             isEditing: _isEditing,
             initialValue: _editedCustomer.notes,
-            onChanged: (val) => _editedCustomer = _editedCustomer.copyWith(notes: val),
+            onChanged: (val) =>
+                _editedCustomer = _editedCustomer.copyWith(notes: val),
           ),
         ],
       ),
@@ -177,14 +186,14 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
   }
 
   Widget _buildInfoField(
-      String label,
-      String displayValue,
-      IconData icon, {
-        bool isEditing = false,
-        int maxLines = 1,
-        String? initialValue,
-        ValueChanged<String>? onChanged,
-      }) {
+    String label,
+    String displayValue,
+    IconData icon, {
+    bool isEditing = false,
+    int maxLines = 1,
+    String? initialValue,
+    ValueChanged<String>? onChanged,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

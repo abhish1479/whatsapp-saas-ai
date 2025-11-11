@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; // FIX: Added import for context.go()
 import 'package:humainity_flutter/core/providers/chat_provider.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
-// FIX: Removed conflicting import
-// import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
 import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
@@ -139,7 +137,9 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
       child: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.muted.withOpacity(0.5),
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.muted.withOpacity(0.5),
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
@@ -149,15 +149,21 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 24, color: isSelected ? AppColors.primary : AppColors.foreground),
+            Icon(icon,
+                size: 24,
+                color: isSelected ? AppColors.primary : AppColors.foreground),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
                   const SizedBox(height: 2),
-                  Text(description, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                  Text(description,
+                      style: const TextStyle(
+                          color: AppColors.mutedForeground, fontSize: 12)),
                 ],
               ),
             ),
@@ -183,22 +189,32 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
             children: [
               AppBadge(
                 text: isVoice ? 'VOICE AGENT' : 'WHATSAPP AGENT',
-                color: isVoice ? AppColors.warning.withOpacity(0.2) : AppColors.success.withOpacity(0.2),
+                color: isVoice
+                    ? AppColors.warning.withOpacity(0.2)
+                    : AppColors.success.withOpacity(0.2),
                 textColor: isVoice ? AppColors.warning : AppColors.success,
-                icon: Icon(isVoice ? LucideIcons.volume2 : LucideIcons.messageSquare, size: 12, color: isVoice ? AppColors.warning : AppColors.success),
+                icon: Icon(
+                    isVoice ? LucideIcons.volume2 : LucideIcons.messageSquare,
+                    size: 12,
+                    color: isVoice ? AppColors.warning : AppColors.success),
               ),
               const SizedBox(width: 16),
               Text(
-                isVoice ? 'Your Agent is now ready for direct voice calls' : 'Connect your business number',
-                style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                isVoice
+                    ? 'Your Agent is now ready for direct voice calls'
+                    : 'Connect your business number',
+                style: const TextStyle(
+                    color: AppColors.mutedForeground, fontSize: 14),
               ),
             ],
           ),
           AppButton(
             text: 'Settings',
             icon: const Icon(LucideIcons.settings), // FIX: Wrapped in Icon()
-            variant: AppButtonVariant.outline,
-            onPressed: () => context.go('/dashboard/settings'), // FIX: context.go() now works
+            // FIX: Use the correct parameter 'style' and value 'AppButtonStyle.tertiary'
+            style: AppButtonStyle.tertiary,
+            onPressed: () => context
+                .go('/dashboard/settings'), // FIX: context.go() now works
           ),
         ],
       ),
@@ -215,7 +231,10 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
             width: 480,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary.withOpacity(0.2), AppColors.primary.withOpacity(0.05)],
+                colors: [
+                  AppColors.primary.withOpacity(0.2),
+                  AppColors.primary.withOpacity(0.05)
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -228,7 +247,10 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
             width: 480,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.success.withOpacity(0.1), AppColors.success.withOpacity(0.05)],
+                colors: [
+                  AppColors.success.withOpacity(0.1),
+                  AppColors.success.withOpacity(0.05)
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -281,7 +303,10 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
           if (chatState.isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(children: [Text('Agent is typing...', style: TextStyle(color: AppColors.mutedForeground))]),
+              child: Row(children: [
+                Text('Agent is typing...',
+                    style: TextStyle(color: AppColors.mutedForeground))
+              ]),
             ),
           Container(
             padding: const EdgeInsets.all(16.0),
@@ -303,7 +328,10 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                 AppButton(
                   text: 'Send',
                   icon: const Icon(LucideIcons.send), // FIX: Wrapped in Icon()
-                  onPressed: _messageController.text.trim().isEmpty || chatState.isLoading ? null : _sendMessage,
+                  onPressed: _messageController.text.trim().isEmpty ||
+                          chatState.isLoading
+                      ? null
+                      : _sendMessage,
                 ),
               ],
             ),
@@ -326,7 +354,12 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
               image: AssetImage('assets/images/agent-sarah.jpg'),
               fit: BoxFit.cover,
             ),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, spreadRadius: 5)],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  spreadRadius: 5)
+            ],
           ),
         ),
         if (_isListening) ...[
@@ -336,21 +369,28 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Listening...', style: TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                const Text('Listening...',
+                    style: TextStyle(
+                        color: AppColors.mutedForeground, fontSize: 12)),
                 const SizedBox(width: 8),
-                Text(_formatTime(_callDuration), style: const TextStyle(fontFamily: 'monospace')),
+                Text(_formatTime(_callDuration),
+                    style: const TextStyle(fontFamily: 'monospace')),
               ],
             ),
           ),
         ],
         const SizedBox(height: 24),
-        const Text('Ashley', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        const Text('Customer Support Agent', style: TextStyle(color: AppColors.mutedForeground)),
+        const Text('Ashley',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const Text('Customer Support Agent',
+            style: TextStyle(color: AppColors.mutedForeground)),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -360,7 +400,9 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
               iconSize: 24,
               color: _isMuted ? AppColors.warning : AppColors.foreground,
               style: IconButton.styleFrom(
-                backgroundColor: _isMuted ? AppColors.warning.withOpacity(0.1) : AppColors.muted,
+                backgroundColor: _isMuted
+                    ? AppColors.warning.withOpacity(0.1)
+                    : AppColors.muted,
                 padding: const EdgeInsets.all(16),
               ),
               onPressed: () => setState(() => _isMuted = !_isMuted),
@@ -398,22 +440,41 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
               image: AssetImage('assets/images/agent-sarah.jpg'),
               fit: BoxFit.cover,
             ),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, spreadRadius: 5)],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  spreadRadius: 5)
+            ],
           ),
         ),
         const SizedBox(height: 24),
-        const Text('Ashley', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        const Text('Customer Support Agent', style: TextStyle(color: AppColors.mutedForeground)),
+        const Text('Ashley',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const Text('Customer Support Agent',
+            style: TextStyle(color: AppColors.mutedForeground)),
         const SizedBox(height: 24),
         SizedBox(
           width: 250,
           child: Column(
             children: [
-              AppButton(text: 'Popular Destinations', variant: AppButtonVariant.outline, onPressed: () {}),
+              // FIX: Use AppButtonStyle.tertiary
+              AppButton(
+                  text: 'Popular Destinations',
+                  style: AppButtonStyle.tertiary,
+                  onPressed: () {}),
               const SizedBox(height: 8),
-              AppButton(text: 'Flight Information', variant: AppButtonVariant.outline, onPressed: () {}),
+              // FIX: Use AppButtonStyle.tertiary
+              AppButton(
+                  text: 'Flight Information',
+                  style: AppButtonStyle.tertiary,
+                  onPressed: () {}),
               const SizedBox(height: 8),
-              AppButton(text: 'Hotel Recommendations', variant: AppButtonVariant.outline, onPressed: () {}),
+              // FIX: Use AppButtonStyle.tertiary
+              AppButton(
+                  text: 'Hotel Recommendations',
+                  style: AppButtonStyle.tertiary,
+                  onPressed: () {}),
             ],
           ),
         ),
@@ -439,12 +500,15 @@ class ChatMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alignment = isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final alignment =
+        isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final color = isUser ? AppColors.primary : AppColors.card;
-    final textColor = isUser ? AppColors.primaryForeground : AppColors.cardForeground;
+    final textColor =
+        isUser ? AppColors.primaryForeground : AppColors.cardForeground;
 
     return Row(
-      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment:
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!isUser) ...[
@@ -460,14 +524,19 @@ class ChatMessageBubble extends StatelessWidget {
             crossAxisAlignment: alignment,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(12),
                     topRight: const Radius.circular(12),
-                    bottomLeft: isUser ? const Radius.circular(12) : const Radius.circular(0),
-                    bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(12),
+                    bottomLeft: isUser
+                        ? const Radius.circular(12)
+                        : const Radius.circular(0),
+                    bottomRight: isUser
+                        ? const Radius.circular(0)
+                        : const Radius.circular(12),
                   ),
                   border: isUser ? null : Border.all(color: AppColors.border),
                 ),
@@ -479,7 +548,8 @@ class ChatMessageBubble extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 DateFormat.jm().format(timestamp),
-                style: const TextStyle(color: AppColors.mutedForeground, fontSize: 10),
+                style: const TextStyle(
+                    color: AppColors.mutedForeground, fontSize: 10),
               ),
             ],
           ),

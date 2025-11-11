@@ -14,7 +14,8 @@ class PricingSection extends StatefulWidget {
   State<PricingSection> createState() => _PricingSectionState();
 }
 
-class _PricingSectionState extends State<PricingSection> with SingleTickerProviderStateMixin {
+class _PricingSectionState extends State<PricingSection>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _currency = 'INR';
 
@@ -92,19 +93,64 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
     return ResponsiveLayout(
       mobile: Column(
         children: [
-          _buildPriceCard(title: 'Starter', price: _currency == 'INR' ? '₹1,000' : '\$12', description: 'Perfect for small businesses getting started', features: ['1,000 WhatsApp conversations', '1 WhatsApp Channel', 'Basic AI training']),
+          _buildPriceCard(
+              title: 'Starter',
+              price: _currency == 'INR' ? '₹1,000' : '\$12',
+              description: 'Perfect for small businesses getting started',
+              features: [
+                '1,000 WhatsApp conversations',
+                '1 WhatsApp Channel',
+                'Basic AI training'
+              ]),
           const SizedBox(height: 16),
-          _buildPriceCard(title: 'Growth', price: _currency == 'INR' ? '₹1,500' : '\$18', description: 'For growing businesses with higher volume', features: ['3,000 WhatsApp conversations', '2 WhatsApp Channels', 'Advanced AI training'], isPopular: true),
+          _buildPriceCard(
+              title: 'Growth',
+              price: _currency == 'INR' ? '₹1,500' : '\$18',
+              description: 'For growing businesses with higher volume',
+              features: [
+                '3,000 WhatsApp conversations',
+                '2 WhatsApp Channels',
+                'Advanced AI training'
+              ],
+              isPopular: true),
         ],
       ),
       desktop: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(child: _buildPriceCard(title: 'Starter', price: _currency == 'INR' ? '₹1,000' : '\$12', description: 'Perfect for small businesses getting started', features: ['1,000 WhatsApp conversations', '1 WhatsApp Channel', 'Basic AI training'])),
+          Expanded(
+              child: _buildPriceCard(
+                  title: 'Starter',
+                  price: _currency == 'INR' ? '₹1,000' : '\$12',
+                  description: 'Perfect for small businesses getting started',
+                  features: [
+                '1,000 WhatsApp conversations',
+                '1 WhatsApp Channel',
+                'Basic AI training'
+              ])),
           const SizedBox(width: 16),
-          Expanded(child: _buildPriceCard(title: 'Growth', price: _currency == 'INR' ? '₹1,500' : '\$18', description: 'For growing businesses with higher volume', features: ['3,000 WhatsApp conversations', '2 WhatsApp Channels', 'Advanced AI training'], isPopular: true)),
+          Expanded(
+              child: _buildPriceCard(
+                  title: 'Growth',
+                  price: _currency == 'INR' ? '₹1,500' : '\$18',
+                  description: 'For growing businesses with higher volume',
+                  features: [
+                    '3,000 WhatsApp conversations',
+                    '2 WhatsApp Channels',
+                    'Advanced AI training'
+                  ],
+                  isPopular: true)),
           const SizedBox(width: 16),
-          Expanded(child: _buildPriceCard(title: 'Professional', price: _currency == 'INR' ? '₹2,500' : '\$30', description: 'For established businesses scaling up', features: ['5,000 WhatsApp conversations', '3 WhatsApp Channels', 'Custom integrations'])),
+          Expanded(
+              child: _buildPriceCard(
+                  title: 'Professional',
+                  price: _currency == 'INR' ? '₹2,500' : '\$30',
+                  description: 'For established businesses scaling up',
+                  features: [
+                '5,000 WhatsApp conversations',
+                '3 WhatsApp Channels',
+                'Custom integrations'
+              ])),
         ],
       ),
     );
@@ -115,19 +161,61 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
     return ResponsiveLayout(
       mobile: Column(
         children: [
-          _buildPriceCard(title: 'Up to 2L Minutes', price: _currency == 'INR' ? '₹7' : '\$0.08', period: '/min', description: 'HD voice quality', features: ['Up to 200,000 minutes', 'Call recording', 'Basic analytics']),
+          _buildPriceCard(
+              title: 'Up to 2L Minutes',
+              price: _currency == 'INR' ? '₹7' : '\$0.08',
+              period: '/min',
+              description: 'HD voice quality',
+              features: [
+                'Up to 200,000 minutes',
+                'Call recording',
+                'Basic analytics'
+              ]),
           const SizedBox(height: 16),
-          _buildPriceCard(title: '2L - 5L Minutes', price: _currency == 'INR' ? '₹6' : '\$0.07', period: '/min', description: 'Advanced analytics', features: ['200,000 - 500,000 minutes', 'Priority routing'], isPopular: true),
+          _buildPriceCard(
+              title: '2L - 5L Minutes',
+              price: _currency == 'INR' ? '₹6' : '\$0.07',
+              period: '/min',
+              description: 'Advanced analytics',
+              features: ['200,000 - 500,000 minutes', 'Priority routing'],
+              isPopular: true),
         ],
       ),
       desktop: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(child: _buildPriceCard(title: 'Up to 2L Minutes', price: _currency == 'INR' ? '₹7' : '\$0.08', period: '/min', description: 'HD voice quality', features: ['Up to 200,000 minutes', 'Call recording', 'Basic analytics'])),
+          Expanded(
+              child: _buildPriceCard(
+                  title: 'Up to 2L Minutes',
+                  price: _currency == 'INR' ? '₹7' : '\$0.08',
+                  period: '/min',
+                  description: 'HD voice quality',
+                  features: [
+                'Up to 200,000 minutes',
+                'Call recording',
+                'Basic analytics'
+              ])),
           const SizedBox(width: 16),
-          Expanded(child: _buildPriceCard(title: '2L - 5L Minutes', price: _currency == 'INR' ? '₹6' : '\$0.07', period: '/min', description: 'Advanced analytics', features: ['200,000 - 500,000 minutes', 'Priority routing'], isPopular: true)),
+          Expanded(
+              child: _buildPriceCard(
+                  title: '2L - 5L Minutes',
+                  price: _currency == 'INR' ? '₹6' : '\$0.07',
+                  period: '/min',
+                  description: 'Advanced analytics',
+                  features: ['200,000 - 500,000 minutes', 'Priority routing'],
+                  isPopular: true)),
           const SizedBox(width: 16),
-          Expanded(child: _buildPriceCard(title: '5L+ Minutes', price: _currency == 'INR' ? '₹5' : '\$0.06', period: '/min', description: 'Dedicated support', features: ['500,000+ minutes', 'Call transcription', 'Custom integrations'])),
+          Expanded(
+              child: _buildPriceCard(
+                  title: '5L+ Minutes',
+                  price: _currency == 'INR' ? '₹5' : '\$0.06',
+                  period: '/min',
+                  description: 'Dedicated support',
+                  features: [
+                '500,000+ minutes',
+                'Call transcription',
+                'Custom integrations'
+              ])),
         ],
       ),
     );
@@ -142,42 +230,54 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
     bool isPopular = false,
   }) {
     return AppCard(
-      border: isPopular ? Border.all(color: AppColors.primary, width: 2) : Border.all(color: AppColors.border),
+      border: isPopular
+          ? Border.all(color: AppColors.primary, width: 2)
+          : Border.all(color: AppColors.border),
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(price, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
-              Text(period, style: const TextStyle(fontSize: 16, color: AppColors.mutedForeground)),
+              Text(price,
+                  style: const TextStyle(
+                      fontSize: 40, fontWeight: FontWeight.bold)),
+              Text(period,
+                  style: const TextStyle(
+                      fontSize: 16, color: AppColors.mutedForeground)),
             ],
           ),
-          Text(description, style: const TextStyle(color: AppColors.mutedForeground)),
+          Text(description,
+              style: const TextStyle(color: AppColors.mutedForeground)),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
           ...features.map((feature) => Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Row(
-              children: [
-                const Icon(LucideIcons.check, color: AppColors.success, size: 16),
-                const SizedBox(width: 8),
-                Text(feature),
-              ],
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.check,
+                        color: AppColors.success, size: 16),
+                    const SizedBox(width: 8),
+                    Text(feature),
+                  ],
+                ),
+              )),
           const Spacer(),
           SizedBox(
             width: double.infinity,
             child: AppButton(
               text: 'Get Started',
               onPressed: () {},
-              variant: isPopular ? AppButtonVariant.primary : AppButtonVariant.outline,
+              // FIX: Replaced 'variant' with 'style' and used ternary logic
+              style:
+                  isPopular ? AppButtonStyle.primary : AppButtonStyle.tertiary,
             ),
           ),
         ],
