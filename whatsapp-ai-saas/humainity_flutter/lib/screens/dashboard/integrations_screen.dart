@@ -91,7 +91,9 @@ class IntegrationsScreen extends StatelessWidget {
             children: [
               Icon(icon, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
@@ -148,8 +150,11 @@ class IntegrationsScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(description, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                      Text(title,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(description,
+                          style: const TextStyle(
+                              color: AppColors.mutedForeground, fontSize: 12)),
                     ],
                   ),
                 ],
@@ -162,14 +167,22 @@ class IntegrationsScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(isConnected ? LucideIcons.checkCircle : LucideIcons.xCircle,
-                        size: 12, color: isConnected ? AppColors.success : AppColors.mutedForeground),
+                    Icon(
+                        isConnected
+                            ? LucideIcons.checkCircle
+                            : LucideIcons.xCircle,
+                        size: 12,
+                        color: isConnected
+                            ? AppColors.success
+                            : AppColors.mutedForeground),
                     const SizedBox(width: 4),
                     Text(
                       isConnected ? 'Connected' : 'Not Connected',
                       style: TextStyle(
                           fontSize: 10,
-                          color: isConnected ? AppColors.success : AppColors.mutedForeground),
+                          color: isConnected
+                              ? AppColors.success
+                              : AppColors.mutedForeground),
                     ),
                   ],
                 ),
@@ -178,16 +191,15 @@ class IntegrationsScreen extends StatelessWidget {
           ),
           const Spacer(),
           if (apiKeyField != null) ...[
-            AppTextField(
-                labelText: '$title API Key',
-                hintText: apiKeyField),
+            AppTextField(labelText: '$title API Key', hintText: apiKeyField),
             const SizedBox(height: 8),
           ],
           SizedBox(
             width: double.infinity,
             child: AppButton(
               text: isConnected ? 'Disconnect' : 'Connect',
-              variant: AppButtonVariant.outline,
+              // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+              style: AppButtonStyle.tertiary,
               onPressed: onConnect,
             ),
           ),

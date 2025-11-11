@@ -38,10 +38,17 @@ class SolutionsSection extends StatelessWidget {
                     iconColor: AppColors.primary,
                     avatar: 'assets/images/agent-sarah.jpg',
                     title: 'Customer Support Automation',
-                    description: 'Deliver instant, intelligent support that scales with your business.',
+                    description:
+                        'Deliver instant, intelligent support that scales with your business.',
                     features: [
-                      _buildFeatureItem(LucideIcons.messageSquare, 'Smart ticketing and instant FAQ handling', AppColors.primary),
-                      _buildFeatureItem(LucideIcons.fileText, 'RAG-based responses from uploaded documents', AppColors.primary),
+                      _buildFeatureItem(
+                          LucideIcons.messageSquare,
+                          'Smart ticketing and instant FAQ handling',
+                          AppColors.primary),
+                      _buildFeatureItem(
+                          LucideIcons.fileText,
+                          'RAG-based responses from uploaded documents',
+                          AppColors.primary),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -51,10 +58,17 @@ class SolutionsSection extends StatelessWidget {
                     iconColor: AppColors.success,
                     avatar: 'assets/images/agent-alex.jpg',
                     title: 'Sales Outreach & Campaigns',
-                    description: 'Accelerate revenue with intelligent, personalized outreach at scale.',
+                    description:
+                        'Accelerate revenue with intelligent, personalized outreach at scale.',
                     features: [
-                      _buildFeatureItem(LucideIcons.megaphone, 'WhatsApp and Voice campaigns with personalization', AppColors.success),
-                      _buildFeatureItem(LucideIcons.barChart3, 'Real-time analytics: Open rate, Response rate', AppColors.success),
+                      _buildFeatureItem(
+                          LucideIcons.megaphone,
+                          'WhatsApp and Voice campaigns with personalization',
+                          AppColors.success),
+                      _buildFeatureItem(
+                          LucideIcons.barChart3,
+                          'Real-time analytics: Open rate, Response rate',
+                          AppColors.success),
                     ],
                   ),
                 ],
@@ -69,10 +83,17 @@ class SolutionsSection extends StatelessWidget {
                       iconColor: AppColors.primary,
                       avatar: 'assets/images/agent-sarah.jpg',
                       title: 'Customer Support Automation',
-                      description: 'Deliver instant, intelligent support that scales with your business.',
+                      description:
+                          'Deliver instant, intelligent support that scales with your business.',
                       features: [
-                        _buildFeatureItem(LucideIcons.messageSquare, 'Smart ticketing and instant FAQ handling', AppColors.primary),
-                        _buildFeatureItem(LucideIcons.fileText, 'RAG-based responses from uploaded documents', AppColors.primary),
+                        _buildFeatureItem(
+                            LucideIcons.messageSquare,
+                            'Smart ticketing and instant FAQ handling',
+                            AppColors.primary),
+                        _buildFeatureItem(
+                            LucideIcons.fileText,
+                            'RAG-based responses from uploaded documents',
+                            AppColors.primary),
                       ],
                     ),
                   ),
@@ -84,10 +105,17 @@ class SolutionsSection extends StatelessWidget {
                       iconColor: AppColors.success,
                       avatar: 'assets/images/agent-alex.jpg',
                       title: 'Sales Outreach & Campaigns',
-                      description: 'Accelerate revenue with intelligent, personalized outreach at scale.',
+                      description:
+                          'Accelerate revenue with intelligent, personalized outreach at scale.',
                       features: [
-                        _buildFeatureItem(LucideIcons.megaphone, 'WhatsApp and Voice campaigns with personalization', AppColors.success),
-                        _buildFeatureItem(LucideIcons.barChart3, 'Real-time analytics: Open rate, Response rate', AppColors.success),
+                        _buildFeatureItem(
+                            LucideIcons.megaphone,
+                            'WhatsApp and Voice campaigns with personalization',
+                            AppColors.success),
+                        _buildFeatureItem(
+                            LucideIcons.barChart3,
+                            'Real-time analytics: Open rate, Response rate',
+                            AppColors.success),
                       ],
                     ),
                   ),
@@ -101,14 +129,14 @@ class SolutionsSection extends StatelessWidget {
   }
 
   Widget _buildSolutionCard(
-      BuildContext context, {
-        required IconData icon,
-        required Color iconColor,
-        required String avatar,
-        required String title,
-        required String description,
-        required List<Widget> features,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String avatar,
+    required String title,
+    required String description,
+    required List<Widget> features,
+  }) {
     return AppCard(
       border: Border.all(color: AppColors.border, width: 2),
       child: Column(
@@ -126,13 +154,19 @@ class SolutionsSection extends StatelessWidget {
                 child: Icon(icon, color: iconColor, size: 32),
               ),
               const SizedBox(width: 16),
-              AppAvatar(imageUrl: avatar, fallbackText: title.substring(0, 2), radius: 24),
+              AppAvatar(
+                  imageUrl: avatar,
+                  fallbackText: title.substring(0, 2),
+                  radius: 24),
             ],
           ),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(description, style: const TextStyle(color: AppColors.mutedForeground)),
+          Text(description,
+              style: const TextStyle(color: AppColors.mutedForeground)),
           const SizedBox(height: 24),
           ...features,
           const SizedBox(height: 24),
@@ -141,7 +175,8 @@ class SolutionsSection extends StatelessWidget {
             child: AppButton(
               text: 'Explore Solutions',
               onPressed: () => context.go('/industries'),
-              variant: AppButtonVariant.outline,
+              // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+              style: AppButtonStyle.tertiary,
             ),
           ),
         ],
@@ -165,7 +200,10 @@ class SolutionsSection extends StatelessWidget {
             child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14))),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w500, fontSize: 14))),
         ],
       ),
     );

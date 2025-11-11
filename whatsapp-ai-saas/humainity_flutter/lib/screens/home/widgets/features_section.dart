@@ -11,32 +11,38 @@ class FeaturesSection extends StatelessWidget {
     {
       "icon": LucideIcons.messageSquare,
       "title": "Connect Channels in Minutes",
-      "description": "Seamlessly integrate WhatsApp Business API and Voice channels.",
+      "description":
+          "Seamlessly integrate WhatsApp Business API and Voice channels.",
     },
     {
       "icon": LucideIcons.brain,
       "title": "Train Your AI on Business Knowledge",
-      "description": "Upload PDFs, docs, FAQs, and media. Our RAG-based system learns your business.",
+      "description":
+          "Upload PDFs, docs, FAQs, and media. Our RAG-based system learns your business.",
     },
     {
       "icon": LucideIcons.zap,
       "title": "Automate Customer Journeys",
-      "description": "Set up intelligent workflows, forms, and actions. Let AI handle routine conversations 24/7.",
+      "description":
+          "Set up intelligent workflows, forms, and actions. Let AI handle routine conversations 24/7.",
     },
     {
       "icon": LucideIcons.barChart3,
       "title": "Track Everything from One Dashboard",
-      "description": "Monitor conversions, appointments, payments, and campaign performance in real-time.",
+      "description":
+          "Monitor conversions, appointments, payments, and campaign performance in real-time.",
     },
     {
       "icon": LucideIcons.users,
       "title": "Smart Campaign Management",
-      "description": "Create targeted WhatsApp and Voice campaigns with intelligent retries and follow-ups.",
+      "description":
+          "Create targeted WhatsApp and Voice campaigns with intelligent retries and follow-ups.",
     },
     {
       "icon": LucideIcons.settings,
       "title": "Personalize Your AI Agent",
-      "description": "Customize avatar, tone, voice, and conversation style to match your brand perfectly.",
+      "description":
+          "Customize avatar, tone, voice, and conversation style to match your brand perfectly.",
     },
   ];
 
@@ -85,12 +91,22 @@ class FeaturesSection extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(feature['icon'] as IconData, color: AppColors.primaryForeground, size: 24),
+                        child: Icon(feature['icon'] as IconData,
+                            color: AppColors.primaryForeground, size: 24),
                       ),
                       const SizedBox(height: 16),
-                      Text(feature['title'] as String, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text(feature['title'] as String,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
-                      Text(feature['description'] as String, style: const TextStyle(color: AppColors.mutedForeground)),
+                      // FIX: Wrap the description in Expanded to resolve the RenderFlex overflow in the grid cell
+                      Expanded(
+                        child: Text(
+                          feature['description'] as String,
+                          style:
+                              const TextStyle(color: AppColors.mutedForeground),
+                        ),
+                      ),
                     ],
                   ),
                 );

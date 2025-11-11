@@ -28,29 +28,38 @@ class IndustriesScreen extends StatelessWidget {
                   children: [
                     const AppBadge(
                       text: 'Human + AI Collaboration Platform',
-                      icon: Icon(LucideIcons.sparkles, size: 12, color: AppColors.primary),
+                      icon: Icon(LucideIcons.sparkles,
+                          size: 12, color: AppColors.primary),
                       color: AppColors.primaryLight,
                       textColor: AppColors.primary,
                     ),
                     const SizedBox(height: 24),
                     const Text(
                       'Industries & Use Cases',
-                      style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Discover how HumAInity.AI helps SMBs across diverse industries automate customer interactions while maintaining the human touch.',
-                      style: TextStyle(fontSize: 18, color: AppColors.mutedForeground),
+                      style: TextStyle(
+                          fontSize: 18, color: AppColors.mutedForeground),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        AppButton(text: 'Start Free Trial', onPressed: () => context.go('/dashboard')),
+                        AppButton(
+                            text: 'Start Free Trial',
+                            onPressed: () => context.go('/dashboard')),
                         const SizedBox(width: 16),
-                        AppButton(text: 'See Features', variant: AppButtonVariant.outline, onPressed: () => context.go('/#features')),
+                        // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                        AppButton(
+                            text: 'See Features',
+                            style: AppButtonStyle.tertiary,
+                            onPressed: () => context.go('/#features')),
                       ],
                     ),
                   ],
@@ -67,13 +76,15 @@ class IndustriesScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Automate with Empathy, Across Every Industry',
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Click on any industry to explore tailored automation solutions, conversational flows, and success metrics.',
-                      style: TextStyle(fontSize: 18, color: AppColors.mutedForeground),
+                      style: TextStyle(
+                          fontSize: 18, color: AppColors.mutedForeground),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 48),
@@ -104,28 +115,46 @@ class IndustriesScreen extends StatelessWidget {
                                         gradient: AppColors.gradientPrimary,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Icon(industry.icon, color: AppColors.primaryForeground, size: 24),
+                                      child: Icon(industry.icon,
+                                          color: AppColors.primaryForeground,
+                                          size: 24),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Text(industry.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                                          Text(industry.tagline, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12), maxLines: 2),
+                                          Text(industry.name,
+                                              style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600)),
+                                          Text(industry.tagline,
+                                              style: const TextStyle(
+                                                  color:
+                                                      AppColors.mutedForeground,
+                                                  fontSize: 12),
+                                              maxLines: 2),
                                         ],
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                Text(industry.description, style: const TextStyle(color: AppColors.mutedForeground), maxLines: 3),
+                                Text(industry.description,
+                                    style: const TextStyle(
+                                        color: AppColors.mutedForeground),
+                                    maxLines: 3),
                                 const Spacer(),
                                 Row(
                                   children: const [
-                                    Text('Explore Solutions', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500)),
+                                    Text('Explore Solutions',
+                                        style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w500)),
                                     SizedBox(width: 4),
-                                    Icon(LucideIcons.arrowRight, color: AppColors.primary, size: 16),
+                                    Icon(LucideIcons.arrowRight,
+                                        color: AppColors.primary, size: 16),
                                   ],
                                 ),
                               ],

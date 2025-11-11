@@ -54,8 +54,15 @@ class FormsScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // FIX: context is now available
-            Text('Form Templates', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
-            AppButton(text: 'Create New Form', icon: const Icon(LucideIcons.plus), onPressed: () {}),
+            Text('Form Templates',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            AppButton(
+                text: 'Create New Form',
+                icon: const Icon(LucideIcons.plus),
+                onPressed: () {}),
           ],
         ),
         const SizedBox(height: 16),
@@ -64,16 +71,20 @@ class FormsScreen extends StatelessWidget {
           spacing: 16.0,
           runSpacing: 16.0,
           children: [
-            _buildTemplateCard(context, 'Customer Enquiry', 'Collect customer information and inquiries.', true),
-            _buildTemplateCard(context, 'Service Request', 'For tracking support and service issues.', false),
-            _buildTemplateCard(context, 'Feedback Form', 'Gather feedback on recent interactions.', false),
+            _buildTemplateCard(context, 'Customer Enquiry',
+                'Collect customer information and inquiries.', true),
+            _buildTemplateCard(context, 'Service Request',
+                'For tracking support and service issues.', false),
+            _buildTemplateCard(context, 'Feedback Form',
+                'Gather feedback on recent interactions.', false),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildTemplateCard(BuildContext context, String title, String subtitle, bool isActive) {
+  Widget _buildTemplateCard(
+      BuildContext context, String title, String subtitle, bool isActive) {
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: SizedBox(
@@ -84,17 +95,31 @@ class FormsScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                AppBadge(text: isActive ? 'Active' : 'Draft', variant: isActive ? AppBadgeVariant.primary : AppBadgeVariant.secondary),
+                Text(title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                AppBadge(
+                    text: isActive ? 'Active' : 'Draft',
+                    variant: isActive
+                        ? AppBadgeVariant.primary
+                        : AppBadgeVariant.secondary),
               ],
             ),
             const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+            Text(subtitle,
+                style: const TextStyle(
+                    color: AppColors.mutedForeground, fontSize: 14)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                AppButton(text: 'Edit', variant: AppButtonVariant.outline, onPressed: () {}),
+                // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                AppButton(
+                    text: 'Edit',
+                    style: AppButtonStyle.tertiary,
+                    onPressed: () {}),
                 const SizedBox(width: 8),
                 AppButton(text: 'Preview', onPressed: () {}),
               ],
@@ -111,24 +136,38 @@ class FormsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // FIX: context is now available
-        Text('Form Builder', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+        Text('Form Builder',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 16),
         AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppTextField(labelText: 'Form Title', hintText: 'e.g., Contact Us Form'),
+              const AppTextField(
+                  labelText: 'Form Title', hintText: 'e.g., Contact Us Form'),
               const SizedBox(height: 16),
-              const AppTextField(labelText: 'Form Description', hintText: 'A brief description...', maxLines: 3),
+              const AppTextField(
+                  labelText: 'Form Description',
+                  hintText: 'A brief description...',
+                  maxLines: 3),
               const SizedBox(height: 24),
-              const Text('Form Fields (Drag & Drop Coming Soon)', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text('Form Fields (Drag & Drop Coming Soon)',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 16),
               _buildFormFieldsList(),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  AppButton(text: 'Add Field', variant: AppButtonVariant.outline, icon: const Icon(LucideIcons.plus), onPressed: () {}),
+                  // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                  AppButton(
+                      text: 'Add Field',
+                      style: AppButtonStyle.tertiary,
+                      icon: const Icon(LucideIcons.plus),
+                      onPressed: () {}),
                 ],
               ),
               const SizedBox(height: 24),
@@ -160,7 +199,8 @@ class FormsScreen extends StatelessWidget {
           Divider(color: AppColors.border),
           _FormFieldItem(label: 'Email', type: 'Email Input', isRequired: true),
           Divider(color: AppColors.border),
-          _FormFieldItem(label: 'Phone', type: 'Phone Input', isRequired: false),
+          _FormFieldItem(
+              label: 'Phone', type: 'Phone Input', isRequired: false),
           Divider(color: AppColors.border),
           _FormFieldItem(label: 'Message', type: 'Textarea', isRequired: true),
         ],
@@ -174,7 +214,11 @@ class FormsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // FIX: context is now available
-        Text('Form Preview', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+        Text('Form Preview',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 16),
         AppCard(
           child: Column(
@@ -187,21 +231,34 @@ class FormsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // FIX: context is now available
-                      Text('Customer Enquiry Form', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                      const Text('Collect customer information and inquiries.', style: TextStyle(color: AppColors.mutedForeground)),
+                      Text('Customer Enquiry Form',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600)),
+                      const Text('Collect customer information and inquiries.',
+                          style: TextStyle(color: AppColors.mutedForeground)),
                     ],
                   ),
-                  const AppBadge(text: 'Active', color: AppColors.success, textColor: AppColors.successForeground),
+                  const AppBadge(
+                      text: 'Active',
+                      color: AppColors.success,
+                      textColor: AppColors.successForeground),
                 ],
               ),
               const SizedBox(height: 24),
-              const AppTextField(labelText: 'Name *', hintText: 'Enter your name'),
+              const AppTextField(
+                  labelText: 'Name *', hintText: 'Enter your name'),
               const SizedBox(height: 16),
-              const AppTextField(labelText: 'Email *', hintText: 'Enter your email'),
+              const AppTextField(
+                  labelText: 'Email *', hintText: 'Enter your email'),
               const SizedBox(height: 16),
               const AppTextField(labelText: 'Phone', hintText: 'Optional'),
               const SizedBox(height: 16),
-              const AppTextField(labelText: 'Message *', hintText: 'How can we help?', maxLines: 5),
+              const AppTextField(
+                  labelText: 'Message *',
+                  hintText: 'How can we help?',
+                  maxLines: 5),
               const SizedBox(height: 24),
               AppButton(text: 'Submit Inquiry', onPressed: () {}),
             ],
@@ -236,7 +293,8 @@ class _FormFieldItem extends StatelessWidget {
               if (isRequired)
                 const Padding(
                   padding: EdgeInsets.only(left: 4.0),
-                  child: Text('*', style: TextStyle(color: AppColors.destructive)),
+                  child:
+                      Text('*', style: TextStyle(color: AppColors.destructive)),
                 ),
             ],
           ),
@@ -244,11 +302,13 @@ class _FormFieldItem extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                icon: const Icon(LucideIcons.pencil, size: 16, color: AppColors.mutedForeground),
+                icon: const Icon(LucideIcons.pencil,
+                    size: 16, color: AppColors.mutedForeground),
                 onPressed: () {},
               ),
               IconButton(
-                icon: const Icon(LucideIcons.trash2, size: 16, color: AppColors.destructive),
+                icon: const Icon(LucideIcons.trash2,
+                    size: 16, color: AppColors.destructive),
                 onPressed: () {},
               ),
             ],

@@ -43,7 +43,10 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: 8),
                   const Text(
                     'HumAInity.ai',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.foreground),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: AppColors.foreground),
                   ),
                 ],
               ),
@@ -60,7 +63,8 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: 16),
                   AppButton(
                     text: 'Login',
-                    variant: AppButtonVariant.outline,
+                    // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
+                    style: AppButtonStyle.tertiary,
                     onPressed: () => context.go('/dashboard'),
                   ),
                   const SizedBox(width: 8),
@@ -97,7 +101,8 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
       },
       child: Text(
         text,
-        style: const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w500),
+        style: const TextStyle(
+            color: AppColors.foreground, fontWeight: FontWeight.w500),
       ),
     );
   }

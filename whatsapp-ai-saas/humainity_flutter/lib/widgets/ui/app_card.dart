@@ -10,7 +10,7 @@ class AppCard extends StatelessWidget {
   final Color? borderColor;
   final double? elevation;
   final double? borderRadius;
-  final BoxBorder? border; // ADDED
+  final BoxBorder? border;
 
   const AppCard({
     super.key,
@@ -22,7 +22,7 @@ class AppCard extends StatelessWidget {
     this.borderColor,
     this.elevation,
     this.borderRadius,
-    this.border, // ADDED
+    this.border,
   });
 
   @override
@@ -47,7 +47,7 @@ class AppCard extends StatelessWidget {
         color: color ?? theme.color ?? AppColors.card,
         gradient: gradient,
         borderRadius: BorderRadius.circular(borderRadius ?? 12.0),
-        border: effectiveBorder, // UPDATED
+        border: effectiveBorder,
         boxShadow: [
           if (elevation != null)
             BoxShadow(
