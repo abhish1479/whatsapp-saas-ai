@@ -1,6 +1,8 @@
 import os, logging
 from typing import Dict, Any, List
 from openai import AsyncOpenAI
+from dotenv import load_dotenv
+load_dotenv()
 
 client = AsyncOpenAI()
 # Provider selection
@@ -101,12 +103,13 @@ async def generate_reply(tenant_id: str, query: str, docs: Dict[str, Any]) -> st
 
 
 
-async def analysis(tenant_id: str, query: str) -> str:
+async def analysis(tenant_id: str, query: str,system_prompt:str) -> str:
     try:
         if PROVIDER == "openai":
             resp = await client.chat.completions.create(
                 model=MODEL,
-                messages=[{"role": "user", "content": query}],
+                messages=[{"role": "user", "content": query},
+                          {"role": "system", "content": system_prompt}],
                 temperature=TEMPERATURE,
                 max_tokens=5000,
             )

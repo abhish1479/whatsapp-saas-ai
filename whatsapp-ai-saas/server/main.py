@@ -1,7 +1,8 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, kyc, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing, subscriptions_plans,leads,campaigns, monitoring, metrics
+from routers import auth, kyc, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing, subscriptions_plans,leads,campaigns, monitoring, metrics,knowledge,whatsapp_webhook
 from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
@@ -11,7 +12,10 @@ from database import Base, engine
 import os
 from fastapi.staticfiles import StaticFiles
 from settings import settings
-from routers.whatsapp_webhook import whatsapp_webhook
+from utils.responses import ( # Import global handlers
+    http_exception_handler, 
+    validation_exception_handler
+)
 
 
 app = FastAPI(title="WhatsApp AI Agent SaaS", version="1.0")
@@ -22,7 +26,8 @@ origins = [
     "http://localhost:8082",   # Flutter web dev server
     "http://127.0.0.1:8082",
     "http://localhost:3000",   # (if using Vite/React)
-    "http://localhost",        # fallback
+    "http://localhost",
+                    # fallback
 ]
 
 
@@ -39,6 +44,8 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 os.makedirs(settings.MEDIA_DIR, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
@@ -61,7 +68,8 @@ app.include_router(leads.router)
 app.include_router(campaigns.router)
 app.include_router(monitoring.router)
 app.include_router(metrics.router)
-app.add_api_route("/webhook", whatsapp_webhook, methods=["POST"])
+app.include_router(whatsapp_webhook.router)
+app.include_router(knowledge.router)
 
 @app.get("/healthz")
 def healthz():

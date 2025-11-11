@@ -1,10 +1,10 @@
 
 import uuid
-from sqlalchemy import UUID, Column, Float, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint,BigInteger
+from sqlalchemy import UUID, Column, Enum, Float, Index, Integer, Numeric, String, Boolean, ForeignKey, Text, DateTime, JSON, UniqueConstraint,BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
-from utils.enums import Onboarding
+from utils.enums import Onboarding, ProcessingStatusEnum, SourceTypeEnum
 
 class Timestamp:
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -356,3 +356,23 @@ class CampaignRecipient(Base):
 
     campaign = relationship("Campaign", back_populates="recipients")
     lead = relationship("Lead", back_populates="recipients")
+
+
+class KnowledgeSource(Timestamp, Base):
+    __tablename__ = "knowledge_sources"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_type = Column(Enum(SourceTypeEnum), nullable=False)
+    name = Column(Text, nullable=False)
+    source_uri = Column(Text, nullable=False)
+    size_bytes = Column(BigInteger, nullable=True)
+    summary = Column(Text, nullable=True)
+    tags = Column(JSON, default=list)
+    processing_status = Column(Enum(ProcessingStatusEnum), nullable=False, default=ProcessingStatusEnum.PENDING, index=True)
+    processing_error = Column(Text, nullable=True)
+    vector_chunk_count = Column(Integer, nullable=True, default=0)
+    last_processed_at = Column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self):
+        return f"<KnowledgeSource(id={self.id}, name='{self.name}', status='{self.processing_status.value}')>"

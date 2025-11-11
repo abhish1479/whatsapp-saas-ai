@@ -1,10 +1,19 @@
 
+from contextlib import contextmanager
 from fastapi import Header, HTTPException
 import jwt, datetime
 from settings import settings
 from database import SessionLocal
 
 def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@contextmanager
+def get_db_session():
     db = SessionLocal()
     try:
         yield db

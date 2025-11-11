@@ -85,6 +85,29 @@ services:
       - server
     restart: unless-stopped
 
-
+  rq_file_processing:
+    container_name: wa_rq_file_processing
+    build:
+      context: .                   # build from project root
+      dockerfile: server/Dockerfile
+    command: rq worker file_processing --url redis://redis:6379/0
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE: file_processing
+      CHROMA_PATH: /data/chroma
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      server:
+        condition: service_started
+    volumes:
+      - ./data/chroma:/data/chroma
+    restart: unless-stopped
+    
 volumes:
   db_data:

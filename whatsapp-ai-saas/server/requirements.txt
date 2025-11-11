@@ -34,3 +34,6 @@ playwright
 python-dotenv==1.0.1
 pydantic-settings==2.6.1
 rq==1.16.2
+pandas
+PyMuPDF
+python-docx

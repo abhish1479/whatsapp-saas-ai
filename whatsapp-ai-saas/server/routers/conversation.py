@@ -5,6 +5,9 @@ from sqlalchemy import text
 from deps import get_db
 from services.exotel_api import whatsapp_msg_send_api_bulk
 from services import llm
+from data_models.request_model import TemplateSendRequest
+from fastapi.responses import JSONResponse
+
 
 router = APIRouter(tags=["conversations"])
 
@@ -29,11 +32,38 @@ async def get_summary(conversation_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/talk_to_me")
-async def talk_to_me(
-    request: Request,
+async def template_msg_send(
+    request_data: TemplateSendRequest,
     db: Session = Depends(get_db)
 ):
-    return await whatsapp_msg_send_api_bulk(request, db)
+    try:
+        # Convert recipients to list of dicts (Pydantic already validates structure)
+        recipients = [r.dict() for r in request_data.recipients]
+
+        result = await whatsapp_msg_send_api_bulk(
+            db=db,
+            tenant_id=request_data.tenant_id,
+            recipients=recipients,
+            from_number="+919773743558",
+            template_name="whatsapp_saas_v3",
+            paramsList=[],  # no extra params beyond name + body
+            language="en"
+        )
+        return result
+
+    except ValueError as ve:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": str(ve)}
+        )
+    except Exception as e:
+        print(f"[TALK_TO_ME] Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Internal server error"}
+        )
 
 
 @router.post("/workflow_optimizer")

@@ -86,6 +86,19 @@ class RAGService:
         # Chroma client is sync; it's fine to call from async here
         col.add(ids=ids, documents=texts, metadatas=metadatas)
 
+    async def add_documents_rag(self, tenant_id: str, docs: List[Dict[str, Any]] ,metadatas: List[Dict[str, Any]] ):
+        """
+        docs = [{id?, text, source_url?, version?, language?}]
+        """
+        if not docs:
+            return
+
+        col = self._get_collection(tenant_id)
+        ids = [str(d.get("id") or uuid.uuid4()) for d in docs]
+        texts = [d["text"] for d in docs]
+        # Chroma client is sync; it's fine to call from async here
+        col.add(ids=ids, documents=texts, metadatas=metadatas)
+
     async def delete_namespace(self, tenant_id: str) -> None:
         """
         Hard-delete the tenant collection (GDPR/DPDP). Irreversible.

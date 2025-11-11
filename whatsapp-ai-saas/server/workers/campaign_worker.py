@@ -1,6 +1,6 @@
 from rq import Worker, Queue, Connection
 from redis import Redis
-from app.settings import settings
+from settings import settings
 
 listen = ['campaigns']
 

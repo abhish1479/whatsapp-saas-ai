@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 
 // ADDED enum for badge styling
-enum AppBadgeVariant { primary, secondary, outline }
+enum AppBadgeVariant { primary, secondary, outline ,destructive }
 
 class AppBadge extends StatelessWidget {
   final String text;
@@ -42,6 +42,10 @@ class AppBadge extends StatelessWidget {
         defaultBackgroundColor = Colors.transparent;
         defaultTextColor = AppColors.foreground;
         defaultBorder = Border.all(color: AppColors.border, width: 1);
+        break;
+      case AppBadgeVariant.destructive:
+        defaultBackgroundColor = AppColors.destructive;
+        defaultTextColor = AppColors.destructiveForeground;
         break;
     }
 

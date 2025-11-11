@@ -6,7 +6,8 @@ from requests import Session
 import requests
 from deps import get_db
 from dotenv import load_dotenv
-from models import AgentConfiguration, BusinessProfile
+import services.llm as llm
+from models import AgentConfiguration, BusinessProfile, Template, Workflow
 
 
 load_dotenv()
@@ -133,12 +134,10 @@ def send_reply_via_exotel_api_template(
         print(f"[EXOTEL WA] Params: {params}")
 
         resp = requests.post(EXOTEL_SEND_SMS_URL, json=payload, headers=headers, auth=auth, timeout=30)
-        msg = f"""Hi {params[0]}, this is {params[1]}!
-                We’re offering {params[2]} — exclusively for you.
-                    -Limited slots/time
-                    -No obligation
-                    - Instant benefit
-            Are you available to learn more or get started today? Reply YES or NO."""
+        msg = f"""Hi {params[0]}
+                  Welcome to {params[1]} !
+                  How can I assist you today?
+                  """
         #await append_user(to_number,msg)
         print(f"[EXOTEL WA] Status: {resp.status_code}")
         print(f"[EXOTEL WA] Body: {resp.text}")
@@ -164,7 +163,7 @@ async def whatsapp_msg_send_api_via_template(request: Request):
 
         to_number = data.get("to")
         from_number = data.get("from")
-        template_name = data.get("template","whatsapp_saas")
+        template_name = data.get("template","whatsapp_saas_v2")
         params = data.get("params", [])      # Now can be any number of items
         language = data.get("language", "en")  # Optional, defaults to en_US
 
@@ -214,18 +213,23 @@ async def whatsapp_msg_send_api_via_template(request: Request):
         )
     
 
-async def whatsapp_msg_send_api_bulk(request: Request,
-    db: Session = Depends(get_db)                                 
-                                     ):
+async def whatsapp_msg_send_api_bulk(
+    tenant_id: int,
+    recipients: dict,
+    from_number: str = "+919773743558",
+    template_name: str = "whatsapp_saas_v3",
+    paramsList: list = [],
+    language: str = "en" ,
+    db: Session = Depends(get_db) ):
     try:
-        data = await request.json()
 
-        tenant_id = data.get("tenant_id") 
-        from_number = data.get("from","+919773743558")  # Optional, for audit/logging
-        recipients = data.get("recipients")
-        template_name = data.get("template", "whatsapp_saas")
-        paramsList = data.get("params", [])
-        language = data.get("language", "en")
+
+        # tenant_id = data.get("tenant_id") 
+        # from_number = data.get("from","+919773743558")  # Optional, for audit/logging
+        # recipients = data.get("recipients")
+        # template_name = data.get("template", "whatsapp_saas_v2")
+        # paramsList = data.get("params", [])
+        # language = data.get("language", "en")
 
         if not isinstance(recipients, list) or len(recipients) == 0:
             return JSONResponse(
@@ -244,23 +248,64 @@ async def whatsapp_msg_send_api_bulk(request: Request,
         #         status_code=400,
         #         content={"status": "error", "message": "'template' is required"}
         #     )
-        
-        business_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
-        if not business_profile:
-            return JSONResponse(
-                status_code=400,
-                content={"status": "error", "message": "business profile not found for this tenant"}
-            )
-        agentconfiguration = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
-        if not agentconfiguration:
-            return JSONResponse(
-                status_code=400,
-                content={"status": "error", "message": "agent configuration not found for this tenant"}
-            )
-        
-        paramsList.insert(0,agentconfiguration.agent_name)
-        paramsList.insert(1,business_profile.business_name)
+        template = db.query(Template).filter(Template.tenant_id == tenant_id).first()
+        if not template:
+            business_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
+            if not business_profile:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": "business profile not found for this tenant"}
+                )
+            agentconfiguration = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
+            if not agentconfiguration:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": "agent configuration not found for this tenant"}
+                )
+            wrokflow = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
+            if not wrokflow:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": "workflow not found for this tenant"}
+                )
+            
+            llm_prompt = f"""
+                You are an AI assistant helping {business_profile.business_name} (a {business_profile.business_category} business) 
+                engage new customers on WhatsApp. Based on the following details:
 
+                - Business Name: {business_profile.business_name}
+                - Industry: {business_profile.business_category}
+                - Description: {business_profile.description or 'N/A'}
+                - Agent Name: {agentconfiguration.agent_name}
+                - Agent Tone: {agentconfiguration.conversation_tone or 'friendly and professional'}
+                - Workflow Goal: {wrokflow.template or 'initiate a helpful conversation'}
+
+                Generate a short, welcoming WhatsApp message (max 160 characters) that invites the customer to start a conversation.
+                The message should feel personal, non-promotional, and encourage a reply (e.g., with a question or clear next step).
+                Do not include placeholders like {{name}}—assume it will be sent as plain text.
+                i have a approved template body give output for one place holder of template-
+                Welcome to <placeholder> !
+                  How can I assist you today?
+                Return only the message body for placeholder, nothing else.
+                """
+
+                # Call your LLM (pseudo-code—replace with actual LLM client)
+            generated_body = await llm.analysis(tenant_id,llm_prompt)
+            paramsList.insert(0,generated_body.strip())
+            # Save the generated body into the Template model
+            new_template = Template(
+                    tenant_id=tenant_id,
+                    body=generated_body.strip(),
+                    name="whatsapp_saas_v2",
+                    language="en",
+                    status= "active"    # or whatever enum/type you use
+                )
+            db.add(new_template)
+            db.commit()   
+            
+        else:
+            paramsList.insert(0,template.body)
+            
         for idx, recipient in enumerate(recipients):
             if not isinstance(recipient, dict):
                 return JSONResponse(

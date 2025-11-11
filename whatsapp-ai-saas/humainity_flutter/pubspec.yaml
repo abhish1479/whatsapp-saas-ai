@@ -20,6 +20,10 @@ dependencies:
   flutter_colorpicker: ^1.0.3
   toggle_switch: ^2.3.0
   dotted_border: ^2.1.0 # <-- ADD THIS LINE
+  http: ^1.2.1
+  file_picker: ^8.0.6
+  http_parser: ^4.0.2
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

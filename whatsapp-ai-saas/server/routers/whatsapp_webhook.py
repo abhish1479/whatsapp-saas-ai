@@ -1,10 +1,13 @@
-from fastapi import Request
+from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from services.ai_model import process_message_background
 import asyncio
 from fastapi import Request
 from fastapi.responses import Response
 
+router = APIRouter(tags=["webhooks"])
+
+@router.post("/whatsapp_webhook")
 async def whatsapp_webhook(request: Request):
     print("=" * 60)
     print("[WEBHOOK] New request received from Exotel")
