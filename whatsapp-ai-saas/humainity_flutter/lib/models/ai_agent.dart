@@ -23,6 +23,15 @@ class AiAgent {
 // you have in your project's assets/images folder.
 const List<AiAgent> presetAgents = [
   AiAgent(
+    id: 'agent-sarah',
+    name: 'Sarah',
+    persona: 'Proactive Sales Representative',
+    role:
+        'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
+    imagePath: 'assets/images/agent-sarah.jpg',
+    primaryColor: Color(0xFF1E88E5), // Green
+  ),
+  AiAgent(
     id: 'agent-alex',
     name: 'Alex',
     persona: 'Friendly Customer Success Agent',
@@ -32,31 +41,22 @@ const List<AiAgent> presetAgents = [
     primaryColor: Color(0xFF1E88E5), // Blue
   ),
   AiAgent(
-    id: 'agent-sarah',
-    name: 'Sarah',
-    persona: 'Proactive Sales Representative',
-    role:
-        'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
-    imagePath: 'assets/images/agent-sarah.jpg',
-    primaryColor: Color(0xFF43A047), // Green
-  ),
-  AiAgent(
     id: 'agent-maya',
     name: 'Maya',
     persona: 'Technical Support Specialist',
     role:
         'Maya is an expert in troubleshooting complex technical problems, analyzing error logs, and providing detailed, step-by-step resolution guides.',
     imagePath: 'assets/images/agent-maya.jpg',
-    primaryColor: Color(0xFFE53935), // Red
+    primaryColor: Color(0xFF1E88E5), // Red
   ),
   AiAgent(
-    id: 'custom',
-    name: 'Custom Agent',
+    id: 'agent-david',
+    name: 'David',
     persona: 'Design your own AI persona from scratch.',
     role:
         'This agent has no pre-set instructions. You must define the name, persona, and role explicitly for optimal performance.',
-    imagePath: 'assets/images/ai-sales-agent.jpg', // Placeholder image
-    primaryColor: Color(0xFF673AB7), // Deep Purple
+    imagePath: 'assets/images/agent-david.jpg', // Placeholder image
+    primaryColor: Color(0xFF1E88E5), // Deep Purple
   ),
 ];
 

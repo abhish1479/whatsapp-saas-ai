@@ -1,9 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
 import 'package:humainity_flutter/models/ai_agent.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
 import 'package:humainity_flutter/screens/dashboard/widgets/preset_agent_card.dart';
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
@@ -11,165 +11,140 @@ import 'package:humainity_flutter/widgets/ui/app_card.dart';
 import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:image_picker/image_picker.dart';
+// Import the new provider
+import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
+// Import the config model
+import 'package:humainity_flutter/models/agent_config_model.dart';
+// IMPORTANT: Ensure ChatPreview is imported correctly
+import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
 
-// --- Riverpod State Providers ---
-
-// 1. Tracks the currently selected agent ID.
-final selectedAgentIdProvider =
-    StateProvider<String>((ref) => presetAgents.first.id);
-
-// 2. Tracks the current persona/role text in the text field.
-final personaTextProvider =
-    StateProvider<String>((ref) => presetAgents.first.role);
-
-// 3. Tracks the agent's name, used in the top text field.
-final agentNameProvider =
-    StateProvider<String>((ref) => presetAgents.first.name);
-
-// 4. Tracks the custom image path (for custom agent). Using String for asset/network path.
-final customImagePathProvider = StateProvider<String?>((ref) => null);
+// --- REMOVED ALL LOCAL STATEPROVIDERS ---
 
 // --- AIAgentScreen Widget ---
-
 class AIAgentScreen extends ConsumerWidget {
   const AIAgentScreen({super.key});
 
+  // Utility function to handle image picking
+  Future<void> _pickImage(WidgetRef ref, ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      // Call the notifier method to stage the file
+      ref.read(aiAgentProvider.notifier).stageLocalImage(file, pickedFile.path);
+    } else {
+      print('No image selected.');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the current state from Riverpod
-    final selectedAgentId = ref.watch(selectedAgentIdProvider);
-    final selectedAgent =
-        presetAgents.firstWhere((agent) => agent.id == selectedAgentId);
-
-    // Get the persona text and agent name (which can be customized regardless of preset)
-    final personaText = ref.watch(personaTextProvider);
-    final agentName = ref.watch(agentNameProvider);
-    final customImagePath = ref.watch(customImagePathProvider);
+    // Watch the single state provider
+    final agentState = ref.watch(aiAgentProvider);
+    final selectedPresetId = agentState.selectedPresetId;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADING: Personalize Your AI Agent
+          // HEADING
           const Text(
             'Personalize Your AI Agent',
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           const Text(
-            'Configure your conversational AI assistant\'s appearance, personality, and core settings.',
-            style: TextStyle(color: AppColors.mutedForeground),
+            'Customize your AI assistant\'s appearance, personality, and behavior.',
+            style: TextStyle(color: AppColors.mutedForeground, fontSize: 16),
           ),
           const SizedBox(height: 24),
 
-          // Responsive Layout (Two columns on desktop, one column on mobile/tablet)
-          WebContainer(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left Column: Configuration Panels
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      _buildAgentSelectionCard(ref, selectedAgentId),
-                      const SizedBox(height: 24),
-                      _buildAvatarBrandingCard(
-                          ref, selectedAgent, customImagePath),
-                      const SizedBox(height: 24),
-                      _buildAgentDescriptionCard(
-                          ref, selectedAgent, agentName, personaText),
-                      const SizedBox(height: 24),
-                      _buildLanguageAndToneCard(),
-                      // Removed _buildAdvancedSettingsCard() as requested
-                      const SizedBox(height: 24),
-                      _buildActionButtons(ref),
-                    ],
-                  ),
+          // AGENT SELECTION CARD
+          _buildAgentSelectionCard(ref, selectedPresetId, context),
+          const SizedBox(height: 24),
+
+          // Main Content Area
+          agentState.config.when(
+            // --- LOADING STATE ---
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(64.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            // --- ERROR STATE ---
+            error: (error, stack) => Center(
+              child: AppCard(
+                child: Column(
+                  children: [
+                    Text('Failed to load configuration: $error',
+                        style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    AppButton(
+                      text: 'Retry',
+                      onPressed: () =>
+                          ref.read(aiAgentProvider.notifier).fetchAgentConfig(),
+                    )
+                  ],
                 ),
+              ),
+            ),
+            // --- DATA LOADED STATE ---
+            data: (config) {
+              // isSaving is true if the state is AsyncLoading but still has a value
+              final isSaving =
+                  agentState.config.isLoading && agentState.config.hasValue;
 
-                // Gap between columns on desktop
-                if (Responsive.isDesktop(context)) const SizedBox(width: 24),
-
-                // Right Column: Live Branding Preview (takes 1/3 space on desktop)
-                if (Responsive.isDesktop(context))
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Column: Configuration Panels
                   Expanded(
-                    flex: 1,
-                    // FIX: Constrain height to stabilize layout
-                    child: SizedBox(
-                      height: 700,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Agent Configuration Preview',
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: _buildLiveBrandingPreview(
-                                selectedAgent, agentName, customImagePath),
-                          ),
-                        ],
+                    flex: Responsive.isDesktop(context) ? 2 : 1,
+                    child: Column(
+                      children: [
+                        _buildAvatarUploadCard(
+                            ref, config, agentState.localImageFile, context),
+                        const SizedBox(height: 24),
+                        _buildAgentDescriptionCard(ref, config, context),
+                        const SizedBox(height: 24),
+                        _buildConversationSettingsCard(ref, config, context),
+                        const SizedBox(height: 24),
+                        _buildActionButtons(ref, isSaving),
+                      ],
+                    ),
+                  ),
+
+                  // Right Column: Live Preview
+                  if (Responsive.isDesktop(context)) const SizedBox(width: 24),
+                  if (Responsive.isDesktop(context))
+                    Expanded(
+                      flex: 1,
+                      child: SizedBox(
+                        height: 700,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Live Preview',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 16),
+                            Expanded(
+                              child: _buildLiveBrandingPreview(
+                                config,
+                                agentState.localImageFile,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Section 1: Agent Selection ---
-  Widget _buildAgentSelectionCard(WidgetRef ref, String selectedAgentId) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Choose a Preconfigured Agent',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Start with a preset, or select "Custom Agent" to define your own avatar and persona.',
-            style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          // Grid/Wrap of PresetAgentCards
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Calculate cross axis count based on constraints for responsiveness
-              final double minWidth = 200;
-              final int crossAxisCount =
-                  (constraints.maxWidth / (minWidth + 16)).floor().clamp(1, 4);
-              final double cardWidth = (constraints.maxWidth / crossAxisCount) -
-                  (16 * (crossAxisCount - 1) / crossAxisCount);
-
-              return Wrap(
-                spacing: 16, // Horizontal space
-                runSpacing: 16, // Vertical space
-                children: presetAgents.map((agent) {
-                  return SizedBox(
-                    width: cardWidth,
-                    child: PresetAgentCard(
-                      agent: agent,
-                      isSelected: agent.id == selectedAgentId,
-                      onTap: () {
-                        // Update state providers when a new agent is selected
-                        ref.read(selectedAgentIdProvider.notifier).state =
-                            agent.id;
-                        ref.read(agentNameProvider.notifier).state = agent.name;
-                        ref.read(personaTextProvider.notifier).state =
-                            agent.role;
-                      },
-                    ),
-                  );
-                }).toList(),
+                ],
               );
             },
           ),
@@ -178,64 +153,164 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- New Section: Avatar & Branding ---
-  Widget _buildAvatarBrandingCard(
-      WidgetRef ref, AiAgent selectedAgent, String? customImagePath) {
-    // Determine the image source based on selection
-    final imagePath = selectedAgent.id == 'custom'
-        ? (customImagePath ?? 'assets/images/ai-sales-agent.jpg')
-        : selectedAgent.imagePath;
+  // --- 1. Agent Selection (Responsive Grid/Wrap) ---
+  Widget _buildAgentSelectionCard(
+      WidgetRef ref, String? selectedPresetId, BuildContext context) {
+    return AppCard(
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            // ... (Header row remains the same) ...
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(LucideIcons.bot, color: AppColors.primary, size: 16),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Choose a Preconfigured Agent',
+                  style: TextStyle(
+                      fontSize: Responsive.isMobile(context) ? 15 : 18,
+                      fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+              'Start with a preset to define your core avatar and persona.',
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+          const SizedBox(height: 16),
+
+          // Responsive layout implementation
+          Builder(builder: (context) {
+            // Mobile (2x2 Grid)
+            if (Responsive.isMobile(context)) {
+              return GridView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: presetAgents.length,
+                shrinkWrap: true,
+                primary: false,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16.0,
+                  mainAxisSpacing: 16.0,
+                  childAspectRatio: 0.5,
+                ),
+                itemBuilder: (context, index) {
+                  final agent = presetAgents[index];
+                  return PresetAgentCard(
+                    agent: agent,
+                    isSelected: agent.id == selectedPresetId,
+                    onTap: () {
+                      // Call notifier method
+                      ref.read(aiAgentProvider.notifier).selectPreset(agent);
+                    },
+                  );
+                },
+              );
+            }
+
+            // Desktop / Tablet (Fluid Wrap)
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                // ... (LayoutBuilder logic remains the same) ...
+                const double minWidth = 200;
+                const double spacing = 16.0;
+                final int crossAxisCount =
+                    (constraints.maxWidth / (minWidth + spacing))
+                        .floor()
+                        .clamp(2, 4);
+
+                final double totalSpacing = spacing * (crossAxisCount - 1);
+                final double cardWidth =
+                    (constraints.maxWidth - totalSpacing) / crossAxisCount;
+
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: presetAgents.map((agent) {
+                    return SizedBox(
+                      width: cardWidth,
+                      child: PresetAgentCard(
+                        agent: agent,
+                        isSelected: agent.id == selectedPresetId,
+                        onTap: () {
+                          // Call notifier method
+                          ref
+                              .read(aiAgentProvider.notifier)
+                              .selectPreset(agent);
+                        },
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // --- 2. Avatar Upload ---
+  Widget _buildAvatarUploadCard(WidgetRef ref, AgentConfig config,
+      File? localImageFile, BuildContext context) {
+    // Determine the image source
+    ImageProvider imageProvider;
+    if (localImageFile != null) {
+      // 1. Use local staged file
+      imageProvider = FileImage(localImageFile);
+    } else if (config.agentImage != null) {
+      // 2. Use URL from API
+      // Note: Use NetworkImage for http/https URLs, AssetImage for local assets
+      if (config.agentImage!.startsWith('http')) {
+        imageProvider = NetworkImage(config.agentImage!);
+      } else {
+        imageProvider = AssetImage(config.agentImage!);
+      }
+    } else {
+      // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
+      imageProvider = const AssetImage('assets/images/agent-david.jpg');
+    }
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.image, color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
-              Text('Avatar & Branding',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              const Icon(LucideIcons.user, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('Agent Avatar Configuration',
+                  style: TextStyle(
+                      fontSize: Responsive.isMobile(context) ? 15 : 18,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Image Preview
           Row(
             children: [
               CircleAvatar(
                 radius: 40,
-                backgroundImage: AssetImage(imagePath),
+                backgroundImage: imageProvider,
                 backgroundColor: AppColors.primary.withOpacity(0.1),
+                onBackgroundImageError: (exception, stackTrace) =>
+                    print('Failed to load image: $exception'),
               ),
               const SizedBox(width: 16),
-
-              // Custom Image Uploader (only visible for Custom Agent)
-              if (selectedAgent.id == 'custom')
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppButton(
-                      text: 'Upload from Gallery',
-                      icon: const Icon(LucideIcons.image),
-                      // Mock action for gallery upload
-                      onPressed: () => ref
-                          .read(customImagePathProvider.notifier)
-                          .state = 'assets/images/agent-david.jpg',
-                      style: AppButtonStyle.tertiary,
-                    ),
-                    const SizedBox(height: 8),
-                    AppButton(
-                      text: 'Take Photo with Camera',
-                      icon: const Icon(LucideIcons.camera),
-                      // Mock action for camera upload
-                      onPressed: () => ref
-                          .read(customImagePathProvider.notifier)
-                          .state = 'assets/images/agent-maya.jpg',
-                      style: AppButtonStyle.tertiary,
-                    ),
-                  ],
+              Expanded(
+                child: AppButton(
+                  text: 'Upload Agent Avatar',
+                  icon: const Icon(LucideIcons.image),
+                  onPressed: () => _pickImage(ref, ImageSource.gallery),
+                  style: AppButtonStyle.tertiary,
                 ),
+              ),
             ],
           ),
         ],
@@ -243,9 +318,9 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- Section 2: Agent Description ---
-  Widget _buildAgentDescriptionCard(WidgetRef ref, AiAgent selectedAgent,
-      String agentName, String personaText) {
+  // --- 3. Agent Description ---
+  Widget _buildAgentDescriptionCard(
+      WidgetRef ref, AgentConfig config, BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,76 +330,74 @@ class AIAgentScreen extends ConsumerWidget {
               const Icon(LucideIcons.pencil,
                   color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              const Text('Describe Agent',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-              const Spacer(),
-              // Hint Button (Only load preset if not custom, as tags handle custom roles)
-              if (selectedAgent.id != 'custom')
-                AppButton(
-                  text: 'Load Preset Role',
-                  onPressed: () {
-                    // Set the persona text to the selected preset's role description
-                    ref.read(personaTextProvider.notifier).state =
-                        selectedAgent.role;
-                  },
-                  color: AppColors.primary,
-                  style: AppButtonStyle.tertiary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
+              Text('Describe Agent',
+                  style: TextStyle(
+                      fontSize: Responsive.isMobile(context) ? 15 : 18,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
+
           // Agent Name Field
           AppTextField(
+            // FIX: Add key to force rebuild when config data changes
+            key: ValueKey('name_${config.agentName}'),
+            initialValue: config.agentName,
             labelText: 'Agent Name',
             hintText: 'e.g., Alex, Sarah',
-            initialValue: agentName,
-            onChanged: (val) {
-              ref.read(agentNameProvider.notifier).state = val;
-            },
+            // Call notifier method on change
+            onChanged: (val) =>
+                ref.read(aiAgentProvider.notifier).updateAgentName(val),
           ),
           const SizedBox(height: 16),
+
           // Agent Persona/Role Description Field
           AppTextField(
-            labelText: 'Agent Persona/Role Description',
+            // FIX: Add key to force rebuild when config data changes
+            key: ValueKey('persona_${config.agentPersona.hashCode}'),
+            initialValue: config.agentPersona,
+            labelText: 'Agent Persona / Role Description',
             hintText:
                 'Describe in detail how your agent should behave and what its core goal is.',
             maxLines: 8,
-            initialValue: personaText,
-            onChanged: (val) {
-              ref.read(personaTextProvider.notifier).state = val;
-            },
+            // Call notifier method on change
+            onChanged: (val) =>
+                ref.read(aiAgentProvider.notifier).updateAgentPersona(val),
           ),
           const SizedBox(height: 16),
-          // Dynamic Role Tags
-          _buildRoleTags(ref),
+          _buildRoleTags(ref, config.agentPersona),
         ],
       ),
     );
   }
 
-  // --- New Section: Dynamic Role Tags ---
-  Widget _buildRoleTags(WidgetRef ref) {
-    final currentPersona = ref.watch(personaTextProvider);
+  Widget _buildRoleTags(WidgetRef ref, String currentPersona) {
+    // This can remain as-is, as it just calls the notifier
+    final roleDescriptions = {
+      'Sales Lead':
+          'Act as an aggressive sales lead qualification specialist, asking targeted questions.',
+      'Customer Support':
+          'Act as a kind and patient customer support representative, focusing on solutions.',
+      'Technical Expert':
+          'Act as a highly knowledgeable technical expert, using precise and detailed language.',
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Select a Pre-defined Role Tag (Optional)',
+        const Text('Select a Pre-defined Role Tag ',
             style: TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,
           children: roleDescriptions.keys.map((tag) {
-            // FIX: Accessing roleDescriptions directly now that it's globally available/imported.
             final isSelected = currentPersona == roleDescriptions[tag];
             return InkWell(
               onTap: () {
-                // Set text box content to the role description for the selected tag
-                ref.read(personaTextProvider.notifier).state =
-                    roleDescriptions[tag]!;
+                ref
+                    .read(aiAgentProvider.notifier)
+                    .updateAgentPersona(roleDescriptions[tag]!);
               },
               child: AppBadge(
                 text: tag,
@@ -340,44 +413,130 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- Section 3: Live Branding Preview ---
-  Widget _buildLiveBrandingPreview(
-      AiAgent selectedAgent, String agentName, String? customImagePath) {
-    // Branding color is fixed based on selected agent/default if custom
-    final brandingColor = selectedAgent.primaryColor;
-    final imagePath = selectedAgent.id == 'custom'
-        ? (customImagePath ?? 'assets/images/ai-sales-agent.jpg')
-        : selectedAgent.imagePath;
+  // --- 4. Conversation Settings (Voice Model Removed) ---
+  Widget _buildConversationSettingsCard(
+      WidgetRef ref, AgentConfig config, BuildContext context) {
+    final selectedLanguageCode = config.preferredLanguages.isNotEmpty
+        ? config.preferredLanguages.first
+        : 'en';
 
-    return Column(
-      children: [
-        AppCard(
-          child: Column(
+    const List<Map<String, String>> availableLanguages = [
+      {'code': 'en', 'name': 'English'},
+      {'code': 'es', 'name': 'Spanish'},
+      {'code': 'fr', 'name': 'French'},
+      {'code': 'hi', 'name': 'Hindi'},
+      {'code': 'ja', 'name': 'Japanese'},
+      {'code': 'pt', 'name': 'Portuguese'},
+      {'code': 'de', 'name': 'German'},
+    ];
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.slidersHorizontal,
+                  color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('Conversation Settings',
+                  style: TextStyle(
+                      fontSize: Responsive.isMobile(context) ? 15 : 18,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Greeting Message
+          AppTextField(
+            initialValue: config.greetingMessage,
+            labelText: 'Agent Greeting Message',
+            hintText: 'e.g., Hello! How can I assist you today?',
+            maxLines: 2,
+            onChanged: (val) =>
+                ref.read(aiAgentProvider.notifier).updateGreetingMessage(val),
+          ),
+          const SizedBox(height: 16),
+
+          // Language and Tone Row
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Agent Branding',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
-              const SizedBox(height: 12),
-              // Chat Button Text
-              AppTextField(
-                labelText: 'Chat Button Text',
-                hintText: 'e.g., Talk to Alex',
-                // Using a generic variable name since provider storage is complex
-                initialValue: 'Chat with $agentName',
-                onChanged: (val) {
-                  // TODO: Store button text in a separate provider
-                },
+              Expanded(
+                child: AppDropdown<String>(
+                  labelText: 'Primary Language',
+                  value: selectedLanguageCode,
+                  items: availableLanguages.map((lang) {
+                    return DropdownMenuItem(
+                      value: lang['code']!,
+                      child: Text(lang['name']!),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      ref.read(aiAgentProvider.notifier).updateLanguage(val);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: AppDropdown<String>(
+                  labelText: 'Default Tone',
+                  value: config.conversationTone,
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'friendly', child: Text('Friendly')),
+                    DropdownMenuItem(
+                        value: 'professional', child: Text('Professional')),
+                    DropdownMenuItem(value: 'formal', child: Text('Formal')),
+                    DropdownMenuItem(value: 'casual', child: Text('Casual')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      ref.read(aiAgentProvider.notifier).updateTone(val);
+                    }
+                  },
+                ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 24),
-        // Chat Preview Widget
+          // --- Voice Model Dropdown REMOVED ---
+        ],
+      ),
+    );
+  }
+
+  // --- 5. Live Branding Preview (ChatPreview Fix) ---
+  Widget _buildLiveBrandingPreview(AgentConfig config, File? localImageFile) {
+    // Find the associated preset color, or use default
+    final preset = presetAgents.firstWhere(
+      (p) => p.name == config.agentName,
+      orElse: () => presetAgents.last, // Fallback color
+    );
+    final brandingColor = preset.primaryColor;
+
+    // FIX: Determine the correct STRING PATH for ChatPreview
+    String imagePath;
+    if (localImageFile != null) {
+      // 1. Use the path from the locally staged file
+      imagePath = localImageFile.path;
+    } else if (config.agentImage != null) {
+      // 2. Use the path from the config (could be asset or network URL)
+      imagePath = config.agentImage!;
+    } else {
+      // 3. Fallback
+      imagePath = 'assets/images/agent-david.jpg';
+    }
+
+    return Column(
+      children: [
         Expanded(
           child: AppCard(
             padding: EdgeInsets.zero,
             child: ChatPreview(
-              agentName: agentName,
+              agentName: config.agentName,
+              // FIX: Pass the 'agentImage' string path, not 'agentImageProvider'
               agentImage: imagePath,
               primaryColor: brandingColor,
             ),
@@ -387,90 +546,56 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- Utility Widgets (Reused from original) ---
-  Widget _buildLanguageAndToneCard() {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(LucideIcons.slidersHorizontal,
-                  color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
-              Text('Conversation Settings',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: AppDropdown<String>(
-                  labelText: 'Default Language',
-                  hint: const Text('Select a Language'),
-                  items: const [
-                    DropdownMenuItem(value: 'en', child: Text('English')),
-                    DropdownMenuItem(value: 'es', child: Text('Spanish')),
-                  ],
-                  onChanged: (val) {},
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AppDropdown<String>(
-                  labelText: 'Default Tone',
-                  // hint: const Text('Select a Tone'),
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'friendly', child: Text('Friendly')),
-                    DropdownMenuItem(value: 'formal', child: Text('Formal')),
-                  ],
-                  onChanged: (val) {},
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  // --- Action Buttons ---
-  Widget _buildActionButtons(WidgetRef ref) {
+  // --- 6. Action Buttons ---
+  Widget _buildActionButtons(WidgetRef ref, bool isSaving) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
         // Reset Button
-        AppButton(
-          text: 'Reset to Default',
-          onPressed: () {
-            // Reset all state providers to their initial first-agent values
-            ref.read(selectedAgentIdProvider.notifier).state =
-                presetAgents.first.id;
-            ref.read(agentNameProvider.notifier).state =
-                presetAgents.first.name;
-            ref.read(personaTextProvider.notifier).state =
-                presetAgents.first.role;
-          },
-          // FIX: Use style: AppButtonStyle.tertiary
-          style: AppButtonStyle.tertiary,
+        Expanded(
+          flex: 1,
+          child: AppButton(
+            text: 'Reset to Default',
+            // Disable reset button while saving
+            onPressed: isSaving
+                ? null
+                : () {
+                    // A full reset should re-fetch from the server
+                    ref.read(aiAgentProvider.notifier).fetchAgentConfig();
+                  },
+            style: AppButtonStyle.tertiary,
+          ),
         ),
         const SizedBox(width: 16),
         // Save Button
-        AppButton(
-          text: 'Save Changes',
-          onPressed: () {
-            // TODO: Implement save logic here, likely calling an AgentRepository method
-            final currentConfig = {
-              'agentId': ref.read(selectedAgentIdProvider),
-              'name': ref.read(agentNameProvider),
-              'persona': ref.read(personaTextProvider),
-            };
-            print('Saving Agent Configuration: $currentConfig');
-          },
+        Expanded(
+          flex: 1,
+          child: AppButton(
+            text: isSaving ? 'Saving...' : 'Save Changes',
+            onPressed: isSaving
+                ? null
+                : () async {
+                    // Show snackbar on success/error
+                    final scaffoldMessenger = ScaffoldMessenger.of(ref.context);
+                    try {
+                      await ref
+                          .read(aiAgentProvider.notifier)
+                          .saveAgentConfig();
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Configuration Saved!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (e) {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text('❌ Save failed: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+          ),
         ),
       ],
     );
