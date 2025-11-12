@@ -30,18 +30,36 @@ def create_template(template_in: TemplateCreate, db: Session = Depends(get_db)):
                 "details": ["Tenant not found"]
             }
         )
+    template = db.query(Template).filter(
+        Template.tenant_id == template_in.tenant_id,
+        Template.name == template_in.name).first()
+    if template:
+        return build_response(
+            success=False,
+            message="Template with the same name already exists for this tenant",
+            error={
+                "code": "DUPLICATE_TEMPLATE",
+                "details": ["A template with this name already exists"]
+            }
+        )
 
     try:
-        new_template = Template(**template_in.model_dump())
-        db.add(new_template)
+        template = Template(**template_in.model_dump())
+        db.add(template)
         db.commit()
-        db.refresh(new_template)
+        db.refresh(template)
 
         response_data = TemplateResponse(
-            id=new_template.id,
-            title=new_template.name,
-            content=new_template.body,
-            created_at=new_template.created_at
+            id=template.id,
+            tenant_id=template.tenant_id,
+            language=template.language,
+            category=template.category,
+            name=template.name,
+            body=template.body,
+            status=template.status,
+            type=template.type,
+            created_at=template.created_at,
+            updated_at=template.updated_at,
         )
         return build_response(
             success=True,
@@ -115,9 +133,15 @@ def update_template(
         db.refresh(template)
         response_data = TemplateResponse(
             id=template.id,
-            title=template.name,
-            content=template.body,
-            created_at=template.created_at
+            tenant_id=template.tenant_id,
+            language=template.language,
+            category=template.category,
+            name=template.name,
+            body=template.body,
+            status=template.status,
+            type=template.type,
+            created_at=template.created_at,
+            updated_at=template.updated_at
         )
         return build_response(
             success=True,
@@ -167,7 +191,7 @@ def delete_template(template_id: int, db: Session = Depends(get_db)):
             error={"code": "DELETE_ERROR", "details": [str(e)]}
         )
     
-@router.get("get_templates_list", response_model=TemplatesListAPIResponse)
+@router.get("/get_templates_list", response_model=TemplatesListAPIResponse)
 def get_templates_by_tenant(
     tenant_id: int,
     db: Session = Depends(get_db)

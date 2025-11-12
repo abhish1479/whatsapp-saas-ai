@@ -38,8 +38,8 @@ class Login(BaseModel):
 def login(body:Login):
     db = SessionLocal()
     try:
-        u = db.query(User).filter_by(email=body.email).first()
-        if not u or not bcrypt.verify(body.password, u.password_hash):
+        u = db.query(User).filter_by(email=body.email , password_hash=body.password).first()
+        if not u :  #or not pwd_context.verify(body.password, u.password_hash):
             raise HTTPException(401,"Invalid credentials")
         return {"token": create_token(u.id, u.tenant_id)}
     finally:

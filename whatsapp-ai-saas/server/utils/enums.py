@@ -20,20 +20,20 @@ class SourceTypeEnum(enum.Enum):
     FILE = "FILE"
     URL = "URL"
 
-class ProcessingStatusEnum(enum.Enum):
+class ProcessingStatusEnum(str,enum.Enum):
     PENDING = "Pending"
     PROCESSING = "Processing"
     COMPLETED = "Completed"
     FAILED = "Failed"
 
 
-class TemplateStatusEnum(enum.Enum):
+class TemplateStatusEnum(str,enum.Enum):
     DRAFT = "Draft"
     SUBMITTED = "Submitted"
     ACTIVATED = "Activated"
     DEACTIVATED = "Deactivated"
 
 
-class TemplateTypeEnum(enum.Enum):
+class TemplateTypeEnum(str,enum.Enum):
     INBOUND = "Inbound"
     OUTBOUND = "Outbound"
