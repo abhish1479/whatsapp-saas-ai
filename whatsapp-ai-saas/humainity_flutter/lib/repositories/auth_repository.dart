@@ -13,6 +13,12 @@ class AuthRepository {
     }
     return url;
   }
+  
+  // NEW: For App Hydration - Check if a token is present
+  Future<bool> getAuthStatus() async {
+    final token = await _store.getToken();
+    return token != null && token.isNotEmpty;
+  }
 
   Future<void> signIn(String email, String password) async {
     final url = Uri.parse('$_baseUrl/auth/login');
@@ -89,7 +95,7 @@ class AuthRepository {
   }
 
   Future<void> _handleAuthResponse(Map<String, dynamic> data) async {
-    final token = data['token'];
+    final token = data['access_token'];
     if (token == null || token.toString().isEmpty) {
       throw Exception('Missing token in response');
     }
@@ -113,8 +119,12 @@ class AuthRepository {
   String _safeError(http.Response res, String context) {
     try {
       final body = jsonDecode(res.body);
-      return body['error']?.toString() ?? '$context (${res.statusCode})';
+      return body['message']?.toString() ?? body['error']?.toString() ?? '$context (${res.statusCode})';
     } catch (_) {
+      // Fallback for non-JSON or unexpected body
+      if (res.statusCode >= 500) {
+        return 'Server error (${res.statusCode}). Please try again later.';
+      }
       return '$context (${res.statusCode})';
     }
   }

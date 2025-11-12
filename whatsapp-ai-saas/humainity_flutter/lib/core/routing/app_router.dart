@@ -35,23 +35,27 @@ final routerProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) => const NotFoundScreen(),
 
     /// Refresh router whenever auth state changes
-   refreshListenable: GoRouterRefreshStream(
-  ref.watch(authNotifierProvider.notifier).streamController.stream,
-),
+    refreshListenable: GoRouterRefreshStream(
+      ref.watch(authNotifierProvider.notifier).streamController.stream,
+    ),
 
     redirect: (BuildContext context, GoRouterState state) {
+      if (!authState.isInitialized) return null;
       final bool isLoggedIn = authState.isAuthenticated;
-      final bool isAuthRoute = state.matchedLocation == '/auth';
-      final bool isDashboardRoute =
-          state.matchedLocation.startsWith('/dashboard');
+      final String location = state.matchedLocation;
+      // Define public routes that should be inaccessible when logged in
+      final bool isPublicRoute = location == '/' || location == '/auth';
+      final bool isDashboardRoute = location.startsWith('/dashboard');
+      // 2. If NOT logged in, redirect dashboard routes to auth.
+      if (!isLoggedIn && isDashboardRoute) {
+        return '/auth';
+      }
+     // 3. If IS logged in, redirect public routes ('/' and '/auth') to dashboard.
+      if (isLoggedIn && isPublicRoute) {
+        return '/dashboard';
+      }
 
-      // If not logged in, redirect away from dashboard routes
-      if (!isLoggedIn && isDashboardRoute) return '/auth';
-
-      // If logged in and at /auth, redirect to dashboard
-      if (isLoggedIn && isAuthRoute) return '/dashboard';
-
-      return null; // No redirect needed
+      return null; 
     },
 
     routes: [
