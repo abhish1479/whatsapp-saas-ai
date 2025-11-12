@@ -17,6 +17,16 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     libasound2 \
     ca-certificates \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxss1 \
+    libxt6 \
+    libpango-1.0-0 \
+    libcairo2 \
+    fonts-liberation \
+    libappindicator3-1 \
+    libdrm2 \
+    libxshmfence1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY server/requirements.txt .

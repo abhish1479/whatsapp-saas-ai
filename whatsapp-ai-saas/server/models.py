@@ -4,7 +4,7 @@ from sqlalchemy import UUID, Column, Enum, Float, Index, Integer, Numeric, Strin
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
-from utils.enums import Onboarding, ProcessingStatusEnum, SourceTypeEnum
+from utils.enums import Onboarding, ProcessingStatusEnum, SourceTypeEnum , TemplateStatusEnum , TemplateTypeEnum
 
 class Timestamp:
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -109,7 +109,7 @@ class WalletTx(Base):
     ref_id = Column(String)
     created_at = Column(DateTime, server_default=func.now())
 
-class Template(Base):
+class Template(Timestamp,Base):
     __tablename__ = "templates"
     id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
@@ -117,7 +117,9 @@ class Template(Base):
     language = Column(String, default="en")
     category = Column(String, default="MARKETING")
     body = Column(Text, nullable=False)
-    status = Column(String, default="draft")
+    status = Column(Enum(TemplateStatusEnum), nullable=False, default=TemplateStatusEnum.DRAFT, index=True)
+    type = Column(Enum(TemplateTypeEnum), nullable=False, index=True)
+
 
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"

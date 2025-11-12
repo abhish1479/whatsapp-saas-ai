@@ -10,6 +10,7 @@ class KnowledgeSource {
   final List<String> tags;
   final int? sizeBytes;
   final String? processingError;
+  final String? summary;
 
   KnowledgeSource({
     required this.id,
@@ -21,6 +22,7 @@ class KnowledgeSource {
     required this.tags,
     this.sizeBytes,
     this.processingError,
+    this.summary
   });
 
   factory KnowledgeSource.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class KnowledgeSource {
       tags: List<String>.from(json['tags']?.map((e) => e.toString()) ?? []),
       sizeBytes: json['size_bytes'],
       processingError: json['processing_error'],
+      summary: json['summary'],
     );
   }
 
@@ -60,7 +63,8 @@ class KnowledgeSource {
         other.processingStatus == processingStatus &&
         listEquals(other.tags, tags) &&
         other.sizeBytes == sizeBytes &&
-        other.processingError == processingError;
+        other.processingError == processingError &&
+        other.summary == summary;
   }
 
   @override
@@ -74,5 +78,6 @@ class KnowledgeSource {
     tags.hashCode ^
     sizeBytes.hashCode ^
     processingError.hashCode;
+    summary.hashCode;
   }
 }

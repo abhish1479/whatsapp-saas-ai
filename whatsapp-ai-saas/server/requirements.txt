@@ -1,7 +1,7 @@
 fastapi==0.114.2
 uvicorn[standard]==0.30.6
 python-multipart==0.0.9
-pydantic==2.9.2
+pydantic
 SQLAlchemy==2.0.35
 psycopg2-binary==2.9.9
 redis==5.0.8
@@ -37,3 +37,4 @@ rq==1.16.2
 pandas
 PyMuPDF
 python-docx
+crawl4ai>=0.7.6

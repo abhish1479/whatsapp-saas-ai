@@ -21,7 +21,19 @@ class SourceTypeEnum(enum.Enum):
     URL = "URL"
 
 class ProcessingStatusEnum(enum.Enum):
-    PENDING = "PENDING"
-    PROCESSING = "PROCESSING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
+    PENDING = "Pending"
+    PROCESSING = "Processing"
+    COMPLETED = "Completed"
+    FAILED = "Failed"
+
+
+class TemplateStatusEnum(enum.Enum):
+    DRAFT = "Draft"
+    SUBMITTED = "Submitted"
+    ACTIVATED = "Activated"
+    DEACTIVATED = "Deactivated"
+
+
+class TemplateTypeEnum(enum.Enum):
+    INBOUND = "Inbound"
+    OUTBOUND = "Outbound"

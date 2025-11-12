@@ -48,4 +48,8 @@ Thumbs.db
 *.zip 
 *.zip 
 
-data/
+data/chroma
+media/
+linux/
+macos/
+windows/

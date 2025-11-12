@@ -133,7 +133,8 @@ async def upload_url(
     db.refresh(db_source)
     
     # 2. Add the scraping job to the Redis Queue
-    web_queue = queue_manager.get_queue("web_crwalling")
+    # web_queue = queue_manager.get_queue("web_crwalling")
+    web_queue = queue_manager.get_queue("file_processing")
 
     web_queue.enqueue(
         process_url_job,
@@ -169,3 +170,29 @@ async def get_knowledge_sources(
         message=f"Found {len(sources)} knowledge sources." if sources else "No knowledge sources found."
     )
 
+
+@router.post("/test")
+async def upload_url(
+    id: int
+):
+    await process_url_job(id)
+    
+
+@router.post("/upload_file_test")
+async def upload_file_test(file: UploadFile = File(...)):
+    from utils.file_extractor import FileExtractor
+
+    # Read file content as bytes
+    file_bytes = await file.read()
+    
+    # Extract text using both bytes and filename
+    extracted_text = FileExtractor.extract_text(file_bytes, file.filename)
+    
+    return {"text": extracted_text}
+
+
+@router.post("/web_crawl_test")
+async def web_crawl_test(url: str):
+    from utils.web_crawler import scrape_single_page
+    extracted_text = await scrape_single_page(url)
+    return {"text": extracted_text}

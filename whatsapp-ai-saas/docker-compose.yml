@@ -47,32 +47,32 @@ services:
       volumes:
         - ./data/chroma:/data/chroma
 
-  worker:
-    container_name: wa_worker
-    build:
-      context: .                   # build from project root
-      dockerfile: server/Dockerfile
-    command: python -m workers.webhook_worker
-    env_file:
-      - .env
-    environment:         
-      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
-      REDIS_URL: redis://redis:6379/0
-      WEBHOOK_QUEUE: wh_inbound_queue
-      CHROMA_PATH: /data/chroma
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      server:
-        condition: service_started
-    volumes:
-      - ./data/chroma:/data/chroma
+  # worker:
+  #   container_name: wa_worker
+  #   build:
+  #     context: .                   # build from project root
+  #     dockerfile: server/Dockerfile
+  #   command: python -m workers.webhook_worker
+  #   env_file:
+  #     - .env
+  #   environment:         
+  #     DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+  #     REDIS_URL: redis://redis:6379/0
+  #     WEBHOOK_QUEUE: wh_inbound_queue
+  #     CHROMA_PATH: /data/chroma
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     server:
+  #       condition: service_started
+  #   volumes:
+  #     - ./data/chroma:/data/chroma
   
   flutter_web:
     build:
-      context: ./flutter_onboarding
+      context: ./humainity_flutter
       dockerfile: Dockerfile
       args:
         API_HOST: localhost
