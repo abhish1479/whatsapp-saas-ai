@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-// *** REFACTOR *** - Import new auth provider
 import 'package:humainity_flutter/core/providers/auth_provider.dart';
 import 'package:humainity_flutter/screens/auth/auth_screen.dart';
 import 'package:humainity_flutter/screens/dashboard/actions_screen.dart';
@@ -23,43 +23,37 @@ import 'package:humainity_flutter/screens/home/home_screen.dart';
 import 'package:humainity_flutter/screens/industries/industries_screen.dart';
 import 'package:humainity_flutter/screens/industries/industry_detail_screen.dart';
 import 'package:humainity_flutter/screens/not_found_screen.dart';
-import 'dart:async'; // Import for StreamSubscription
 
-final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'DashboardShell');
+final _shellNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'DashboardShell');
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // *** REFACTOR *** - Watch the new authStateProvider
-  final authState = ref.watch(authStateProvider);
+  final authState = ref.watch(authNotifierProvider);
 
   return GoRouter(
     initialLocation: '/',
     errorBuilder: (context, state) => const NotFoundScreen(),
-    // This refreshListenable will re-run the redirect logic whenever
-    // the auth state changes (login, logout).
-    // *** FIX: Pass the stream *from* the provider, not the provider itself ***
-    refreshListenable: GoRouterRefreshStream(ref.watch(authStateProvider.stream)),
+
+    /// Refresh router whenever auth state changes
+   refreshListenable: GoRouterRefreshStream(
+  ref.watch(authNotifierProvider.notifier).streamController.stream,
+),
+
     redirect: (BuildContext context, GoRouterState state) {
-      // *** REFACTOR *** - Use the new auth state stream
-      // We can use authState.value directly since the provider is watched
-      final session = authState.value?.session;
-      final bool isLoggedIn = session != null;
-
+      final bool isLoggedIn = authState.isAuthenticated;
       final bool isAuthRoute = state.matchedLocation == '/auth';
-      final bool isDashboardRoute = state.matchedLocation.startsWith('/dashboard');
+      final bool isDashboardRoute =
+          state.matchedLocation.startsWith('/dashboard');
 
-      // If user is not logged in and is trying to access dashboard, redirect to auth
-      if (!isLoggedIn && isDashboardRoute) {
-        return '/auth';
-      }
+      // If not logged in, redirect away from dashboard routes
+      if (!isLoggedIn && isDashboardRoute) return '/auth';
 
-      // If user is logged in and is on the auth page, redirect to dashboard
-      if (isLoggedIn && isAuthRoute) {
-        return '/dashboard';
-      }
+      // If logged in and at /auth, redirect to dashboard
+      if (isLoggedIn && isAuthRoute) return '/dashboard';
 
-      // No redirect needed
-      return null;
+      return null; // No redirect needed
     },
+
     routes: [
       GoRoute(
         path: '/',
@@ -79,7 +73,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           industryId: state.pathParameters['industryId']!,
         ),
       ),
-      // Dashboard Shell Route
+
+      // ----- Dashboard Shell -----
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
@@ -154,13 +149,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// Helper class to bridge Riverpod Stream to GoRouter's Listenable
+/// ✅ Helper to rebuild GoRouter when Riverpod provider emits new state
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
     _subscription = stream.asBroadcastStream().listen(
-          (dynamic _) => notifyListeners(),
-    );
+          (_) => notifyListeners(),
+        );
   }
 
   late final StreamSubscription<dynamic> _subscription;
