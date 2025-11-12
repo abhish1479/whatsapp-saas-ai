@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humainity_flutter/core/routing/app_router.dart';
 import 'package:humainity_flutter/core/theme/app_theme.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
@@ -11,12 +13,38 @@ Future<void> main() async {
   // Load environment variables
   await dotenv.load(fileName: ".env");
 
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: dotenv.env['VITE_SUPABASE_URL']!,
-    anonKey: dotenv.env['VITE_SUPABASE_PUBLISHABLE_KEY']!,
-  );
+  // Initialize Supabase first (so any provider that calls Supabase.instance works)
+   try {
+    await Supabase.initialize(
+      url: dotenv.env['VITE_SUPABASE_URL']!,
+      anonKey: dotenv.env['VITE_SUPABASE_PUBLISHABLE_KEY']!,
+    );
+    debugPrint('✅ Supabase initialized');
+  } catch (e) {
+    debugPrint('⚠️ Supabase init failed: $e');
+  }
 
+// ✅ Initialize Firebase
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyBXal3rxC8vav5BvxJqoHUqHLN_yoeV9Bw",
+          authDomain: "whatsapp-saas-3ed90.firebaseapp.com",
+          projectId: "whatsapp-saas-3ed90",
+          storageBucket: "whatsapp-saas-3ed90.firebasestorage.app",
+          messagingSenderId: "734195415255",
+          appId: "1:734195415255:web:ca824a4e8a3a97d091d892",
+          measurementId: "G-WNVHGN378H",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
+    debugPrint('✅ Firebase initialized');
+  } catch (e) {
+    debugPrint('⚠️ Firebase init failed: $e');
+  }
   runApp(
     const ProviderScope(
       child: MyApp(),

@@ -1,82 +1,85 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/supabase_provider.dart';
 import 'package:humainity_flutter/repositories/auth_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Provider for the AuthRepository
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final client = ref.watch(supabaseClientProvider);
-  return AuthRepository(client);
-});
-
-// StreamProvider for the real-time auth state
-final authStateProvider = StreamProvider<AuthState>((ref) {
-  return ref.watch(supabaseClientProvider).auth.onAuthStateChange;
-});
-
-// State for the AuthNotifier (tracking loading/errors)
-class AuthScreenState {
+class AuthState {
+  final bool isAuthenticated;
   final bool isLoading;
   final String? error;
+  const AuthState({required this.isAuthenticated, this.isLoading = false, this.error});
 
-  AuthScreenState({this.isLoading = false, this.error});
+  AuthState copyWith({bool? isAuthenticated, bool? isLoading, String? error}) =>
+      AuthState(
+        isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+        isLoading: isLoading ?? this.isLoading,
+        error: error,
+      );
 
-  AuthScreenState copyWith({bool? isLoading, String? error}) {
-    return AuthScreenState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-    );
-  }
+  factory AuthState.initial() => const AuthState(isAuthenticated: false);
 }
 
-// Notifier for handling auth actions (login, signup)
-class AuthNotifier extends StateNotifier<AuthScreenState> {
-  final AuthRepository _repository;
+class AuthNotifier extends StateNotifier<AuthState> {
+  final AuthRepository _repo;
+  final StreamController<AuthState> streamController = StreamController<AuthState>.broadcast();
 
-  AuthNotifier(this._repository) : super(AuthScreenState());
+  AuthNotifier(this._repo) : super(AuthState.initial());
+
+  void _emit(AuthState newState) {
+    state = newState;
+    streamController.add(newState);
+  }
 
   Future<void> signIn(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _emit(state.copyWith(isLoading: true, error: null));
     try {
-      await _repository.signIn(email, password);
-      state = state.copyWith(isLoading: false);
+      await _repo.signIn(email, password);
+      _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      // Rethrow to be caught by the UI if needed
-      rethrow;
+      _emit(state.copyWith(error: e.toString(), isAuthenticated: false, isLoading: false));
     }
   }
 
   Future<void> signUp({
     required String email,
     required String password,
-    required Map<String, dynamic> data,
+    required String businessName,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _emit(state.copyWith(isLoading: true, error: null));
     try {
-      await _repository.signUp(email: email, password: password, data: data);
-      state = state.copyWith(isLoading: false);
+      await _repo.signUp(email: email, password: password, businessName: businessName);
+      _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
+      _emit(state.copyWith(error: e.toString(), isAuthenticated: false, isLoading: false));
     }
   }
 
-  Future<void> signOut() async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> signInWithGoogle(String idToken, bool isLogin) async {
+    _emit(state.copyWith(isLoading: true, error: null));
     try {
-      await _repository.signOut();
-      state = state.copyWith(isLoading: false);
+      await _repo.socialSignIn(
+        idToken: idToken,
+        provider: 'google',
+        isLogin: isLogin,
+      );
+      _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
+      _emit(state.copyWith(error: e.toString(), isAuthenticated: false, isLoading: false));
     }
+  }
+
+
+  Future<void> signOut() async {
+    await _repo.signOut();
+    _emit(state.copyWith(isAuthenticated: false));
+  }
+
+  @override
+  void dispose() {
+    streamController.close();
+    super.dispose();
   }
 }
 
-// Provider for the AuthNotifier
-final authNotifierProvider =
-StateNotifierProvider<AuthNotifier, AuthScreenState>((ref) {
-  final repository = ref.watch(authRepositoryProvider);
-  return AuthNotifier(repository);
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier(AuthRepository());
 });

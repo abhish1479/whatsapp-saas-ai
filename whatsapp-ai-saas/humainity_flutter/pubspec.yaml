@@ -20,14 +20,17 @@ dependencies:
   flutter_colorpicker: ^1.0.3
   toggle_switch: ^2.3.0
   dotted_border: ^2.1.0 # <-- ADD THIS LINE
+  firebase_core: ^4.1.1
+  firebase_auth: ^6.1.0
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^6.2.0
+  universal_html: ^2.2.4
   http: ^1.2.1
   provider: ^6.0.5
   image_picker: ^1.0.7
   file_picker: ^8.0.6
   http_parser: ^4.0.2
   shared_preferences: ^2.5.3
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
