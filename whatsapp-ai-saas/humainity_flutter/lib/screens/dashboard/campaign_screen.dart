@@ -299,14 +299,14 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
             ],
           ),
           const SizedBox(height: 16),
-          AppDropdown<String>(
-            labelText: 'Message Template',
-            hint: const Text('Select a template'),
-            value: _templateId,
-            onChanged: (val) => setState(() => _templateId = val),
-            items: templateItems,
-            validator: (val) => val == null ? 'Template is required' : null,
-          ),
+          // AppDropdown<String>(
+          //   labelText: 'Message Template',
+          //   hint: const Text('Select a template'),
+          //   value: _templateId,
+          //   onChanged: (val) => setState(() => _templateId = val),
+          //   items: templateItems,
+          //   validator: (val) => val == null ? 'Template is required' : null,
+          // ),
           const SizedBox(height: 16),
           AppDropdown<String>(
             labelText: 'Initial Status',

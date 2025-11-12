@@ -15,15 +15,15 @@ final campaignsRepositoryProvider = Provider<CampaignsRepository>((ref) {
 
 // Provider for the TemplatesRepository
 // This can be defined here or in a dedicated templates_provider.dart if it doesn't exist
-final templatesRepositoryProvider = Provider<TemplatesRepository>((ref) {
-  final supabase = ref.watch(supabaseClientProvider);
-  return TemplatesRepository(supabase);
-});
+// final templatesRepositoryProvider = Provider<templatesRepositoryProvider>((ref) {
+//   final repository = ref.watch(templatesRepositoryProvider);
+//   return TemplatesRepository(repository);
+// });
 
 // 1. State (Unchanged)
 class CampaignsState {
   final List<Campaign> campaigns;
-  final List<MessageTemplate> templates;
+  final List<Template> templates;
   final bool isLoading;
   final String? error;
 
@@ -36,7 +36,7 @@ class CampaignsState {
 
   CampaignsState copyWith({
     List<Campaign>? campaigns,
-    List<MessageTemplate>? templates,
+    List<Template>? templates,
     bool? isLoading,
     String? error,
   }) {
@@ -68,13 +68,13 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
       // *** REFACTOR *** - Use repository methods
       final campaignsFuture = _campaignsRepository.fetchCampaigns();
       final templatesFuture =
-      _templatesRepository.fetchTemplates(type: 'outbound');
+      _templatesRepository.getTemplates("1");
 
       final results = await Future.wait([campaignsFuture, templatesFuture]);
 
       state = state.copyWith(
         campaigns: results[0] as List<Campaign>,
-        templates: results[1] as List<MessageTemplate>,
+        templates: results[1] as List<Template>,
         isLoading: false,
       );
     } catch (e) {
@@ -95,7 +95,7 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
   Future<void> fetchTemplates() async {
     try {
       // *** REFACTOR ***
-      final templates = await _templatesRepository.fetchTemplates(type: 'outbound');
+      final templates = await _templatesRepository.getTemplates("1");
       state = state.copyWith(templates: templates, error: null);
     } catch (e) {
       state = state.copyWith(error: e.toString());

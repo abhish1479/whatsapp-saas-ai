@@ -1,104 +1,130 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/campaigns_provider.dart'; // Import for repo provider
 import 'package:humainity_flutter/models/template.dart';
-import 'package:humainity_flutter/repositories/templates_repository.dart'; // Import repository
+import 'package:humainity_flutter/repositories/templates_repository.dart';
+import 'package:humainity_flutter/core/storage/store_user_data.dart'; // Import storage service
 
-// 1. State (Unchanged)
+// 1. Define the State
 class TemplatesState {
-  final List<MessageTemplate> templates;
   final bool isLoading;
   final String? error;
+  final List<Template> inboundTemplates;
+  final List<Template> outboundTemplates;
 
   TemplatesState({
-    this.templates = const [],
     this.isLoading = false,
     this.error,
+    this.inboundTemplates = const [],
+    this.outboundTemplates = const [],
   });
 
   TemplatesState copyWith({
-    List<MessageTemplate>? templates,
     bool? isLoading,
     String? error,
+    List<Template>? inboundTemplates,
+    List<Template>? outboundTemplates,
   }) {
     return TemplatesState(
-      templates: templates ?? this.templates,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error ?? this.error,
+      inboundTemplates: inboundTemplates ?? this.inboundTemplates,
+      outboundTemplates: outboundTemplates ?? this.outboundTemplates,
     );
   }
 }
 
-// 2. Notifier (Refactored to use Repository)
+// 2. Create the Notifier
 class TemplatesNotifier extends StateNotifier<TemplatesState> {
-  // *** REFACTOR ***
-  final Ref _ref;
+  final TemplatesRepository _repository;
+  final StoreUserData _storage; // Add storage service
 
-  TemplatesNotifier(this._ref) : super(TemplatesState()) {
-    fetchTemplates();
+  TemplatesNotifier(this._repository, this._storage) : super(TemplatesState()) {
+    loadTemplates(); // Load templates on initialization
   }
 
-  Future<void> fetchTemplates() async {
-    state = state.copyWith(isLoading: true);
+  // Helper to get tenantId or set error
+  Future<String?> _getTenantId() async {
+    final tenantId = await _storage.getTenantId();
+    if (tenantId == null) {
+      state = state.copyWith(isLoading: false, error: 'User not logged in. Tenant ID missing.');
+      return null;
+    }
+    return tenantId;
+  }
+
+  Future<void> loadTemplates() async {
     try {
-      // *** REFACTOR ***
-      // We can re-use the provider defined in campaigns_provider.dart
-      final templates =
-      await _ref.read(templatesRepositoryProvider).fetchTemplates();
-      state = state.copyWith(templates: templates, isLoading: false, error: null);
+      state = state.copyWith(isLoading: true, error: null);
+      final tenantId = await _getTenantId();
+      if (tenantId == null) return; // Error already set
+
+      final allTemplates = await _repository.getTemplates(tenantId);
+
+      final inbound = allTemplates
+          .where((t) => t.type == TemplateType.INBOUND)
+          .toList();
+      final outbound = allTemplates
+          .where((t) => t.type == TemplateType.OUTBOUND)
+          .toList();
+
+      state = state.copyWith(
+        isLoading: false,
+        inboundTemplates: inbound,
+        outboundTemplates: outbound,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<MessageTemplate> fetchTemplateById(String id) async {
+  Future<bool> addTemplate(Map<String, dynamic> data) async {
     try {
-      // *** REFACTOR ***
-      final template =
-      await _ref.read(templatesRepositoryProvider).fetchTemplateById(id);
-      return template;
+      state = state.copyWith(isLoading: true, error: null);
+      final tenantId = await _getTenantId();
+      if (tenantId == null) return false; // Error already set
+
+      await _repository.createTemplate(tenantId, data);
+      await loadTemplates(); // Refresh the list
+      return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      rethrow;
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
     }
   }
 
-  // *** FIX: Added saveTemplate method ***
-  Future<void> saveTemplate(Map<String, dynamic> formData, String? id) async {
+  Future<bool> editTemplate(int templateId, Map<String, dynamic> data) async {
     try {
-      await _ref.read(templatesRepositoryProvider).saveTemplate(formData, id);
-      // Refresh the list
-      await fetchTemplates();
+      state = state.copyWith(isLoading: true, error: null);
+      // No tenantId needed for update, but we can keep the loading state
+      await _repository.updateTemplate(templateId, data);
+      await loadTemplates(); // Refresh the list
+      return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      rethrow;
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
     }
   }
 
-  // *** FIX: Added deleteTemplate method ***
-  Future<void> deleteTemplate(String id) async {
+  Future<void> removeTemplate(int templateId) async {
     try {
-      await _ref.read(templatesRepositoryProvider).deleteTemplate(id);
-      // Refresh the list by removing the item locally (faster)
+      // Optimistic update: remove from UI first
       state = state.copyWith(
-          templates: state.templates.where((t) => t.id != id).toList()
+        inboundTemplates: state.inboundTemplates.where((t) => t.id != templateId).toList(),
+        outboundTemplates: state.outboundTemplates.where((t) => t.id != templateId).toList(),
+        error: null,
       );
+      // No tenantId needed for delete
+      await _repository.deleteTemplate(templateId);
     } catch (e) {
       state = state.copyWith(error: e.toString());
-      rethrow;
+      // If delete failed, reload to get the item back
+      await loadTemplates();
     }
   }
 }
 
-// 3. Provider (Unchanged)
-final templatesProvider =
-StateNotifierProvider<TemplatesNotifier, TemplatesState>((ref) {
-  return TemplatesNotifier(ref);
-});
-
-// Provider for a single template (Unchanged)
-final templateProvider =
-FutureProvider.autoDispose.family<MessageTemplate, String>((ref, id) async {
-  // *** REFACTOR ***
-  // We can't use the Notifier's method directly, so we call the repo
-  return ref.watch(templatesRepositoryProvider).fetchTemplateById(id);
+// 3. Define the Provider
+final templatesProvider = StateNotifierProvider<TemplatesNotifier, TemplatesState>((ref) {
+  final repository = ref.watch(templatesRepositoryProvider);
+  final storage = StoreUserData(); // Get storage service
+  return TemplatesNotifier(repository, storage);
 });

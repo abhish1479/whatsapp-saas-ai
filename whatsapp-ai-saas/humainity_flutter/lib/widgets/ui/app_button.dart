@@ -5,7 +5,7 @@ import 'package:humainity_flutter/core/theme/app_colors.dart';
 enum AppButtonVariant { primary, outline, ghost, secondary, destructive, link }
 
 // Use this enum for simplified styling requested by the user, mapping to standard variants.
-enum AppButtonStyle { primary, secondary, tertiary }
+enum AppButtonStyle { primary, secondary, tertiary ,destructive}
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -48,6 +48,9 @@ class AppButton extends StatelessWidget {
       case AppButtonStyle.tertiary:
         // Tertiary often means low emphasis, similar to an outlined style.
         return AppButtonVariant.outline;
+      case AppButtonStyle.destructive:
+        return AppButtonVariant.destructive;
+
     }
   }
 
