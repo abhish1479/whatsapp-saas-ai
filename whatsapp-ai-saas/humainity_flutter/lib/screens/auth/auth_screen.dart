@@ -105,36 +105,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
   }
 
- Future<void> _handleGoogleAuth() async {
-  setState(() => _isLoading = true);
-  try {
-    String? idToken = '';
-    if (kIsWeb) {
-      final provider = GoogleAuthProvider();
-      final cred = await FirebaseAuth.instance.signInWithPopup(provider);
-      idToken = await cred.user!.getIdToken();
-    } else {
-      final googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) throw Exception('Sign-in cancelled');
-      final googleAuth = await googleUser.authentication;
-      idToken = googleAuth.idToken ?? '';
+  Future<void> _handleGoogleAuth() async {
+    setState(() => _isLoading = true);
+    try {
+      String? idToken = '';
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        final cred = await FirebaseAuth.instance.signInWithPopup(provider);
+        idToken = await cred.user!.getIdToken();
+      } else {
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) throw Exception('Sign-in cancelled');
+        final googleAuth = await googleUser.authentication;
+        idToken = googleAuth.idToken ?? '';
+      }
+
+      if (idToken!.isEmpty) throw Exception('No ID token received');
+
+      final notifier = ref.read(authNotifierProvider.notifier);
+      await notifier.signInWithGoogle(idToken, _isLogin);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-In error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    if (idToken!.isEmpty) throw Exception('No ID token received');
-
-    final notifier = ref.read(authNotifierProvider.notifier);
-    await notifier.signInWithGoogle(idToken, _isLogin);
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Google Sign-In error: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -360,7 +360,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 ),
               ),
 
-              // ---- Divider + Google button (added patch) ----
+              // ---- Divider + Google button ----
               const SizedBox(height: 16),
               const Text(
                 'OR CONTINUE WITH',
@@ -400,12 +400,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   ),
                 ),
               ),
-              // ---- end patch ----
+              // ---- end google button ----
 
               const SizedBox(height: 16),
               TextButton(
-                onPressed:
-                    _isLoading ? null : () => setState(() => _isLogin = !_isLogin),
+                onPressed: _isLoading
+                    ? null
+                    : () => setState(() {
+                          _isLogin = !_isLogin;
+                          _formKey.currentState?.reset();
+                        }),
                 child: Text(
                   _isLogin
                       ? "Don't have an account? Sign Up"
@@ -420,14 +424,146 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 
+  // Helper method for feature list items
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 24,
+          color: const Color(0xFFE0F2FE), // Light blue/white icon on dark background
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // New Widget for the left floating card
+  Widget _buildLeftPanel(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 450),
+        child: Container(
+          margin: const EdgeInsets.all(40),
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            // Semi-transparent, slightly frosted glass effect
+            color: const Color(0xFF1E293B).withOpacity(0.85),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0EA5E9).withOpacity(0.3),
+                blurRadius: 50,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              const Text(
+                'Humanity AI',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Next-Generation AI Agent Platform',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Image
+              Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 250),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/images/ai-sales-agent.jpg',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Feature Grid
+              Column(
+                children: [
+                  _buildFeatureItem(
+                    icon: Icons.auto_awesome_outlined,
+                    title: 'Hyper-Personalization',
+                    subtitle: 'Tailor every customer interaction with deep learning models.',
+                  ),
+                  const Divider(color: Color(0xFF475569), height: 30),
+                  _buildFeatureItem(
+                    icon: Icons.flash_on_outlined,
+                    title: 'Instant Deployment',
+                    subtitle: 'Integrate agents into your workflow in minutes, not weeks.',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
     ref.listen<AuthState>(authNotifierProvider, (prev, next) {
-      if (next.isAuthenticated) {
-        context.go('/dashboard');
-      } else if (next.error != null && next.error != prev?.error) {
+      if (next.error != null && next.error != prev?.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.error!),
@@ -443,10 +579,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
+          // Darker, more professional blue gradient background
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFE0F2FE), Color(0xFFF0F9FF)],
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
           ),
         ),
         child: SafeArea(
@@ -457,46 +594,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               child: isWeb
                   ? Row(
                       children: [
-                        Expanded(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  height: 400,
-                                  decoration:
-                                      const BoxDecoration(shape: BoxShape.circle),
-                                  child: Image.asset(
-                                    'assets/images/ai-sales-agent.jpg',
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                const SizedBox(height: 30),
-                                const Text(
-                                  'AI Agent Platform',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Create and manage your\nAI-powered customer engagement',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // --- Floating Card Left Panel ---
                         Expanded(
                           child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(40),
-                            child: _buildFormCard(context, authState),
+                            child: _buildLeftPanel(context),
+                          ),
+                        ),
+                        // --- Login Form Panel (Light background for contrast) ---
+                        Expanded(
+                          child: Container(
+                            color: const Color(0xFFF8FAFC), // Nearly white background
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(40),
+                              child: _buildFormCard(context, authState),
+                            ),
                           ),
                         ),
                       ],
