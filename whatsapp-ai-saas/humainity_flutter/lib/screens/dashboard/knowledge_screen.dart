@@ -219,8 +219,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
   // <-- 1. UPDATED WIDGET: _buildLinkItem
   Widget _buildLinkItem(BuildContext context, KnowledgeSource link) {
     final bool mobile = isMobile(context);
-    final bool isScraped = link.processingStatus == 'COMPLETED';
-    final bool isPending = link.processingStatus == 'PENDING';
+    final bool isScraped = link.processingStatus == 'Completed';
+    final bool isPending = link.processingStatus == 'Pending';
     final bool isExpanded = _expandedUrls[link.id] ?? false;
     final bool hasSummary = link.summary != null && link.summary!.isNotEmpty;
 
@@ -453,8 +453,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
           ),
           const SizedBox(height: 16),
           ...state.fileSources.map((item) {
-            final bool isTrained = item.processingStatus == 'COMPLETED';
-            final bool isPending = item.processingStatus == 'PENDING';
+            final bool isTrained = item.processingStatus == 'Completed';
+            final bool isPending = item.processingStatus == 'Pending';
             final bool isExpanded = _expandedFiles[item.id] ?? false;
             final bool hasSummary = item.summary != null && item.summary!.isNotEmpty;
 
@@ -535,6 +535,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                               spacing: 4,
                               runSpacing: 4,
                               alignment: WrapAlignment.end,
+                              direction: mobile ? Axis.vertical : Axis.horizontal,
                               children: item.tags.map((tag) => AppBadge(text: tag, variant: AppBadgeVariant.outline, icon: const Icon(LucideIcons.tag, size: 14))).toList(),
                             )
                           ],
