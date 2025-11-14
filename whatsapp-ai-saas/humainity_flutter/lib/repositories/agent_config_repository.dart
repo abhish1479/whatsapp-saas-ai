@@ -11,61 +11,71 @@ import 'package:humainity_flutter/core/storage/store_user_data.dart';
 // --- 1. The Repository Provider (FINAL) ---
 // This provider now watches the storeUserDataProvider
 final agentConfigRepositoryProvider = Provider<AgentConfigRepository>((ref) {
-  // Watch the correctly named storage service provider
   final storeUserData = ref.watch(storeUserDataProvider);
-
-  // If SharedPreferences is still loading, storeUserData will be null.
+  // Ensure StoreUserData is initialized before accessing it
   if (storeUserData == null) {
-    return AgentConfigRepository(null, null);
+    throw Exception('StoreUserData provider returned null.');
   }
-
-  // --- Get token and tenantId from StoreUserData ---
-  final token = storeUserData.getToken();
-  final tenantId = storeUserData.getTenantId(); // Fetch the tenant ID
-
-  return AgentConfigRepository(token, tenantId);
+  return AgentConfigRepository(storeUserData);
 });
 
 // --- 2. The Repository Class ---
 class AgentConfigRepository {
-  final dynamic _token;
-  final dynamic _tenantId;
+  final StoreUserData storeUserData;
   final String _baseUrl;
 
-  AgentConfigRepository(this._token, this._tenantId)
+  AgentConfigRepository(this.storeUserData)
       : _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:8000';
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_token',
-      };
+  // --- Helper for default empty configuration ---
+  static AgentConfig _defaultEmptyConfig() {
+    return AgentConfig(
+      id: 0,
+      tenantId: 0,
+      agentName: 'Sarah',
+      agentPersona:
+          'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
+      greetingMessage: 'Hello! How can I assist you today?',
+      preferredLanguages: ['en'],
+      conversationTone: 'friendly',
+      agentImage: null,
+    );
+  }
+
+  Future<Map<String, String>> _getHeaders() async {
+    final String? token = await storeUserData.getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   /// Fetches the agent configuration from the API
   Future<AgentConfig> getAgentConfiguration() async {
-    if (_token == null) throw Exception('Not authenticated (no token)');
-    if (_tenantId == null) {
-      throw Exception('Tenant ID not found in local storage. Please log in.');
-    }
+    final tenantId = await storeUserData.getTenantId();
+    final Map<String, String> headers = await _getHeaders();
 
     // Append the tenant_id as a query parameter
     final uri = Uri.parse(
-        '$_baseUrl/agent-config/get_agent_configuration?tenant_id=$_tenantId');
+        '$_baseUrl/agent-config/get_agent_configuration?tenant_id=$tenantId');
 
     try {
-      final response = await http.get(uri, headers: _headers);
+      final response = await http.get(uri, headers: headers);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 && responseBody['success'] == true) {
-        // Parse data from the 'data' field of the APIResponse
+        // Successful response with data
         return AgentConfig.fromMap(responseBody['data']);
+      } else if (response.statusCode != 200) {
+        return _defaultEmptyConfig();
       } else {
-        // Handle structured error response
+        // Handle structured error response (e.g., actual server error, permission issue)
         final errorMessage = responseBody['message'] ?? 'Unknown error';
         final errorDetails =
             responseBody['error']?['details']?.join(', ') ?? '';
 
-        throw Exception(
-            'Failed to load agent configuration: $errorMessage. Details: $errorDetails');
+        return _defaultEmptyConfig();
       }
     } catch (e) {
       throw Exception('Failed to connect: $e');
@@ -77,21 +87,19 @@ class AgentConfigRepository {
     required AgentConfig config,
     File? agentImageFile,
   }) async {
-    if (_token == null) throw Exception('Not authenticated (no token)');
-    if (_tenantId == null) {
-      throw Exception('Tenant ID not found in local storage. Please log in.');
-    }
+    final tenantId = await storeUserData.getTenantId();
+    final token = await storeUserData.getToken();
 
     final uri = Uri.parse('$_baseUrl/agent-config/update_agent_configuration');
 
     try {
       final request = http.MultipartRequest('POST', uri);
-      request.headers['Authorization'] = 'Bearer $_token';
+      request.headers['Authorization'] = 'Bearer $token';
 
       // --- 1. Create JSON Payload (Matches AgentConfigPayload Pydantic Model) ---
       final configJsonPayload = json.encode({
         // Ensure tenant_id is an integer for the Pydantic model
-        'tenant_id': int.parse(_tenantId!),
+        'tenant_id': int.parse(tenantId!),
         'agent_name': config.agentName,
         'agent_persona': config.agentPersona,
         'greeting_message': config.greetingMessage,

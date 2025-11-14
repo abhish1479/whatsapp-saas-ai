@@ -52,9 +52,9 @@ const List<AiAgent> presetAgents = [
   AiAgent(
     id: 'agent-david',
     name: 'David',
-    persona: 'Design your own AI persona from scratch.',
+    persona: 'Formal & Executive',
     role:
-        'This agent has no pre-set instructions. You must define the name, persona, and role explicitly for optimal performance.',
+        'David provides polished, high-level communication for executive stakeholders—crafting strategic summaries, negotiating terms, and guiding decision-makers with clarity, professionalism, and data-driven insights.',
     imagePath: 'assets/images/agent-david.jpg', // Placeholder image
     primaryColor: Color(0xFF1E88E5), // Deep Purple
   ),

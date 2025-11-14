@@ -58,13 +58,39 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
       final config = await _repository.getAgentConfiguration();
 
       // Try to find a matching preset
-      final matchingPresetId = _findMatchingPreset(config)?.id;
+      final matchingPreset = _findMatchingPreset(config);
+      final matchingPresetId = matchingPreset?.id;
+
+      // Start with the fetched config and matching ID
+      AgentConfig finalConfig = config;
+      String? finalSelectedPresetId = matchingPresetId;
+
+      // --- MODIFIED LOGIC: Select first default preset if config is a blank slate ---
+      // A "blank slate" is assumed if the agentName is empty AND no preset matched.
+      if (matchingPreset == null &&
+          finalConfig.agentName.isEmpty &&
+          presetAgents.isNotEmpty) {
+        final firstPreset = presetAgents.first;
+
+        // 1. Update the CONFIG fields with the first preset's data (fills the form)
+        finalConfig = config.copyWith(
+          agentName: firstPreset.name,
+          agentPersona: firstPreset.role,
+          agentImage: firstPreset.imagePath,
+        );
+
+        // 2. Update the SELECTED PRESET ID for UI highlighting
+        finalSelectedPresetId = firstPreset.id;
+      } else if (matchingPreset == null && finalConfig.agentName.isNotEmpty) {
+        // If a custom config was loaded (has data, but doesn't match a preset),
+        // use the 'agent-david' ID as a proxy for the 'Custom Agent' selection.
+        finalSelectedPresetId = 'agent-david';
+      }
 
       // Set state to data
       state = state.copyWith(
-        config: AsyncValue.data(config),
-        selectedPresetId: matchingPresetId ??
-            (config.agentImage == null ? 'agent-david' : null),
+        config: AsyncValue.data(finalConfig),
+        selectedPresetId: finalSelectedPresetId,
         clearLocalImage: true, // Clear any stale local image
       );
     } catch (e, s) {
@@ -124,16 +150,15 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
 
   /// Stage a local image file for upload
   void stageLocalImage(File imageFile, String localPath) {
-    if (!state.config.hasValue) return; // Guard
+    if (!state.config.hasValue) return;
 
     state = state.copyWith(
       localImageFile: imageFile,
-      selectedPresetId: 'agent-david', // Switch to custom
+      selectedPresetId: 'agent-david', // Custom
       config: AsyncValue.data(
         state.config.value!.copyWith(
-          agentName: "My Custom Agent",
+          agentName: "",
           agentPersona: "Design your own AI persona from scratch.",
-          // Note: We don't update agentImage URL until after saving
         ),
       ),
     );
