@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:humainity_flutter/core/services/tenant_service.dart';
+import 'package:humainity_flutter/core/storage/store_user_data.dart';
 import 'package:humainity_flutter/models/knowledge_source.dart';
 import 'package:humainity_flutter/repositories/knowledge_repository.dart';
 
@@ -40,17 +40,17 @@ class KnowledgeState {
 // 2. Notifier Class
 class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   final KnowledgeRepository _repository;
-  final TenantService _tenantService;
+  final StoreUserData storeUserData;
 
-  KnowledgeNotifier(this._repository, this._tenantService) : super(KnowledgeState()) {
+  KnowledgeNotifier(this._repository, this.storeUserData) : super(KnowledgeState()) {
     loadKnowledge(); // Load initial data
   }
 
   Future<void> loadKnowledge() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final tenantId = await _tenantService.getTenantId();
-      final sources = await _repository.getKnowledgeSources(tenantId);
+      final tenantId = await storeUserData.getTenantId();
+      final sources = await _repository.getKnowledgeSources(tenantId!);
 
       // Separate sources by type as requested
       final files = sources.where((s) => s.sourceType == "FILE").toList();
@@ -69,8 +69,8 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   Future<void> uploadFile(PlatformFile file) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final tenantId = await _tenantService.getTenantId();
-      final newSource = await _repository.uploadFile(tenantId, file);
+      final tenantId = await storeUserData.getTenantId();
+      final newSource = await _repository.uploadFile(tenantId!, file);
 
       // Add the new file to the state
       state = state.copyWith(
@@ -85,8 +85,8 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   Future<void> addUrl(String url) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final tenantId = await _tenantService.getTenantId();
-      final newSource = await _repository.webCrawl(tenantId, url);
+      final tenantId = await storeUserData.getTenantId();
+      final newSource = await _repository.webCrawl(tenantId!, url);
 
       // Add the new URL to the state
       state = state.copyWith(
@@ -101,8 +101,8 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   Future<void> testQuery(String query) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final tenantId = await _tenantService.getTenantId();
-      final result = await _repository.queryRAG(tenantId, query);
+      final tenantId = await storeUserData.getTenantId();
+      final result = await _repository.queryRAG(tenantId!, query);
 
       state = state.copyWith(
         queryResult: result,
@@ -117,6 +117,6 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
 // 3. Provider Definition
 final knowledgeProvider = StateNotifierProvider<KnowledgeNotifier, KnowledgeState>((ref) {
   final repository = ref.watch(knowledgeRepositoryProvider);
-  final tenantService = ref.watch(tenantServiceProvider);
-  return KnowledgeNotifier(repository, tenantService);
+  final storeUserData = ref.watch(storeUserDataProvider);
+  return KnowledgeNotifier(repository, storeUserData!);
 });

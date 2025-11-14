@@ -35,10 +35,9 @@ class TemplatesState {
 // 2. Create the Notifier
 class TemplatesNotifier extends StateNotifier<TemplatesState> {
   final TemplatesRepository _repository;
-  final dynamic tenantId;
-  final dynamic token; // Add storage service
+  final StoreUserData storeUserData;
 
-  TemplatesNotifier(this._repository, this.token, this.tenantId)
+  TemplatesNotifier(this._repository, this.storeUserData)
       : super(TemplatesState()) {
     loadTemplates(); // Load templates on initialization
   }
@@ -46,9 +45,8 @@ class TemplatesNotifier extends StateNotifier<TemplatesState> {
   Future<void> loadTemplates() async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      if (tenantId == null) return; // Error already set
-
-      final allTemplates = await _repository.getTemplates(tenantId);
+      final tenantId = await storeUserData.getTenantId();
+      final allTemplates = await _repository.getTemplates(tenantId!);
 
       final inbound =
           allTemplates.where((t) => t.type == TemplateType.INBOUND).toList();
@@ -68,6 +66,7 @@ class TemplatesNotifier extends StateNotifier<TemplatesState> {
   Future<bool> addTemplate(Map<String, dynamic> data) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
+      final tenantId = await storeUserData.getTenantId();
       if (tenantId == null) return false; // Error already set
 
       await _repository.createTemplate(tenantId, data);
@@ -117,14 +116,5 @@ final templatesProvider =
     StateNotifierProvider<TemplatesNotifier, TemplatesState>((ref) {
   final repository = ref.watch(templatesRepositoryProvider);
   final storeUserData = ref.watch(storeUserDataProvider);
-
-  // If SharedPreferences is still loading, storeUserData will be null.
-  if (storeUserData == null) {
-    return TemplatesNotifier(repository, null, null);
-  }
-
-  // --- Get token and tenantId from StoreUserData ---
-  final token = storeUserData.getToken();
-  final tenantId = storeUserData.getTenantId();
-  return TemplatesNotifier(repository, token, tenantId);
+  return TemplatesNotifier(repository, storeUserData!);
 });

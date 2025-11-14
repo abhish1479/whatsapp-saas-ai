@@ -45,7 +45,9 @@ async def process_url_job(id:int):
 
     # --- 2. Do async work (no DB session here) ---
     response_obj = None
+    db = SessionLocal()
     try:
+        source = db.query(KnowledgeSource).filter(KnowledgeSource.id == id).first()
         # Assuming this function only uses primitive data (not ORM objects)
         response_obj = await _process_url_and_update_rag(source)
         summary = response_obj.get("summary", "No summary generated.")
@@ -66,6 +68,8 @@ async def process_url_job(id:int):
         finally:
             db_fail.close()
         return
+    finally:
+        db.close()
 
     # --- 3. Update to COMPLETED in a new session ---
     db_complete = SessionLocal()
@@ -119,7 +123,9 @@ async def process_file_job(id: int):
 
     # --- 2. Do async work (no DB session here) ---
     response_obj = None
+    db = SessionLocal()
     try:
+        source = db.query(KnowledgeSource).filter(KnowledgeSource.id == id).first()
         # Assuming this function only uses primitive data (not ORM objects)
         response_obj = await _process_pdf_and_update_rag(source)
         summary = response_obj.get("summary", "No summary generated.")
@@ -140,6 +146,8 @@ async def process_file_job(id: int):
         finally:
             db_fail.close()
         return
+    finally:
+        db.close()
 
     # --- 3. Update to COMPLETED in a new session ---
     db_complete = SessionLocal()

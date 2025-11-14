@@ -299,7 +299,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                       variant: isScraped ? AppBadgeVariant.success : (isPending ? AppBadgeVariant.secondary : AppBadgeVariant.destructive),
                     ),
                     const SizedBox(height: 8),
-                    if (mobile)
+                    //if (mobile)
                       IconButton(
                         icon: const Icon(LucideIcons.refreshCw, size: 18),
                         color: AppColors.mutedForeground,
@@ -308,13 +308,13 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       )
-                    else
-                      AppButton(
-                        text: 'Refresh',
-                        icon: const Icon(LucideIcons.refreshCw, size: 14),
-                        onPressed: () => ref.read(knowledgeProvider.notifier).loadKnowledge(),
-                        style: AppButtonStyle.tertiary,
-                      ),
+                    // else
+                    //   AppButton(
+                    //     text: 'Refresh',
+                    //     icon: const Icon(LucideIcons.refreshCw, size: 14),
+                    //     onPressed: () => ref.read(knowledgeProvider.notifier).loadKnowledge(),
+                    //     style: AppButtonStyle.tertiary,
+                    //   ),
                   ],
                 ),
               ],

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
@@ -8,7 +9,7 @@ import 'package:humainity_flutter/models/knowledge_source.dart';
 
 class KnowledgeRepository {
   final http.Client _client;
-  final String _baseUrl = 'http://localhost:8000'; // Your API base URL
+  final String? _baseUrl = dotenv.env['API_BASE_URL'];
 
   KnowledgeRepository(this._client);
 

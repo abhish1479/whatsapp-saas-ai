@@ -64,10 +64,10 @@ async def analyze_file_from_bytes(tenant_id :int,file_name:str,file_bytes: bytes
 
     response = await analysis(tenant_id,file_txt.strip(),FILE_PROMPT)
     
-    print(f"LLM response: {response[:500]}...")  # Print the first 500 characters of the response for debugging
+    print(f"LLM response: {response[:200]}...")  # Print the first 500 characters of the response for debugging
     parser = LLMJsonParser(strict=True)
     parsed_output = parser.parse(response)
-    print("parsed_output :  "+{parsed_output}) # Print the parsed output for debugging
+    print(f"parsed_output: {parsed_output}") # Print the parsed output for debugging
     return parsed_output
 
 
@@ -131,9 +131,9 @@ async def analyze_Web(tenant_id :int,source_url:str, ) -> str:
     print(f"Extracted text : {file_txt.strip()}")  # Debugging line to check extracted text length
     response = await analysis(tenant_id,file_txt.strip(),FILE_PROMPT)
     
-    print(f"LLM response: {response[:500]}...")  # Print the first 500 characters of the response for debugging
+    print(f"LLM response: {response[:200]}...")  # Print the first 500 characters of the response for debugging
     parser = LLMJsonParser(strict=True)
     parsed_output = parser.parse(response)
-    print("parsed_output :  "+{parsed_output}) # Print the parsed output for debugging
+    print(f"parsed_output: {parsed_output}") # Print the parsed output for debugging
     return parsed_output
     

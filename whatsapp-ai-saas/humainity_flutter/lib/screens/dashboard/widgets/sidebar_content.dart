@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // ADDED
 import 'package:go_router/go_router.dart';
+import 'package:humainity_flutter/core/providers/auth_provider.dart'; // ADDED
+import 'package:humainity_flutter/core/providers/chat_provider.dart'; // ADDED
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
 
-class SidebarContent extends StatelessWidget {
+// CHANGED to ConsumerWidget
+class SidebarContent extends ConsumerWidget {
   const SidebarContent({super.key});
 
   static const List<Map<String, dynamic>> navigation = [
@@ -59,8 +63,7 @@ class SidebarContent extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    // FIX: Get location from GoRouterState
+  Widget build(BuildContext context, WidgetRef ref) { // ADDED WidgetRef
     final String currentLocation = GoRouterState.of(context).matchedLocation;
 
     return Column(
@@ -179,6 +182,18 @@ class SidebarContent extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              // ADDED: Logout Button
+              IconButton(
+                icon: const Icon(LucideIcons.logOut,
+                    color: AppColors.mutedForeground),
+                tooltip: 'Logout',
+                onPressed: () {
+                  // Call logout from auth provider
+                  ref.read(authNotifierProvider.notifier).signOut();
+                  // Clear the agent preview chat
+                  ref.read(agentPreviewChatProvider.notifier).clearChat();
+                },
               ),
             ],
           ),

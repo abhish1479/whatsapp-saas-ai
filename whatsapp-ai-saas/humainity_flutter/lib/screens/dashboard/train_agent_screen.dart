@@ -142,7 +142,7 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
     final text = _messageController.text;
     if (text.trim().isEmpty) return;
 
-    ref.read(chatProvider.notifier).sendMessage(text);
+    ref.read(agentPreviewChatProvider.notifier).sendMessage(text);
     _messageController.clear();
     _scrollToBottom();
   }
@@ -161,8 +161,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(chatProvider);
-    ref.listen(chatProvider, (_, __) => _scrollToBottom());
+    final chatState = ref.watch(agentPreviewChatProvider);
+    ref.listen(agentPreviewChatProvider, (_, __) => _scrollToBottom());
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -229,7 +229,7 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
               const Text("Your messages:",
                   style: TextStyle(color: AppColors.mutedForeground)),
               Text(
-                  "${chatState.messages.where((m) => m.role == 'user').length}",
+                  "${chatState.messages.where((m) => m.isUser == 'user').length}",
                   style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
@@ -239,7 +239,7 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
               const Text("Agent responses:",
                   style: TextStyle(color: AppColors.mutedForeground)),
               Text(
-                  "${chatState.messages.where((m) => m.role == 'assistant').length}",
+                  "${chatState.messages.where((m) => m.isUser == 'assistant').length}",
                   style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
@@ -262,7 +262,7 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
               // FIX: Replaced variant: AppButtonVariant.destructive with setting the destructive color
               color: AppColors.destructive,
               icon: const Icon(LucideIcons.trash2), // FIX: Wrapped in Icon()
-              onPressed: () => ref.read(chatProvider.notifier).clearChat(),
+              onPressed: () => ref.read(agentPreviewChatProvider.notifier).clearChat(),
             ),
           ),
         ],
@@ -488,8 +488,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
                   padding: const EdgeInsets.only(bottom: 16.0),
                   // FIX: ChatMessageBubble is now defined
                   child: ChatMessageBubble(
-                    message: message.content,
-                    isUser: message.role == 'user',
+                    message: message.text,
+                    isUser: message.isUser == 'user',
                     timestamp: message.timestamp,
                   ),
                 );

@@ -7,6 +7,7 @@ from services.exotel_api import whatsapp_msg_send_api_bulk
 from services import llm
 from data_models.request_model import TemplateSendRequest
 from fastapi.responses import JSONResponse
+from utils.sessions import get_history , append_assistant , append_user
 
 
 router = APIRouter(tags=["conversations"])
@@ -90,3 +91,16 @@ async def workflow_optimizer(
             End: [final message or handoff]
             """
     return await llm.analysis(tenant_id, query_prompt)
+
+
+@router.post("/test_agent")
+async def test_agent(
+    query: str,
+    tenant_id: int,
+):
+    get_conversation = get_history(sender = str(tenant_id), tenant_id=tenant_id)
+    await append_user(sender=str(tenant_id), content=query, tenant_id=tenant_id)
+    get_conversation = get_history(sender = str(tenant_id), tenant_id=tenant_id)
+    model_reply = await llm.llm_model_reply(tenant_id,get_conversation)
+    append_assistant(sender=str(tenant_id), content=model_reply)
+    return {"reply": model_reply}
