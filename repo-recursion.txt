@@ -47,29 +47,22 @@ Builds all services and runs them in background.
 
 docker compose up -d --build
 
-
 --build ensures images are rebuilt on first start.
-
 After first run, you can simply use ** docker compose up -d ** for normal starts.
 
 Access points:
-
 Backend → http://localhost:8000/docs
-
 Flutter Web → http://localhost:8082
-
 DB → port 5433 (Postgres)
-
 Redis → port 6379
 
 🔄 2️⃣ Rebuild after code changes
 🧩 A. When you change backend Python code
-
 FastAPI is baked into a Docker image, so rebuild that service only:
 
 docker compose build server
 docker compose up -d server
-
+docker-compose up -d --build server
 
 or if you edited multiple services:
 
