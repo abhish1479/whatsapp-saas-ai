@@ -95,66 +95,110 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                 ),
               ),
             ),
+
             // --- DATA LOADED STATE ---
             data: (config) {
               // isSaving is true if the state is AsyncLoading but still has a value
               final isSaving =
                   agentState.config.isLoading && agentState.config.hasValue;
 
-              // --- WRAP FORM FIELDS IN A FORM WIDGET ---
-              return Form(
-                key: _formKey,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left Column: Configuration Panels
-                    Expanded(
-                      flex: Responsive.isDesktop(context) ? 2 : 1,
-                      child: Column(
-                        children: [
-                          _buildAvatarUploadCard(
-                              config, agentState.localImageFile, context),
-                          const SizedBox(height: 24),
-                          _buildAgentDescriptionCard(ref, config, context),
-                          const SizedBox(height: 24),
-                          _buildConversationSettingsCard(ref, config, context),
-                          const SizedBox(height: 24),
-                          _buildActionButtons(ref, isSaving),
-                        ],
-                      ),
-                    ),
-
-                    // Right Column: Live Preview
-                    if (Responsive.isDesktop(context))
-                      const SizedBox(width: 24),
-                    if (Responsive.isDesktop(context))
-                      Expanded(
-                        flex: 1,
-                        child: SizedBox(
-                          height: 700,
+              return Column(
+                children: [
+                  // --- WRAP FORM FIELDS IN A FORM WIDGET ---
+                  Form(
+                    key: _formKey,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Column: Configuration Panels
+                        Expanded(
+                          flex: Responsive.isDesktop(context) ? 2 : 1,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Live Preview',
-                                style: TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 16),
-                              Expanded(
-                                child: _buildLiveBrandingPreview(
-                                  config,
-                                  agentState.localImageFile,
-                                ),
-                              ),
+                              _buildAvatarUploadCard(
+                                  config, agentState.localImageFile, context),
+                              const SizedBox(height: 24),
+                              _buildAgentDescriptionCard(ref, config, context),
+                              const SizedBox(height: 24),
+                              _buildConversationSettingsCard(
+                                  ref, config, context),
+                              const SizedBox(height: 24),
+                              _buildActionButtons(ref, isSaving),
                             ],
                           ),
                         ),
-                      ),
-                  ],
-                ),
+
+                        // Right Column: Live Preview
+                        if (Responsive.isDesktop(context))
+                          const SizedBox(width: 24),
+                        if (Responsive.isDesktop(context))
+                          Expanded(
+                            flex: 1,
+                            child: SizedBox(
+                              height: 700,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Live Preview',
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: _buildLiveBrandingPreview(
+                                      config,
+                                      agentState.localImageFile,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- NEW: Default Config Banner Widget ---
+  Widget _buildDefaultConfigBanner() {
+    return AppCard(
+      padding: const EdgeInsets.all(16.0),
+      color: AppColors.primary.withOpacity(0.1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(LucideIcons.info, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Welcome! Please configure your AI Agent.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your configuration was not found on the server. We have pre-filled the form with the default agent. Please customize the details and click "Save Changes" to activate your new AI assistant.',
+                  style: TextStyle(
+                    color: AppColors.primary.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -164,8 +208,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   // --- 1. Agent Selection (Responsive Grid/Wrap) ---
   Widget _buildAgentSelectionCard(
       WidgetRef ref, String? selectedPresetId, BuildContext context) {
-    // ... (This widget has no form fields, so it remains unchanged) ...
-    // ... (Code for this widget is identical to your provided file) ...
+    // ... (This widget is identical to your provided file) ...
     return AppCard(
       margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(10.0),
@@ -270,8 +313,6 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   // --- 2. Avatar Upload ---
   Widget _buildAvatarUploadCard(
       AgentConfig config, File? localImageFile, BuildContext context) {
-    // ... (This widget has no form fields, so it remains unchanged) ...
-    // ... (Code for this widget is identical to your provided file) ...
     // Determine the image source
     ImageProvider imageProvider;
     if (localImageFile != null) {
@@ -287,7 +328,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
       }
     } else {
       // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
-      imageProvider = const AssetImage('assets/images/agent-david.jpg');
+      imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
     }
 
     return AppCard(
@@ -398,7 +439,6 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
   Widget _buildRoleTags(WidgetRef ref, String currentPersona) {
     // ... (This widget remains unchanged) ...
-    // ... (Code for this widget is identical to your provided file) ...
     final roleDescriptions = {
       'Sales Lead':
           'Act as an aggressive sales lead qualification specialist, asking targeted questions.',
@@ -542,8 +582,6 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
   // --- 5. Live Branding Preview ---
   Widget _buildLiveBrandingPreview(AgentConfig config, File? localImageFile) {
-    // ... (This widget remains unchanged) ...
-    // ... (Code for this widget is identical to your provided file) ...
     // Find the associated preset color, or use default
     final preset = presetAgents.firstWhere(
       (p) => p.name == config.agentName,

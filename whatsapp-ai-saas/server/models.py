@@ -201,30 +201,30 @@ class WebIngestRequest(Base):
     url = Column(Text)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    class AgentConfiguration(Base):
-        __tablename__ = "agent_configurations"
+class AgentConfiguration(Base):
+    __tablename__ = "agent_configurations"
         
-        id = Column(Integer, primary_key=True, index=True)
-        # This ForeignKey is the source of the error when tenant_id=1 is missing
-        tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True) 
-        agent_name = Column(String(100), nullable=False)
-        agent_image = Column(String(500), nullable=True) 
-        agent_persona = Column(Text, nullable=True) 
-        greeting_message = Column(String(500), nullable=True) 
-        voice_model = Column(String(100), nullable=True) 
-        preferred_languages = Column(String(100), nullable=False, default="en")
-        conversation_tone = Column(String(50), default="professional")
-        incoming_voice_message_enabled = Column(Boolean, default=True)
-        outgoing_voice_message_enabled = Column(Boolean, default=True)
-        incoming_media_message_enabled = Column(Boolean, default=True)
-        outgoing_media_message_enabled = Column(Boolean, default=True)
-        image_analyzer_enabled = Column(Boolean, default=False)
-        created_at = Column(DateTime(timezone=True), server_default=func.now())
-        updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True, index=True)
+    # This ForeignKey is the source of the error when tenant_id=1 is missing
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True) 
+    agent_name = Column(String(100), nullable=False)
+    agent_image = Column(String(500), nullable=True) 
+    agent_persona = Column(Text, nullable=True) 
+    greeting_message = Column(String(500), nullable=True) 
+    voice_model = Column(String(100), nullable=True) 
+    preferred_languages = Column(String(100), nullable=False, default="en")
+    conversation_tone = Column(String(50), default="professional")
+    incoming_voice_message_enabled = Column(Boolean, default=True)
+    outgoing_voice_message_enabled = Column(Boolean, default=True)
+    incoming_media_message_enabled = Column(Boolean, default=True)
+    outgoing_media_message_enabled = Column(Boolean, default=True)
+    image_analyzer_enabled = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-        __table_args__ = (
-            Index('idx_tenant_agent', 'tenant_id', 'agent_name', unique=True),
-        )
+    __table_args__ = (
+        Index('idx_tenant_agent', 'tenant_id', 'agent_name', unique=True),
+    )
 
 
 class Kyc(Base):
