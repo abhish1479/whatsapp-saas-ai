@@ -1,100 +1,77 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:humainity_flutter/models/ai_agent.dart'; // Assuming presetAgents are here
 
-/// Represents the agent configuration data fetched from and sent to the API.
+// Helper function to convert list to comma-separated string
+String _languagesFromList(List<String> languages) {
+  return languages.join(',');
+}
+
+// Helper function to convert comma-separated string to list
+List<String> _languagesToList(String languages) {
+  if (languages.isEmpty) {
+    return ['en']; // Default
+  }
+  return languages.split(',');
+}
+
 class AgentConfig {
+  final int id;
+  final int tenantId;
   final String agentName;
-  final String? agentImage; // URL from API
+  final String? agentImage; // URL
   final String agentPersona;
   final String greetingMessage;
-  // final String voiceModel; // <-- REMOVED
-  final List<String> preferredLanguages; // Converted from "en,es"
+  final List<String> preferredLanguages; // ["en", "es"]
   final String conversationTone;
 
   AgentConfig({
+    required this.id,
+    required this.tenantId,
     required this.agentName,
     this.agentImage,
     required this.agentPersona,
     required this.greetingMessage,
-    // required this.voiceModel, // <-- REMOVED
     required this.preferredLanguages,
     required this.conversationTone,
   });
 
-  /// Creates a default config, optionally based on a preset.
-  factory AgentConfig.defaults({AiAgent? preset}) {
-    final agent = preset ?? presetAgents.first;
-    return AgentConfig(
-      agentName: agent.name,
-      agentImage: agent.imagePath,
-      agentPersona: agent.role,
-      greetingMessage: 'Hello! How can I assist you today?',
-      // voiceModel: 'standard_voice_1', // <-- REMOVED
-      preferredLanguages: ['en'],
-      conversationTone: 'friendly',
-    );
-  }
-
-  /// Creates an instance from the API JSON response.
-  factory AgentConfig.fromJson(Map<String, dynamic> json) {
-    return AgentConfig(
-      agentName: json['agent_name'] ?? '',
-      agentImage: json['agent_image'],
-      agentPersona: json['agent_persona'] ?? '',
-      greetingMessage: json['greeting_message'] ?? '',
-      // voiceModel: json['voice_model'] ?? 'standard_voice_1', // <-- REMOVED
-      preferredLanguages: (json['preferred_languages'] as String? ?? 'en')
-          .split(',')
-          .where((s) => s.isNotEmpty)
-          .toList(),
-      conversationTone: json['conversation_tone'] ?? 'friendly',
-    );
-  }
-
-  /// Creates a copy of the instance with updated fields.
+  // Create a copy with modified fields
   AgentConfig copyWith({
+    int? id,
+    int? tenantId,
     String? agentName,
     String? agentImage,
     String? agentPersona,
     String? greetingMessage,
-    // String? voiceModel, // <-- REMOVED
     List<String>? preferredLanguages,
     String? conversationTone,
   }) {
     return AgentConfig(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
       agentName: agentName ?? this.agentName,
       agentImage: agentImage ?? this.agentImage,
       agentPersona: agentPersona ?? this.agentPersona,
       greetingMessage: greetingMessage ?? this.greetingMessage,
-      // voiceModel: voiceModel ?? this.voiceModel, // <-- REMOVED
       preferredLanguages: preferredLanguages ?? this.preferredLanguages,
       conversationTone: conversationTone ?? this.conversationTone,
     );
   }
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is AgentConfig &&
-        other.agentName == agentName &&
-        other.agentImage == agentImage &&
-        other.agentPersona == agentPersona &&
-        other.greetingMessage == greetingMessage &&
-        // other.voiceModel == voiceModel && // <-- REMOVED
-        listEquals(other.preferredLanguages, preferredLanguages) &&
-        other.conversationTone == conversationTone;
+  // From JSON (API to App)
+  // Handles mapping snake_case from Python to camelCase in Dart
+  factory AgentConfig.fromMap(Map<String, dynamic> map) {
+    return AgentConfig(
+      id: map['id']?.toInt() ?? 0,
+      tenantId: map['tenant_id']?.toInt() ?? 0,
+      agentName: map['agent_name'] ?? 'AI Agent',
+      agentImage: map['agent_image'],
+      agentPersona: map['agent_persona'] ?? '',
+      greetingMessage: map['greeting_message'] ?? '',
+      preferredLanguages: _languagesToList(map['preferred_languages'] ?? 'en'),
+      conversationTone: map['conversation_tone'] ?? 'friendly',
+    );
   }
 
-  @override
-  int get hashCode {
-    return agentName.hashCode ^
-        agentImage.hashCode ^
-        agentPersona.hashCode ^
-        greetingMessage.hashCode ^
-        // voiceModel.hashCode ^ // <-- REMOVED
-        preferredLanguages.hashCode ^
-        conversationTone.hashCode;
-  }
+  factory AgentConfig.fromJson(String source) =>
+      AgentConfig.fromMap(json.decode(source));
 }

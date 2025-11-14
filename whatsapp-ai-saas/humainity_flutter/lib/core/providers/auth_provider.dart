@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:humainity_flutter/core/storage/store_user_data.dart';
 import 'package:humainity_flutter/repositories/auth_repository.dart';
 
 class AuthState {
@@ -8,12 +9,11 @@ class AuthState {
   final bool isInitialized; // NEW: Indicates if initial check is complete
   final String? error;
 
-  const AuthState({
-    required this.isAuthenticated,
-    this.isLoading = false,
-    this.isInitialized = false, // Initialize as false
-    this.error
-  });
+  const AuthState(
+      {required this.isAuthenticated,
+      this.isLoading = false,
+      this.isInitialized = false, // Initialize as false
+      this.error});
 
   AuthState copyWith({
     bool? isAuthenticated,
@@ -33,11 +33,13 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repo;
-  final StreamController<AuthState> streamController = StreamController<AuthState>.broadcast();
+  final StoreUserData? _storeUserData;
+  final StreamController<AuthState> streamController =
+      StreamController<AuthState>.broadcast();
 
-  AuthNotifier(this._repo) : super(AuthState.initial()) {
+  AuthNotifier(this._repo, this._storeUserData) : super(AuthState.initial()) {
     // NEW: Trigger initial check when the notifier is created
-    initialize(); 
+    initialize();
   }
 
   // NEW: Method to check stored credentials on app startup
@@ -71,7 +73,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _repo.signIn(email, password);
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
-      _emit(state.copyWith(error: e.toString(), isAuthenticated: false, isLoading: false));
+      _emit(state.copyWith(
+          error: e.toString(), isAuthenticated: false, isLoading: false));
     }
   }
 
@@ -82,10 +85,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) async {
     _emit(state.copyWith(isLoading: true, error: null));
     try {
-      await _repo.signUp(email: email, password: password, businessName: businessName);
+      await _repo.signUp(
+          email: email, password: password, businessName: businessName);
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
-      _emit(state.copyWith(error: e.toString(), isAuthenticated: false, isLoading: false));
+      _emit(state.copyWith(
+          error: e.toString(), isAuthenticated: false, isLoading: false));
     }
   }
 
@@ -99,10 +104,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
-      _emit(state.copyWith(error: e.toString(), isAuthenticated: false, isLoading: false));
+      _emit(state.copyWith(
+          error: e.toString(), isAuthenticated: false, isLoading: false));
     }
   }
-
 
   Future<void> signOut() async {
     await _repo.signOut();
@@ -116,7 +121,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  // AuthNotifier constructor calls initialize()
-  return AuthNotifier(AuthRepository());
+final authNotifierProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  // 1. Get the repository (which already has StoreUserData injected via its provider)
+  final repository = ref.watch(authRepositoryProvider);
+
+  // 2. We still need direct access to StoreUserData here for _loadInitialAuthData
+  // Note: The watch handles the potential null state of storeUserDataProvider
+  final storeUserData = ref.watch(storeUserDataProvider);
+
+  // 3. Instantiate the Notifier with both dependencies
+  return AuthNotifier(repository, storeUserData);
 });

@@ -35,36 +35,25 @@ class TemplatesState {
 // 2. Create the Notifier
 class TemplatesNotifier extends StateNotifier<TemplatesState> {
   final TemplatesRepository _repository;
-  final StoreUserData _storage; // Add storage service
+  final dynamic tenantId;
+  final dynamic token; // Add storage service
 
-  TemplatesNotifier(this._repository, this._storage) : super(TemplatesState()) {
+  TemplatesNotifier(this._repository, this.token, this.tenantId)
+      : super(TemplatesState()) {
     loadTemplates(); // Load templates on initialization
-  }
-
-  // Helper to get tenantId or set error
-  Future<String?> _getTenantId() async {
-    final tenantId = await _storage.getTenantId();
-    if (tenantId == null) {
-      state = state.copyWith(isLoading: false, error: 'User not logged in. Tenant ID missing.');
-      return null;
-    }
-    return tenantId;
   }
 
   Future<void> loadTemplates() async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      final tenantId = await _getTenantId();
       if (tenantId == null) return; // Error already set
 
       final allTemplates = await _repository.getTemplates(tenantId);
 
-      final inbound = allTemplates
-          .where((t) => t.type == TemplateType.INBOUND)
-          .toList();
-      final outbound = allTemplates
-          .where((t) => t.type == TemplateType.OUTBOUND)
-          .toList();
+      final inbound =
+          allTemplates.where((t) => t.type == TemplateType.INBOUND).toList();
+      final outbound =
+          allTemplates.where((t) => t.type == TemplateType.OUTBOUND).toList();
 
       state = state.copyWith(
         isLoading: false,
@@ -79,7 +68,6 @@ class TemplatesNotifier extends StateNotifier<TemplatesState> {
   Future<bool> addTemplate(Map<String, dynamic> data) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      final tenantId = await _getTenantId();
       if (tenantId == null) return false; // Error already set
 
       await _repository.createTemplate(tenantId, data);
@@ -108,8 +96,10 @@ class TemplatesNotifier extends StateNotifier<TemplatesState> {
     try {
       // Optimistic update: remove from UI first
       state = state.copyWith(
-        inboundTemplates: state.inboundTemplates.where((t) => t.id != templateId).toList(),
-        outboundTemplates: state.outboundTemplates.where((t) => t.id != templateId).toList(),
+        inboundTemplates:
+            state.inboundTemplates.where((t) => t.id != templateId).toList(),
+        outboundTemplates:
+            state.outboundTemplates.where((t) => t.id != templateId).toList(),
         error: null,
       );
       // No tenantId needed for delete
@@ -123,8 +113,18 @@ class TemplatesNotifier extends StateNotifier<TemplatesState> {
 }
 
 // 3. Define the Provider
-final templatesProvider = StateNotifierProvider<TemplatesNotifier, TemplatesState>((ref) {
+final templatesProvider =
+    StateNotifierProvider<TemplatesNotifier, TemplatesState>((ref) {
   final repository = ref.watch(templatesRepositoryProvider);
-  final storage = StoreUserData(); // Get storage service
-  return TemplatesNotifier(repository, storage);
+  final storeUserData = ref.watch(storeUserDataProvider);
+
+  // If SharedPreferences is still loading, storeUserData will be null.
+  if (storeUserData == null) {
+    return TemplatesNotifier(repository, null, null);
+  }
+
+  // --- Get token and tenantId from StoreUserData ---
+  final token = storeUserData.getToken();
+  final tenantId = storeUserData.getTenantId();
+  return TemplatesNotifier(repository, token, tenantId);
 });
