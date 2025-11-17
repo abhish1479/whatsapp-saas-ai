@@ -8,7 +8,7 @@ import 'package:humainity_flutter/models/template.dart';
 class TemplatesRepository {
   final http.Client _client;
   // Get base URL from environment
-  final String _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
+  final String _baseUrl = dotenv.env['API_BASE_URL'] ?? '';
 
   // Remove TenantService from constructor
   TemplatesRepository(this._client);

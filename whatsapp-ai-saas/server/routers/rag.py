@@ -3,9 +3,11 @@ from typing import List
 from fastapi import APIRouter
 from fastapi.params import Depends
 from requests import Session
+from services import llm
 from services.rag import rag
 from deps import get_db
 from models import BusinessCatalog
+from utils.responses import StandardResponse
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 
@@ -32,6 +34,21 @@ async def query_raw(tenant_id: int, q: str, n: int = 6):
 async def answer(tenant_id: int, q: str):
     return await rag.answer(tenant_id, q)
 
+@router.delete("/delete_namespace")
+async def delete_namespace(tenant_id: int):
+    return await rag.delete_namespace(tenant_id)
+
+@router.post("/rag_test_query")
+async def query_raw(tenant_id: int, q: str, n: int = 6):
+    rag_context = await rag.query(tenant_id, q, n=n)
+    system_prompt = f"""You are a knowledge refiner. Your sole task is to take the raw retrieved passages below and return them exactly, but cleaned, deduplicated, and structured clearly — preserving all original meaning and facts. Do not answer the user query, summarize, infer, or add explanations.
+                      Only reformat the retrieved knowledge into a well-organized, readable form (e.g., bullet points or short paragraphs), removing redundancy and noise.
+                     Retrieved Knowledge:{rag_context}
+                     Output only the refined knowledge — nothing else """
+    print("RAG CONTEXT:", system_prompt)
+    refine_context = await llm.analysis(tenant_id, q, system_prompt)
+    print("REFINED CONTEXT:", refine_context)
+    return StandardResponse(success=True, data=refine_context, message="RAG refined context retrieved successfully.")
 
 @router.post("/add_catalog")
 async def add_catalog(

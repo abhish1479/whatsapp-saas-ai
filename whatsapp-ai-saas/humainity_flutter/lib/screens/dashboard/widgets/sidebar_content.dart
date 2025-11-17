@@ -28,9 +28,9 @@ class SidebarContent extends ConsumerWidget {
       'icon': LucideIcons.bookOpen
     },
     {
-      'name': 'Train Agent',
-      'href': '/dashboard/train-agent',
-      'icon': LucideIcons.graduationCap
+      'name': 'Templates',
+      'href': '/dashboard/templates',
+      'icon': LucideIcons.messageSquare
     },
     {
       'name': 'Test Agent',
@@ -39,11 +39,6 @@ class SidebarContent extends ConsumerWidget {
     },
     {'name': 'Actions', 'href': '/dashboard/actions', 'icon': LucideIcons.zap},
     {'name': 'Forms', 'href': '/dashboard/forms', 'icon': LucideIcons.fileText},
-    {
-      'name': 'Templates',
-      'href': '/dashboard/templates',
-      'icon': LucideIcons.messageSquare
-    },
     {'name': 'CRM', 'href': '/dashboard/crm', 'icon': LucideIcons.users},
     {
       'name': 'Campaigns',
@@ -54,6 +49,11 @@ class SidebarContent extends ConsumerWidget {
       'name': 'Integrations',
       'href': '/dashboard/integrations',
       'icon': LucideIcons.link2
+    },
+    {
+      'name': 'Train Agent',
+      'href': '/dashboard/train-agent',
+      'icon': LucideIcons.graduationCap
     },
     {
       'name': 'Settings',

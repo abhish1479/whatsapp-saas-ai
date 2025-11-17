@@ -8,7 +8,7 @@ class ChatRepository {
   final String _baseUrl;
 
   ChatRepository(this._client)
-      : _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
+      : _baseUrl = dotenv.env['API_BASE_URL'] ?? '';
 
   Future<String> testAgent(String tenantId,String query) async {
     final uri = Uri.parse(

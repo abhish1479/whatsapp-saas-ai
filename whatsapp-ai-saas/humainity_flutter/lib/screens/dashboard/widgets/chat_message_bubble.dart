@@ -3,7 +3,9 @@ import 'package:flutter_markdown/flutter_markdown.dart'; // ADDED for rich text
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart'; // ADDED to open links
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/utils/responsive.dart'; // ADDED to open links
 
 class ChatMessageBubble extends StatelessWidget {
   final String message;
@@ -77,6 +79,50 @@ class ChatMessageBubble extends StatelessWidget {
                         print('Could not launch $href: $e');
                       }
                     }
+                  },
+                  // ADDED: imageBuilder to handle network images
+                  imageBuilder: (uri, title, alt) {
+                    // MODIFIED: Added constraints for responsive image size
+                    final bool isMobile = Responsive.isMobile(context);
+                    final double maxImageWidth = isMobile ? 250.0 : 350.0;
+                    const double maxImageHeight = 400.0;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      // MODIFIED: Wrapped image in ConstrainedBox
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: maxImageWidth,
+                          maxHeight: maxImageHeight,
+                        ),
+                        child: Image.network(
+                          uri.toString(),
+                          fit: BoxFit.contain, // Keeps aspect ratio
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes !=
+                                      null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text(
+                              '[Failed to load image: $alt]\n(This can be a network or web CORS issue)',
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 12),
+                            );
+                          },
+                        ),
+                      ),
+                    );
                   },
                 ),
               ),

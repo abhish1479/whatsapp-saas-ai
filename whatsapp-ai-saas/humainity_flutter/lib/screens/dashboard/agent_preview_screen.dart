@@ -2,18 +2,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart'; // ADDED for logout listener
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
 import 'package:humainity_flutter/core/providers/chat_provider.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart'; // ADDED for responsiveness
-import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart'; // ADDED import
+import 'package:humainity_flutter/core/utils/responsive.dart';
+import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
 import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:toggle_switch/toggle_switch.dart'; // ADDED for mobile toggle
+import 'package:toggle_switch/toggle_switch.dart';
 
 class AgentPreviewScreen extends ConsumerStatefulWidget {
   const AgentPreviewScreen({super.key});
@@ -83,18 +83,14 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     final text = _messageController.text;
     if (text.trim().isEmpty) return;
 
-    // CHANGED to new provider name
     ref.read(agentPreviewChatProvider.notifier).sendMessage(text);
     _messageController.clear();
   }
 
-  // ADDED: Main build method switches layout based on screen size
   @override
   Widget build(BuildContext context) {
-    // ADDED: Listener to clear chat when user logs out
     ref.listen(authNotifierProvider, (previous, next) {
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
-        // User just logged out
         ref.read(agentPreviewChatProvider.notifier).clearChat();
       }
     });
@@ -105,7 +101,6 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     return _buildWebLayout();
   }
 
-  // ADDED: Web layout (original)
   Widget _buildWebLayout() {
     return Row(
       children: [
@@ -122,18 +117,16 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
-  // ADDED: Mobile layout
   Widget _buildMobileLayout() {
     return Column(
       children: [
         _buildPreviewHeader(),
-        _buildMobileChannelSelector(), // Mobile-friendly toggle
-        Expanded(child: _buildPreviewContent()), // Content
+        _buildMobileChannelSelector(),
+        Expanded(child: _buildPreviewContent()),
       ],
     );
   }
 
-  // ADDED: Mobile-friendly channel selector
   Widget _buildMobileChannelSelector() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -275,26 +268,28 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
-  // MODIFIED: To be responsive
   Widget _buildPreviewContent() {
     final bool isVoice = _selectedChannel == 'voice';
     final bool isMobile = Responsive.isMobile(context);
 
-    // On mobile, just show the chat/voice interface
     if (isMobile) {
       if (isVoice) {
-        // Show voice controls and visual
         return _buildVoiceAgentVisual();
       } else {
-        // Show chat interface
         return _buildChatInterface();
       }
     }
 
-    // On web, show side-by-side
+    // MODIFIED: Web layout now conditionally shows voice or chat interface
     return Row(
       children: [
-        Expanded(child: _buildChatInterface()),
+        // --- THIS IS THE FIX ---
+        if (isVoice)
+          Expanded(child: _buildVoiceInterface())
+        else
+          Expanded(child: _buildChatInterface()),
+        // -----------------------
+
         if (isVoice)
           Container(
             width: 480,
@@ -331,11 +326,50 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
-  // MODIFIED: To conditionally show text input or voice controls
+  // ADDED: New widget for the voice-only interface (web)
+  Widget _buildVoiceInterface() {
+    return Container(
+      color: AppColors.muted.withOpacity(0.3),
+      child: Column(
+        children: [
+          const Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    LucideIcons.phone,
+                    size: 64,
+                    color: AppColors.mutedForeground,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Voice Agent Panel',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                  Text(
+                    'Press "Start" to begin',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildVoiceControls(), // The existing Start/Pause/Decline buttons
+        ],
+      ),
+    );
+  }
+
   Widget _buildChatInterface() {
-    // CHANGED to new provider name
     final chatState = ref.watch(agentPreviewChatProvider);
-    final bool isVoice = _selectedChannel == 'voice';
+    // REMOVED: Unnecessary bool `isVoice` as this widget is now only for chat
 
     ref.listen(agentPreviewChatProvider, (_, __) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -364,7 +398,7 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: ChatMessageBubble(
                     message: msg.text,
-                    isUser: msg.isUser, // MODIFIED: directly use bool
+                    isUser: msg.isUser,
                     timestamp: msg.timestamp,
                     agentAvatar: 'assets/images/agent-sarah.jpg',
                   ),
@@ -380,11 +414,12 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                     style: TextStyle(color: AppColors.mutedForeground))
               ]),
             ),
-          // MODIFIED: Conditional input area
-          if (isVoice && Responsive.isMobile(context))
-            const SizedBox() // Voice controls are in the main body on mobile
-          else if (isVoice && !Responsive.isMobile(context))
-            _buildVoiceControls() // Show voice controls for web
+
+          // MODIFIED: Simplified this logic. It will now only show text input.
+          // The voice controls are handled by _buildVoiceInterface() on web
+          // and _buildVoiceAgentVisual() on mobile.
+          if (Responsive.isMobile(context) && _selectedChannel == 'voice')
+            const SizedBox() // On mobile, voice controls are elsewhere
           else
             _buildTextInput(chatState), // Show text input for whatsapp
         ],
@@ -392,7 +427,6 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
-  // ADDED: Extracted text input widget
   Widget _buildTextInput(ChatState chatState) {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -424,7 +458,6 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
-  // ADDED: Voice controls widget
   Widget _buildVoiceControls() {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -596,5 +629,3 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 }
-
-// REMOVED: In-file definition of ChatMessageBubble, as it's in its own file

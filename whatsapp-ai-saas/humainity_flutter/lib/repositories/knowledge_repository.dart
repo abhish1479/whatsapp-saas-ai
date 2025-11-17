@@ -115,23 +115,30 @@ class KnowledgeRepository {
 
   Future<String> queryRAG(String tenantId, String query) async {
     final uri = Uri.parse(
-        '$_baseUrl/rag/rag/query?tenant_id=$tenantId&q=${Uri.encodeComponent(query)}&n=3');
+        '$_baseUrl/rag/rag_test_query?tenant_id=$tenantId&q=${Uri.encodeComponent(query)}&n=3');
     try {
-      final response = await _client.get(uri, headers: {'accept': 'application/json'});
+      final response = await _client.post(uri, headers: {'accept': 'application/json'});
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         // The API response for RAG isn't specified, so we'll assume
         // it's a simple text response or a JSON object.
         // Let's check for a 'data' field, otherwise return the whole body.
-        if (body['data'] != null) {
-          return body['data'].toString();
+        if (body['success'] == true && body['data'] != null) {
+           return body['data'].toString();
+        } else if (body['success'] == true) {
+          // If it doesn't return the object, we'll have to manually create a temporary one
+          // or just trigger a refresh. Let's assume it returns the object for now.
+          throw Exception('NO Data Found in Knowledge Base.');
         }
-        return response.body; // Return the raw response string
-      } else {
-        throw Exception('Failed to query RAG: ${response.body}');
+        else {
+          throw Exception(body['error'] ?? 'Failed to fetch data');
+        }
       }
-    } catch (e) {
+      else {
+         throw Exception('Failed to fetch data: ${response.body}');
+      }
+    }catch (e) {
       debugPrint('Error in queryRAG: $e');
       rethrow;
     }
