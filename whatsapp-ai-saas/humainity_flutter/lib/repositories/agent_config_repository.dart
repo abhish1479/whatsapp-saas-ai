@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:humainity_flutter/models/agent_config_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart'; // HINT: Added for kIsWeb and Uint8List
 // --- CORRECTED IMPORT PATH AND USAGE ---
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
@@ -34,7 +35,7 @@ class AgentConfigRepository {
       tenantId: 0,
       agentName: 'Sarah',
       agentPersona:
-          'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
+      'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
       greetingMessage: 'Hello! How can I assist you today?',
       preferredLanguages: ['en'],
       conversationTone: 'friendly',
@@ -83,9 +84,12 @@ class AgentConfigRepository {
   }
 
   /// Saves the agent configuration to the API
+  // HINT: FIX 3c - Updated signature to accept bytes and filename for web upload
   Future<String?> saveAgentConfiguration({
     required AgentConfig config,
     File? agentImageFile,
+    Uint8List? agentImageBytes,
+    String? agentImageFileName,
   }) async {
     final tenantId = await storeUserData.getTenantId();
     final token = await storeUserData.getToken();
@@ -93,7 +97,8 @@ class AgentConfigRepository {
     final uri = Uri.parse('$_baseUrl/agent-config/update_agent_configuration');
 
     try {
-      final request = http.MultipartRequest('POST', uri);
+      // HINT: FIX 3 - Changed method from 'POST' to 'PUT' to fix 405 Method Not Allowed
+      final request = http.MultipartRequest('PUT', uri);
       request.headers['Authorization'] = 'Bearer $token';
 
       // --- 1. Create JSON Payload (Matches AgentConfigPayload Pydantic Model) ---
@@ -110,12 +115,23 @@ class AgentConfigRepository {
       // Add the JSON payload as a single field named 'payload'
       request.fields['payload'] = configJsonPayload;
 
-      // --- 2. Add Optional File ---
-      if (agentImageFile != null) {
+      // --- 2. Add Optional File (Cross-Platform) ---
+      if (agentImageFile != null && !kIsWeb) {
+        // Native platforms (File access via dart:io)
         request.files.add(
           await http.MultipartFile.fromPath(
             'agent_image', // MUST match Python argument name
             agentImageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+      } else if (agentImageBytes != null && agentImageFileName != null) {
+        // HINT: FIX 3c - Web platform (File access via bytes)
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'agent_image',
+            agentImageBytes,
+            filename: agentImageFileName,
             contentType: MediaType('image', 'jpeg'),
           ),
         );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humainity_flutter/models/agent_config_model.dart';
 import 'package:humainity_flutter/models/ai_agent.dart';
 import 'package:humainity_flutter/repositories/agent_config_repository.dart';
+import 'package:flutter/foundation.dart'; // HINT: Added for Uint8List
 
 // --- 1. The State Object ---
 // A simple class to hold all the data for the AI Agent Screen.
@@ -11,8 +12,10 @@ class AIAgentState {
   // to handle loading/error states.
   final AsyncValue<AgentConfig> config;
 
-  // A local file staged for upload (not yet on the server).
-  final File? localImageFile;
+  // HINT: FIX 3 - Added fields for cross-platform file staging
+  final File? localImageFile; // Used on native/for path reference
+  final Uint8List? localImageBytes; // Used on web/for actual upload data
+  final String? localImageFileName; // File name for upload
 
   // The ID of the currently selected preset (for UI highlighting).
   final String? selectedPresetId;
@@ -20,20 +23,26 @@ class AIAgentState {
   AIAgentState({
     this.config = const AsyncValue.loading(),
     this.localImageFile,
+    this.localImageBytes,
+    this.localImageFileName,
     this.selectedPresetId,
   });
 
   // Helper method to create a copy of the state
   AIAgentState copyWith({
     AsyncValue<AgentConfig>? config,
+    // HINT: FIX 3 - Updated copyWith to manage new file fields
     File? localImageFile,
+    Uint8List? localImageBytes,
+    String? localImageFileName,
     bool clearLocalImage = false,
     String? selectedPresetId,
   }) {
     return AIAgentState(
       config: config ?? this.config,
-      localImageFile:
-          clearLocalImage ? null : localImageFile ?? this.localImageFile,
+      localImageFile: clearLocalImage ? null : localImageFile ?? this.localImageFile,
+      localImageBytes: clearLocalImage ? null : localImageBytes ?? this.localImageBytes,
+      localImageFileName: clearLocalImage ? null : localImageFileName ?? this.localImageFileName,
       selectedPresetId: selectedPresetId ?? this.selectedPresetId,
     );
   }
@@ -83,8 +92,8 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
         finalSelectedPresetId = firstPreset.id;
       } else if (matchingPreset == null && finalConfig.agentName.isNotEmpty) {
         // If a custom config was loaded (has data, but doesn't match a preset),
-        // use the 'agent-david' ID as a proxy for the 'Custom Agent' selection.
-        finalSelectedPresetId = 'agent-david';
+        // use the 'agent-sarah' ID as a proxy for the 'Custom Agent' selection.
+        finalSelectedPresetId = 'agent-sarah';
       }
 
       // Set state to data
@@ -110,10 +119,12 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
     state = state.copyWith(config: AsyncValue.loading());
 
     try {
-      // Call the repository, passing the config data and the local file
+      // HINT: FIX 3 - Pass all staged image properties to the repository
       final newImageUrl = await _repository.saveAgentConfiguration(
         config: configToSave,
         agentImageFile: state.localImageFile,
+        agentImageBytes: state.localImageBytes,
+        agentImageFileName: state.localImageFileName,
       );
 
       // On success, update the state with the new config (which may have
@@ -149,15 +160,25 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
   }
 
   /// Stage a local image file for upload
-  void stageLocalImage(File imageFile, String localPath) {
+  // HINT: FIX 3a - Updated signature to handle bytes/path/name for cross-platform
+  void stageLocalImage({
+    File? imageFile,
+    Uint8List? imageBytes,
+    String? path,
+    String? name,
+  }) {
     if (!state.config.hasValue) return;
 
     state = state.copyWith(
+      // The File object is still needed for display on native platforms
       localImageFile: imageFile,
-      selectedPresetId: 'agent-david', // Custom
+      localImageBytes: imageBytes,
+      localImageFileName: name,
+      selectedPresetId: null, // Custom
       config: AsyncValue.data(
         state.config.value!.copyWith(
-          agentName: "",
+          // Use name if available, otherwise just 'Custom Agent'
+          agentName: name ?? 'Custom Agent',
           agentPersona: "Design your own AI persona from scratch.",
         ),
       ),
@@ -216,10 +237,10 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
   AiAgent? _findMatchingPreset(AgentConfig config) {
     try {
       return presetAgents.firstWhere(
-        (preset) =>
-            preset.name == config.agentName &&
-            preset.role == config.agentPersona &&
-            preset.imagePath == config.agentImage,
+            (preset) =>
+        preset.name == config.agentName &&
+            preset.role == config.agentPersona ,
+        // && preset.imagePath == config.agentImage,
       );
     } catch (e) {
       return null; // No match found
@@ -230,7 +251,7 @@ class AIAgentNotifier extends StateNotifier<AIAgentState> {
 // --- 3. The Main Provider (Exposed to UI) ---
 // This is the provider your AIAgentScreen will watch.
 final aiAgentProvider =
-    StateNotifierProvider<AIAgentNotifier, AIAgentState>((ref) {
+StateNotifierProvider<AIAgentNotifier, AIAgentState>((ref) {
   // It watches the repository provider...
   final repository = ref.watch(agentConfigRepositoryProvider);
   // ...and passes the repository instance to the Notifier.
