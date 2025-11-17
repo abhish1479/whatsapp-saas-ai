@@ -15,6 +15,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
 import 'package:humainity_flutter/models/agent_config_model.dart';
 import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
+import 'package:flutter/foundation.dart';
 
 // --- AIAgentScreen Widget ---
 class AIAgentScreen extends ConsumerStatefulWidget {
@@ -29,7 +30,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Utility function to handle image picking
-  Future<void> _pickImage(ImageSource source) async {
+  /*Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
 
@@ -37,6 +38,37 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
       final file = File(pickedFile.path);
       // Call the notifier method to stage the file
       ref.read(aiAgentProvider.notifier).stageLocalImage(file, pickedFile.path);
+    } else {
+      print('No image selected.');
+    }
+  }*/
+
+  // Utility function to handle image picking
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+
+    if (pickedFile != null) {
+      final name = pickedFile.name;
+      final path = pickedFile.path;
+
+      if (kIsWeb) {
+        // HINT: FIX 3a - On Web, read bytes and stage them directly
+        final bytes = await pickedFile.readAsBytes();
+        ref.read(aiAgentProvider.notifier).stageLocalImage(
+          imageBytes: bytes,
+          path: path,
+          name: name,
+        );
+      } else {
+        // HINT: FIX 3a - On Native, stage the File object
+        final file = File(path);
+        ref.read(aiAgentProvider.notifier).stageLocalImage(
+          imageFile: file,
+          path: path,
+          name: name,
+        );
+      }
     } else {
       print('No image selected.');
     }
@@ -314,9 +346,16 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   Widget _buildAvatarUploadCard(
       AgentConfig config, File? localImageFile, BuildContext context) {
     // Determine the image source
+    final agentState = ref.watch(aiAgentProvider);
+    final localImageBytes = agentState.localImageBytes;
+
+    // Determine the image source
     ImageProvider imageProvider;
-    if (localImageFile != null) {
-      // 1. Use local staged file
+    if (localImageBytes != null && kIsWeb) {
+      // HINT: FIX 3b - Use MemoryImage for staged web bytes (fixes blob URL error)
+      imageProvider = MemoryImage(localImageBytes);
+    } else if (localImageFile != null) {
+      // Use FileImage for native platforms
       imageProvider = FileImage(localImageFile);
     } else if (config.agentImage != null && config.agentImage!.isNotEmpty) {
       // 2. Use URL from API
@@ -393,7 +432,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
           // Agent Name Field
           AppTextField(
-            key: ValueKey('name_${config.agentName}'), // Keeps state in sync
+            // key: ValueKey('name_${config.agentName}'), // Keeps state in sync
             initialValue: config.agentName,
             labelText: 'Agent Name',
             hintText: 'e.g., Alex, Sarah',
@@ -411,7 +450,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
           // Agent Persona/Role Description Field
           AppTextField(
-            key: ValueKey('persona_${config.agentPersona.hashCode}'),
+            // key: ValueKey('persona_${config.agentPersona.hashCode}'),
             initialValue: config.agentPersona,
             labelText: 'Agent Persona / Role Description',
             hintText:
@@ -422,8 +461,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
               if (value == null || value.trim().isEmpty) {
                 return 'Agent Persona cannot be empty';
               }
-              if (value.length < 20) {
-                return 'Persona must be at least 20 characters';
+              if (value.length < 50) {
+                return 'Persona must be at least 50 characters';
               }
               return null;
             },
@@ -515,7 +554,6 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
           // Greeting Message
           AppTextField(
-            key: ValueKey('greeting_${config.greetingMessage.hashCode}'),
             initialValue: config.greetingMessage,
             labelText: 'Agent Greeting Message',
             hintText: 'e.g., Hello! How can I assist you today?',
@@ -589,17 +627,29 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
     );
     final brandingColor = preset.primaryColor;
 
-    // FIX: Determine the correct STRING PATH for ChatPreview
-    String imagePath;
-    if (localImageFile != null) {
-      // 1. Use the path from the locally staged file
-      imagePath = localImageFile.path;
+    // Determine the image source
+    final agentState = ref.watch(aiAgentProvider);
+    final localImageBytes = agentState.localImageBytes;
+
+    // Determine the image source
+    ImageProvider imageProvider;
+    if (localImageBytes != null && kIsWeb) {
+      // HINT: FIX 3b - Use MemoryImage for staged web bytes (fixes blob URL error)
+      imageProvider = MemoryImage(localImageBytes);
+    } else if (localImageFile != null) {
+      // Use FileImage for native platforms
+      imageProvider = FileImage(localImageFile);
     } else if (config.agentImage != null && config.agentImage!.isNotEmpty) {
-      // 2. Use the path from the config (could be asset or network URL)
-      imagePath = config.agentImage!;
+      // 2. Use URL from API
+      // Note: Use NetworkImage for http/https URLs, AssetImage for local assets
+      if (config.agentImage!.startsWith('http')) {
+        imageProvider = NetworkImage(config.agentImage!);
+      } else {
+        imageProvider = AssetImage(config.agentImage!);
+      }
     } else {
-      // 3. Fallback
-      imagePath = 'assets/images/agent-david.jpg';
+      // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
+      imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
     }
 
     return Column(
@@ -610,7 +660,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
             child: ChatPreview(
               agentName: config.agentName,
               // FIX: Pass the 'agentImage' string path, not 'agentImageProvider'
-              agentImage: imagePath,
+              agentImage: imageProvider,
               primaryColor: brandingColor,
             ),
           ),
