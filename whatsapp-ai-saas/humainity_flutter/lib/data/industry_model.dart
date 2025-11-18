@@ -11,6 +11,8 @@ class Industry {
   final List<Map<String, dynamic>> conversationFlow;
   final List<String> integrations;
   final List<Map<String, String>> results;
+  
+  final Color color; 
 
   const Industry({
     required this.id,
@@ -23,5 +25,6 @@ class Industry {
     required this.conversationFlow,
     required this.integrations,
     required this.results,
+    required this.color,
   });
 }

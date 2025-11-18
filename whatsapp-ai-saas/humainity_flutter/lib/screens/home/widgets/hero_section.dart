@@ -1,140 +1,370 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
+import 'package:humainity_flutter/screens/home/widgets/features_section.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
-class HeroSection extends StatelessWidget {
+class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    bool isMobile = Responsive.isMobile(context);
-    final TextAlign textAlign = isMobile ? TextAlign.center : TextAlign.left;
+  State<HeroSection> createState() => _HeroSectionState();
+}
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48.0),
-      // FIX: Using WebContainer (defined in responsive.dart)
-      child: WebContainer(
-        child: Column(
-          children: [
-            Wrap(
-              alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
-              runSpacing: 20,
-              spacing: 30,
-              children: [
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 500),
-                  child: Column(
-                    crossAxisAlignment: isMobile
-                        ? CrossAxisAlignment.center
-                        : CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.secondary),
-                        ),
-                        child: const Text(
-                          'AI-Powered Customer Engagement',
-                          style: TextStyle(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Scale Your Customer Interactions with Smart AI Agents',
-                        style: TextStyle(
-                          fontSize: isMobile ? 36 : 48,
-                          fontWeight: FontWeight.bold,
-                          height: 1.1,
-                        ),
-                        // FIX: Removed const keyword since 'textAlign' is non-constant
-                        textAlign: textAlign,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Deploy autonomous WhatsApp and Voice agents that are trained on your business knowledge to handle support, sales, and outreach 24/7.',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: AppColors.mutedForeground,
-                        ),
-                        textAlign: textAlign,
-                      ),
-                      const SizedBox(height: 32),
-                      Row(
-                        mainAxisAlignment: isMobile
-                            ? MainAxisAlignment.center
-                            : MainAxisAlignment.start,
-                        children: [
-                          AppButton(
-                            text: 'Start Free Trial',
-                            onPressed: () => context.go('/auth'),
-                          ),
-                          const SizedBox(width: 16),
-                          AppButton(
-                            text: 'Book a Demo',
-                            // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
-                            style: AppButtonStyle.tertiary,
-                            icon: const Icon(LucideIcons.calendar),
-                            onPressed: () {},
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: isMobile
-                            ? MainAxisAlignment.center
-                            : MainAxisAlignment.start,
-                        children: [
-                          const Icon(LucideIcons.check,
-                              size: 18, color: AppColors.success),
-                          const SizedBox(width: 8),
-                          Text('No Credit Card Required',
-                              style:
-                                  TextStyle(color: AppColors.mutedForeground)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 500),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/images/dashboard-preview.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 350,
-                          color: AppColors.border,
-                          child: const Center(child: Text("Image Placeholder")),
-                        );
-                      },
+class _HeroSectionState extends State<HeroSection>
+    with SingleTickerProviderStateMixin {
+  late AnimationController floatCtrl;
+  late Animation<double> floatAnim;
+
+  @override
+  void initState() {
+    super.initState();
+
+    floatCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
+    floatAnim = Tween<double>(begin: -12, end: 12).animate(
+      CurvedAnimation(parent: floatCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    floatCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        vertical: isMobile ? 60 : 100,
+        horizontal: 24,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFE8F0FE),
+            Color(0xFFF7FAFF),
+            Color(0xFFE9EEFF),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              /// Main content layout
+              Column(
+                crossAxisAlignment: isMobile
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.start,
+                children: [
+                  isMobile
+                      ? _buildMobileHero(context)
+                      : _buildDesktopHero(context),
+
+                  const SizedBox(height: 5),
+
+                  const Text(
+                    "- it's free! 🎉",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.primary,
                     ),
                   ),
+
+                  const SizedBox(height: 35),
+
+                  _buildKPISection(),
+                ],
+              ),
+
+              /// Floating icons (desktop only)
+              if (!isMobile)
+                Positioned(
+                  right: 0,
+                  bottom: 40,
+                  child: Column(
+                    children: [
+                      _floatingIcon(Icons.chat, Colors.green),
+                      const SizedBox(height: 16),
+                      _floatingIcon(Icons.phone, Colors.blue),
+                      const SizedBox(height: 16),
+                      _floatingIcon(Icons.message, Colors.red),
+                    ],
+                  ),
                 ),
-              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // DESKTOP HERO LAYOUT
+  // ---------------------------------------------------------------------------
+  Widget _buildDesktopHero(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: _leftHeroText(context)),
+        const SizedBox(width: 40),
+        Expanded(child: _rightHeroImageChats()),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // MOBILE HERO LAYOUT
+  // ---------------------------------------------------------------------------
+  Widget _buildMobileHero(BuildContext context) {
+    return Column(
+      children: [
+        _leftHeroText(context),
+        const SizedBox(height: 40),
+        _rightHeroImageChats(),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // LEFT TEXT SECTION
+  // ---------------------------------------------------------------------------
+  Widget _leftHeroText(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
+    return Column(
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "HumAInity.ai",
+          style: TextStyle(
+            color: Color(0xFF009BFF),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          "AI that Talks, Sells & Supports — Just Like You.",
+          style: TextStyle(
+            fontSize: 66,
+            fontWeight: FontWeight.w900,
+            height: 1.15,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          "Automate your customer support and sales outreach with AI agents "
+          "that understand your business, learn from your data, and engage "
+          "across WhatsApp and Voice.",
+          style: TextStyle(
+            fontSize: 18,
+            height: 1.5,
+            color: Colors.black54,
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        AppButton(
+          text: "Create Your AI Agent",
+          onPressed: () => context.go('/auth'),
+          isLg: true,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // RIGHT IMAGE + CHAT BUBBLES (INSIDE IMAGE CLIPPED)
+  // ---------------------------------------------------------------------------
+  Widget _rightHeroImageChats() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(40),
+      child: Stack(
+        children: [
+          SizedBox(
+            width: 550,
+            height: 620,
+            child: Image.asset(
+              "assets/images/ai-sales-agent.jpg",
+              fit: BoxFit.cover,
+            ),
+          ),
+
+ Positioned(
+            top: 30,
+            left: 20,
+            child: _chatBubbleWhite(
+              "Hi! 😊 I'm your AI Sales Agent. \n How can I help you today?",
+            ),
+          ),
+          /// BLUE bubble (Top Right)
+          Positioned(
+            top: 120,
+            right: 20,
+            child: _chatBubbleBlue(
+              "I'd like to schedule a property viewing.",
+            ),
+          ),
+
+          /// WHITE bubble (Middle Left)
+          Positioned(
+            top: 200,
+            left: 20,
+            child: _chatBubbleWhite(
+              "Got it! 👍 When would you like to book your appointment?",
+            ),
+          ),
+
+          /// WHITE bubble (Bottom Right)
+          Positioned(
+            top: 300,
+            right: 20,
+            child: _chatBubbleWhite(
+              "Tuesday works. Do you have any afternoon slots?",
+            ),
+          ),
+
+           Positioned(
+            top: 400,
+            left: 20,
+            child: _chatBubbleWhite(
+              "Absolutely! Here are the available time slots for \n Tuesday afternoon: \n 02:00 PM and 02:30 PM",
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CHAT BUBBLES
+  // ---------------------------------------------------------------------------
+  Widget _chatBubbleBlue(String text) {
+    return _animatedBubble(
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0EA5E9),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _chatBubbleWhite(String text) {
+    return _animatedBubble(
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 12,
+              offset: Offset(0, 4),
             ),
           ],
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 16, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  Widget _animatedBubble(Widget child) {
+    return AnimatedBuilder(
+      animation: floatAnim,
+      builder: (_, __) => Transform.translate(
+        offset: Offset(0, floatAnim.value),
+        child: child,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // KPI SECTION
+  // ---------------------------------------------------------------------------
+  Widget _buildKPISection() {
+    return Row(
+      children: [
+        _kpi("24/7", "Always Available"),
+        const SizedBox(width: 60),
+        _kpi("80%", "Faster Response"),
+        const SizedBox(width: 60),
+        _kpi("45%", "More Bookings"),
+      ],
+    );
+  }
+
+  Widget _kpi(String number, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          number,
+          style: const TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            color: AppColors.primary
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // FLOATING RIGHT SIDE ICONS
+  // ---------------------------------------------------------------------------
+  Widget _floatingIcon(IconData icon, Color color) {
+    return AnimatedBuilder(
+      animation: floatAnim,
+      builder: (_, __) => Transform.translate(
+        offset: Offset(0, floatAnim.value),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 12,
+              )
+            ],
+          ),
+          child: Icon(icon, size: 26, color: color),
         ),
       ),
     );

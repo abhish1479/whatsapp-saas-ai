@@ -9,11 +9,7 @@ import 'package:humainity_flutter/core/theme/app_colors.dart';
 // Google / Firebase
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
-// HTTP + .env + local storage
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -492,7 +488,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             children: [
               // Title
               const Text(
-                'Humanity AI',
+                'HumAInity.ai',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w900,
