@@ -106,7 +106,7 @@ class AuthRepository {
   }
 
   Future<void> _handleAuthResponse(Map<String, dynamic> data) async {
-    final token = data['access_token'];
+    final token = data['access_token'] ?? data['token'];
     if (token == null || token.toString().isEmpty) {
       throw Exception('Missing token in response');
     }
