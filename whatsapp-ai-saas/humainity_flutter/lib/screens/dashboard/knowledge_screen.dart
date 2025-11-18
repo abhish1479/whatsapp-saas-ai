@@ -12,6 +12,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:humainity_flutter/models/knowledge_source.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class KnowledgeScreen extends ConsumerStatefulWidget {
   const KnowledgeScreen({super.key});
@@ -299,7 +301,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                       variant: isScraped ? AppBadgeVariant.success : (isPending ? AppBadgeVariant.secondary : AppBadgeVariant.destructive),
                     ),
                     const SizedBox(height: 8),
-                    if (mobile)
+                    //if (mobile)
                       IconButton(
                         icon: const Icon(LucideIcons.refreshCw, size: 18),
                         color: AppColors.mutedForeground,
@@ -308,13 +310,13 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       )
-                    else
-                      AppButton(
-                        text: 'Refresh',
-                        icon: const Icon(LucideIcons.refreshCw, size: 14),
-                        onPressed: () => ref.read(knowledgeProvider.notifier).loadKnowledge(),
-                        style: AppButtonStyle.tertiary,
-                      ),
+                    // else
+                    //   AppButton(
+                    //     text: 'Refresh',
+                    //     icon: const Icon(LucideIcons.refreshCw, size: 14),
+                    //     onPressed: () => ref.read(knowledgeProvider.notifier).loadKnowledge(),
+                    //     style: AppButtonStyle.tertiary,
+                    //   ),
                   ],
                 ),
               ],
@@ -348,8 +350,9 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
   }
 
   Widget _buildKnowledgeTestCard(BuildContext context, KnowledgeState state) {
-    final bool mobile = isMobile(context);
+    final bool mobile = Responsive.isMobile(context);
 
+    // Helper widget to render the result as Markdown
     Widget _buildQueryResult() {
       if (state.queryResult == null) {
         return const Text(
@@ -357,13 +360,61 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
           style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
         );
       }
-      try {
-        final decoded = json.decode(state.queryResult!);
-        final prettyJson = const JsonEncoder.withIndent('  ').convert(decoded);
-        return Text(prettyJson, style: const TextStyle(color: AppColors.foreground, fontFamily: 'monospace', fontSize: 13));
-      } catch (e) {
-        return Text(state.queryResult!, style: const TextStyle(color: AppColors.foreground, fontSize: 14, height: 1.5));
-      }
+
+      // Render the result as Markdown
+      return MarkdownBody(
+        data: state.queryResult!,
+        selectable: true,
+        onTapLink: (text, href, title) {
+          if (href != null) {
+            try {
+              launchUrl(Uri.parse(href));
+            } catch (e) {
+              print('Could not launch $href: $e');
+            }
+          }
+        },
+        imageBuilder: (uri, title, alt) {
+          // Re-using the responsive image logic from chat_message_bubble
+          final bool isMobile = Responsive.isMobile(context);
+          final double maxImageWidth = isMobile ? 250.0 : 350.0;
+          const double maxImageHeight = 400.0;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: maxImageWidth,
+                maxHeight: maxImageHeight,
+              ),
+              child: Image.network(
+                uri.toString(),
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Text(
+                    '[Failed to load image: $alt]\n(Check console for CORS errors)',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      );
     }
 
     return AppCard(
@@ -374,52 +425,78 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             children: [
               Icon(LucideIcons.search, color: AppColors.primary, size: 20),
               SizedBox(width: 8),
-              Text('Test Knowledge Base', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              Text('Test Knowledge Base',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
           Flex(
             direction: mobile ? Axis.vertical : Axis.horizontal,
-            crossAxisAlignment: mobile ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
+            crossAxisAlignment: mobile
+                ? CrossAxisAlignment.stretch
+                : CrossAxisAlignment.center,
             children: [
               !mobile
-                  ? Expanded(child: AppTextField(controller: _queryController, labelText: 'Test Query', hintText: 'Ask a test question...'))
-                  : AppTextField(controller: _queryController, labelText: 'Test Query', hintText: 'Ask a test question...'),
+                  ? Expanded(
+                  child: AppTextField(
+                      controller: _queryController,
+                      labelText: 'Test Query',
+                      hintText: 'Ask a test question...'))
+                  : AppTextField(
+                  controller: _queryController,
+                  labelText: 'Test Query',
+                  hintText: 'Ask a test question...'),
               SizedBox(width: mobile ? 0 : 8, height: mobile ? 12 : 0),
-              AppButton(text: 'Test Query', onPressed: _runTestQuery, width: mobile ? double.infinity : null),
+              AppButton(
+                  text: 'Test Query',
+                  onPressed: _runTestQuery,
+                  width: mobile ? double.infinity : null),
             ],
           ),
           const SizedBox(height: 12),
           Visibility(
-            visible: _showQueryResult && (state.queryResult != null && state.queryResult!.isNotEmpty),
+            visible: _showQueryResult &&
+                (state.queryResult != null && state.queryResult!.isNotEmpty),
             child: Stack(
               children: [
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: AppColors.muted, borderRadius: BorderRadius.circular(8.0)),
-                  child: _buildQueryResult(),
+                  decoration: BoxDecoration(
+                      color: AppColors.muted,
+                      borderRadius: BorderRadius.circular(8.0)),
+                  child:
+                  _buildQueryResult(), // <-- Use the new Markdown renderer
                 ),
                 Positioned(
-                  top: 4, right: 4,
+                  top: 4,
+                  right: 4,
                   child: IconButton(
-                    icon: const Icon(LucideIcons.x, size: 16, color: AppColors.mutedForeground),
-                    onPressed: () => setState(() { _showQueryResult = false; }),
+                    icon: const Icon(LucideIcons.x,
+                        size: 16, color: AppColors.mutedForeground),
+                    onPressed: () => setState(() {
+                      _showQueryResult = false;
+                    }),
                     tooltip: 'Close result',
                   ),
+
                 ),
               ],
             ),
           ),
           Visibility(
-            visible: !_showQueryResult || (state.queryResult == null || state.queryResult!.isEmpty),
+            visible: !_showQueryResult ||
+                (state.queryResult == null || state.queryResult!.isEmpty),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppColors.muted, borderRadius: BorderRadius.circular(8.0)),
+              decoration: BoxDecoration(
+                  color: AppColors.muted,
+                  borderRadius: BorderRadius.circular(8.0)),
               child: const Text(
                 "Try asking: \"What are your product prices?\" or \"What's your refund policy?\"",
-                style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                style:
+                TextStyle(color: AppColors.mutedForeground, fontSize: 14),
               ),
             ),
           ),

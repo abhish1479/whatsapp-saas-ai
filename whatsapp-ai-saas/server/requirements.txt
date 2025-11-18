@@ -8,7 +8,7 @@ redis==5.0.8
 requests==2.32.3
 PyJWT==2.9.0
 passlib[bcrypt]==1.7.4
-chromadb==0.5.11
+chromadb>=0.5.14,<0.7.0
 tiktoken==0.7.0
 razorpay==1.4.2
 pydantic[email]

@@ -203,20 +203,16 @@ class WebIngestRequest(Base):
 
 class AgentConfiguration(Base):
     __tablename__ = "agent_configurations"
-    
+        
     id = Column(Integer, primary_key=True, index=True)
-    # NOTE: Ensure 'tenants.id' exists in your actual schema
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    # This ForeignKey is the source of the error when tenant_id=1 is missing
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True) 
     agent_name = Column(String(100), nullable=False)
-    agent_image = Column(String(500), nullable=True) # Stores the URL to the uploaded image
-    
-    # NEW/MODIFIED FIELDS
-    agent_persona = Column(Text, nullable=True) # The detailed role description
-    greeting_message = Column(String(500), nullable=True) # NEW: Initial message to customer
-    voice_model = Column(String(100), nullable=True) # NEW: Voice model ID (e.g., Eleven Labs)
-    
-    # EXISTING FIELDS
-    preferred_languages = Column(Text, nullable=False) # comma-separated: "en,es,fr"
+    agent_image = Column(String(500), nullable=True) 
+    agent_persona = Column(Text, nullable=True) 
+    greeting_message = Column(String(500), nullable=True) 
+    voice_model = Column(String(100), nullable=True) 
+    preferred_languages = Column(String(100), nullable=False, default="en")
     conversation_tone = Column(String(50), default="professional")
     incoming_voice_message_enabled = Column(Boolean, default=True)
     outgoing_voice_message_enabled = Column(Boolean, default=True)
@@ -225,8 +221,6 @@ class AgentConfiguration(Base):
     image_analyzer_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    # tenant = relationship("Tenant") # Assuming Tenant model exists
 
     __table_args__ = (
         Index('idx_tenant_agent', 'tenant_id', 'agent_name', unique=True),

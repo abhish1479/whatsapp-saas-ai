@@ -6,7 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// and appearance within a chat interface.
 class ChatPreview extends StatelessWidget {
   final String agentName;
-  final String agentImage;
+  final ImageProvider agentImage;
   final Color primaryColor;
 
   const ChatPreview({
@@ -79,7 +79,10 @@ class ChatPreview extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundImage: AssetImage(agentImage),
+            backgroundImage: agentImage,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            onBackgroundImageError: (exception, stackTrace) =>
+                print('Failed to load image chat preview: $exception'),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -104,7 +107,10 @@ class ChatPreview extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundImage: AssetImage(agentImage),
+          backgroundImage: agentImage,
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          onBackgroundImageError: (exception, stackTrace) =>
+              print('Failed to load image chat preview: $exception'),
         ),
         const SizedBox(width: 8),
         Flexible(

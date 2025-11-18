@@ -1,15 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // FIX: Added import for context.go()
+import 'package:go_router/go_router.dart';
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
 import 'package:humainity_flutter/core/providers/chat_provider.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainity_flutter/core/utils/responsive.dart';
+import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
 import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:intl/intl.dart'; // FIX: Added import for DateFormat
+import 'package:intl/intl.dart';
+import 'package:toggle_switch/toggle_switch.dart';
 
 class AgentPreviewScreen extends ConsumerStatefulWidget {
   const AgentPreviewScreen({super.key});
@@ -79,12 +83,25 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     final text = _messageController.text;
     if (text.trim().isEmpty) return;
 
-    ref.read(chatProvider.notifier).sendMessage(text);
+    ref.read(agentPreviewChatProvider.notifier).sendMessage(text);
     _messageController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authNotifierProvider, (previous, next) {
+      if (previous?.isAuthenticated == true && !next.isAuthenticated) {
+        ref.read(agentPreviewChatProvider.notifier).clearChat();
+      }
+    });
+
+    if (Responsive.isMobile(context)) {
+      return _buildMobileLayout();
+    }
+    return _buildWebLayout();
+  }
+
+  Widget _buildWebLayout() {
     return Row(
       children: [
         _buildChannelsSidebar(),
@@ -97,6 +114,37 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Column(
+      children: [
+        _buildPreviewHeader(),
+        _buildMobileChannelSelector(),
+        Expanded(child: _buildPreviewContent()),
+      ],
+    );
+  }
+
+  Widget _buildMobileChannelSelector() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ToggleSwitch(
+        minWidth: double.infinity,
+        initialLabelIndex: _selectedChannel == 'voice' ? 0 : 1,
+        cornerRadius: 8.0,
+        activeBgColor: const [AppColors.primary],
+        activeFgColor: AppColors.primaryForeground,
+        inactiveBgColor: AppColors.muted,
+        inactiveFgColor: AppColors.mutedForeground,
+        totalSwitches: 2,
+        labels: const ['Voice Agent', 'WhatsApp Agent'],
+        icons: const [LucideIcons.volume2, LucideIcons.messageSquare],
+        onToggle: (index) {
+          _selectChannel(index == 0 ? 'voice' : 'whatsapp');
+        },
+      ),
     );
   }
 
@@ -199,22 +247,21 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                     color: isVoice ? AppColors.warning : AppColors.success),
               ),
               const SizedBox(width: 16),
-              Text(
-                isVoice
-                    ? 'Your Agent is now ready for direct voice calls'
-                    : 'Connect your business number',
-                style: const TextStyle(
-                    color: AppColors.mutedForeground, fontSize: 14),
-              ),
+              if (!Responsive.isMobile(context))
+                Text(
+                  isVoice
+                      ? 'Your Agent is now ready for direct voice calls'
+                      : 'Connect your business number',
+                  style: const TextStyle(
+                      color: AppColors.mutedForeground, fontSize: 14),
+                ),
             ],
           ),
           AppButton(
             text: 'Settings',
-            icon: const Icon(LucideIcons.settings), // FIX: Wrapped in Icon()
-            // FIX: Use the correct parameter 'style' and value 'AppButtonStyle.tertiary'
+            icon: const Icon(LucideIcons.settings),
             style: AppButtonStyle.tertiary,
-            onPressed: () => context
-                .go('/dashboard/settings'), // FIX: context.go() now works
+            onPressed: () => context.go('/dashboard/settings'),
           ),
         ],
       ),
@@ -223,9 +270,26 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
 
   Widget _buildPreviewContent() {
     final bool isVoice = _selectedChannel == 'voice';
+    final bool isMobile = Responsive.isMobile(context);
+
+    if (isMobile) {
+      if (isVoice) {
+        return _buildVoiceAgentVisual();
+      } else {
+        return _buildChatInterface();
+      }
+    }
+
+    // MODIFIED: Web layout now conditionally shows voice or chat interface
     return Row(
       children: [
-        Expanded(child: _buildChatInterface()),
+        // --- THIS IS THE FIX ---
+        if (isVoice)
+          Expanded(child: _buildVoiceInterface())
+        else
+          Expanded(child: _buildChatInterface()),
+        // -----------------------
+
         if (isVoice)
           Container(
             width: 480,
@@ -262,9 +326,52 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
+  // ADDED: New widget for the voice-only interface (web)
+  Widget _buildVoiceInterface() {
+    return Container(
+      color: AppColors.muted.withOpacity(0.3),
+      child: Column(
+        children: [
+          const Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    LucideIcons.phone,
+                    size: 64,
+                    color: AppColors.mutedForeground,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Voice Agent Panel',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                  Text(
+                    'Press "Start" to begin',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildVoiceControls(), // The existing Start/Pause/Decline buttons
+        ],
+      ),
+    );
+  }
+
   Widget _buildChatInterface() {
-    final chatState = ref.watch(chatProvider);
-    ref.listen(chatProvider, (_, __) {
+    final chatState = ref.watch(agentPreviewChatProvider);
+    // REMOVED: Unnecessary bool `isVoice` as this widget is now only for chat
+
+    ref.listen(agentPreviewChatProvider, (_, __) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -289,10 +396,9 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                 final msg = chatState.messages[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
-                  // FIX: ChatMessageBubble is now defined
                   child: ChatMessageBubble(
-                    message: msg.content,
-                    isUser: msg.role == 'user',
+                    message: msg.text,
+                    isUser: msg.isUser,
                     timestamp: msg.timestamp,
                     agentAvatar: 'assets/images/agent-sarah.jpg',
                   ),
@@ -308,33 +414,77 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                     style: TextStyle(color: AppColors.mutedForeground))
               ]),
             ),
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              border: Border(top: BorderSide(color: AppColors.border)),
+
+          // MODIFIED: Simplified this logic. It will now only show text input.
+          // The voice controls are handled by _buildVoiceInterface() on web
+          // and _buildVoiceAgentVisual() on mobile.
+          if (Responsive.isMobile(context) && _selectedChannel == 'voice')
+            const SizedBox() // On mobile, voice controls are elsewhere
+          else
+            _buildTextInput(chatState), // Show text input for whatsapp
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextInput(ChatState chatState) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: AppTextField(
+              labelText: 'Your message',
+              controller: _messageController,
+              hintText: 'I would like to learn more...',
+              onChanged: (val) => setState(() {}),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    labelText: 'Your message', // FIX: Added labelText
-                    controller: _messageController,
-                    hintText: 'I would like to learn more...',
-                    onChanged: (val) => setState(() {}),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                AppButton(
-                  text: 'Send',
-                  icon: const Icon(LucideIcons.send), // FIX: Wrapped in Icon()
-                  onPressed: _messageController.text.trim().isEmpty ||
-                          chatState.isLoading
-                      ? null
-                      : _sendMessage,
-                ),
-              ],
-            ),
+          ),
+          const SizedBox(width: 8),
+          AppButton(
+            text: 'Send',
+            icon: const Icon(LucideIcons.send),
+            onPressed:
+            _messageController.text.trim().isEmpty || chatState.isLoading
+                ? null
+                : _sendMessage,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoiceControls() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          AppButton(
+            text: 'Start',
+            icon: const Icon(LucideIcons.play),
+            style: AppButtonStyle.primary,
+            onPressed: () {},
+          ),
+          AppButton(
+            text: 'Pause',
+            icon: const Icon(LucideIcons.pause),
+            style: AppButtonStyle.secondary,
+            onPressed: () {},
+          ),
+          AppButton(
+            text: 'Decline',
+            icon: const Icon(LucideIcons.phoneOff),
+            style: AppButtonStyle.destructive,
+            onPressed: () {},
           ),
         ],
       ),
@@ -458,99 +608,20 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
           width: 250,
           child: Column(
             children: [
-              // FIX: Use AppButtonStyle.tertiary
               AppButton(
                   text: 'Popular Destinations',
                   style: AppButtonStyle.tertiary,
                   onPressed: () {}),
               const SizedBox(height: 8),
-              // FIX: Use AppButtonStyle.tertiary
               AppButton(
                   text: 'Flight Information',
                   style: AppButtonStyle.tertiary,
                   onPressed: () {}),
               const SizedBox(height: 8),
-              // FIX: Use AppButtonStyle.tertiary
               AppButton(
                   text: 'Hotel Recommendations',
                   style: AppButtonStyle.tertiary,
                   onPressed: () {}),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// FIX: Added the missing ChatMessageBubble widget
-class ChatMessageBubble extends StatelessWidget {
-  final String message;
-  final bool isUser;
-  final DateTime timestamp;
-  final String? agentAvatar;
-
-  const ChatMessageBubble({
-    super.key,
-    required this.message,
-    required this.isUser,
-    required this.timestamp,
-    this.agentAvatar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final alignment =
-        isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    final color = isUser ? AppColors.primary : AppColors.card;
-    final textColor =
-        isUser ? AppColors.primaryForeground : AppColors.cardForeground;
-
-    return Row(
-      mainAxisAlignment:
-          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!isUser) ...[
-          AppAvatar(
-            imageUrl: agentAvatar,
-            fallbackText: 'AI',
-            radius: 16,
-          ),
-          const SizedBox(width: 8),
-        ],
-        Flexible(
-          child: Column(
-            crossAxisAlignment: alignment,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(12),
-                    topRight: const Radius.circular(12),
-                    bottomLeft: isUser
-                        ? const Radius.circular(12)
-                        : const Radius.circular(0),
-                    bottomRight: isUser
-                        ? const Radius.circular(0)
-                        : const Radius.circular(12),
-                  ),
-                  border: isUser ? null : Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  message,
-                  style: TextStyle(color: textColor, fontSize: 14),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat.jm().format(timestamp),
-                style: const TextStyle(
-                    color: AppColors.mutedForeground, fontSize: 10),
-              ),
             ],
           ),
         ),

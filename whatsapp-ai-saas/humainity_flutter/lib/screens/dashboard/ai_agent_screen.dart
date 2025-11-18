@@ -12,21 +12,25 @@ import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
-// Import the new provider
 import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
-// Import the config model
 import 'package:humainity_flutter/models/agent_config_model.dart';
-// IMPORTANT: Ensure ChatPreview is imported correctly
 import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
-
-// --- REMOVED ALL LOCAL STATEPROVIDERS ---
+import 'package:flutter/foundation.dart';
 
 // --- AIAgentScreen Widget ---
-class AIAgentScreen extends ConsumerWidget {
+class AIAgentScreen extends ConsumerStatefulWidget {
   const AIAgentScreen({super.key});
 
+  @override
+  ConsumerState<AIAgentScreen> createState() => _AIAgentScreenState();
+}
+
+class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
+  // --- ADD FORM KEY FOR VALIDATION ---
+  final _formKey = GlobalKey<FormState>();
+
   // Utility function to handle image picking
-  Future<void> _pickImage(WidgetRef ref, ImageSource source) async {
+  /*Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
 
@@ -37,10 +41,41 @@ class AIAgentScreen extends ConsumerWidget {
     } else {
       print('No image selected.');
     }
+  }*/
+
+  // Utility function to handle image picking
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+
+    if (pickedFile != null) {
+      final name = pickedFile.name;
+      final path = pickedFile.path;
+
+      if (kIsWeb) {
+        // HINT: FIX 3a - On Web, read bytes and stage them directly
+        final bytes = await pickedFile.readAsBytes();
+        ref.read(aiAgentProvider.notifier).stageLocalImage(
+          imageBytes: bytes,
+          path: path,
+          name: name,
+        );
+      } else {
+        // HINT: FIX 3a - On Native, stage the File object
+        final file = File(path);
+        ref.read(aiAgentProvider.notifier).stageLocalImage(
+          imageFile: file,
+          path: path,
+          name: name,
+        );
+      }
+    } else {
+      print('No image selected.');
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     // Watch the single state provider
     final agentState = ref.watch(aiAgentProvider);
     final selectedPresetId = agentState.selectedPresetId;
@@ -92,58 +127,70 @@ class AIAgentScreen extends ConsumerWidget {
                 ),
               ),
             ),
+
             // --- DATA LOADED STATE ---
             data: (config) {
               // isSaving is true if the state is AsyncLoading but still has a value
               final isSaving =
                   agentState.config.isLoading && agentState.config.hasValue;
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              return Column(
                 children: [
-                  // Left Column: Configuration Panels
-                  Expanded(
-                    flex: Responsive.isDesktop(context) ? 2 : 1,
-                    child: Column(
+                  // --- WRAP FORM FIELDS IN A FORM WIDGET ---
+                  Form(
+                    key: _formKey,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildAvatarUploadCard(
-                            ref, config, agentState.localImageFile, context),
-                        const SizedBox(height: 24),
-                        _buildAgentDescriptionCard(ref, config, context),
-                        const SizedBox(height: 24),
-                        _buildConversationSettingsCard(ref, config, context),
-                        const SizedBox(height: 24),
-                        _buildActionButtons(ref, isSaving),
+                        // Left Column: Configuration Panels
+                        Expanded(
+                          flex: Responsive.isDesktop(context) ? 2 : 1,
+                          child: Column(
+                            children: [
+                              _buildAvatarUploadCard(
+                                  config, agentState.localImageFile, context),
+                              const SizedBox(height: 24),
+                              _buildAgentDescriptionCard(ref, config, context),
+                              const SizedBox(height: 24),
+                              _buildConversationSettingsCard(
+                                  ref, config, context),
+                              const SizedBox(height: 24),
+                              _buildActionButtons(ref, isSaving),
+                            ],
+                          ),
+                        ),
+
+                        // Right Column: Live Preview
+                        if (Responsive.isDesktop(context))
+                          const SizedBox(width: 24),
+                        if (Responsive.isDesktop(context))
+                          Expanded(
+                            flex: 1,
+                            child: SizedBox(
+                              height: 700,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Live Preview',
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: _buildLiveBrandingPreview(
+                                      config,
+                                      agentState.localImageFile,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-
-                  // Right Column: Live Preview
-                  if (Responsive.isDesktop(context)) const SizedBox(width: 24),
-                  if (Responsive.isDesktop(context))
-                    Expanded(
-                      flex: 1,
-                      child: SizedBox(
-                        height: 700,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Live Preview',
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 16),
-                            Expanded(
-                              child: _buildLiveBrandingPreview(
-                                config,
-                                agentState.localImageFile,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                 ],
               );
             },
@@ -153,9 +200,47 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
+  // --- NEW: Default Config Banner Widget ---
+  Widget _buildDefaultConfigBanner() {
+    return AppCard(
+      padding: const EdgeInsets.all(16.0),
+      color: AppColors.primary.withOpacity(0.1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(LucideIcons.info, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Welcome! Please configure your AI Agent.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your configuration was not found on the server. We have pre-filled the form with the default agent. Please customize the details and click "Save Changes" to activate your new AI assistant.',
+                  style: TextStyle(
+                    color: AppColors.primary.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // --- 1. Agent Selection (Responsive Grid/Wrap) ---
   Widget _buildAgentSelectionCard(
       WidgetRef ref, String? selectedPresetId, BuildContext context) {
+    // ... (This widget is identical to your provided file) ...
     return AppCard(
       margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(10.0),
@@ -258,14 +343,21 @@ class AIAgentScreen extends ConsumerWidget {
   }
 
   // --- 2. Avatar Upload ---
-  Widget _buildAvatarUploadCard(WidgetRef ref, AgentConfig config,
-      File? localImageFile, BuildContext context) {
+  Widget _buildAvatarUploadCard(
+      AgentConfig config, File? localImageFile, BuildContext context) {
+    // Determine the image source
+    final agentState = ref.watch(aiAgentProvider);
+    final localImageBytes = agentState.localImageBytes;
+
     // Determine the image source
     ImageProvider imageProvider;
-    if (localImageFile != null) {
-      // 1. Use local staged file
+    if (localImageBytes != null && kIsWeb) {
+      // HINT: FIX 3b - Use MemoryImage for staged web bytes (fixes blob URL error)
+      imageProvider = MemoryImage(localImageBytes);
+    } else if (localImageFile != null) {
+      // Use FileImage for native platforms
       imageProvider = FileImage(localImageFile);
-    } else if (config.agentImage != null) {
+    } else if (config.agentImage != null && config.agentImage!.isNotEmpty) {
       // 2. Use URL from API
       // Note: Use NetworkImage for http/https URLs, AssetImage for local assets
       if (config.agentImage!.startsWith('http')) {
@@ -275,7 +367,7 @@ class AIAgentScreen extends ConsumerWidget {
       }
     } else {
       // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
-      imageProvider = const AssetImage('assets/images/agent-david.jpg');
+      imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
     }
 
     return AppCard(
@@ -307,7 +399,7 @@ class AIAgentScreen extends ConsumerWidget {
                 child: AppButton(
                   text: 'Upload Agent Avatar',
                   icon: const Icon(LucideIcons.image),
-                  onPressed: () => _pickImage(ref, ImageSource.gallery),
+                  onPressed: () => _pickImage(ImageSource.gallery),
                   style: AppButtonStyle.tertiary,
                 ),
               ),
@@ -318,7 +410,7 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- 3. Agent Description ---
+  // --- 3. Agent Description (WITH VALIDATION) ---
   Widget _buildAgentDescriptionCard(
       WidgetRef ref, AgentConfig config, BuildContext context) {
     return AppCard(
@@ -340,12 +432,17 @@ class AIAgentScreen extends ConsumerWidget {
 
           // Agent Name Field
           AppTextField(
-            // FIX: Add key to force rebuild when config data changes
-            key: ValueKey('name_${config.agentName}'),
+            // key: ValueKey('name_${config.agentName}'), // Keeps state in sync
             initialValue: config.agentName,
             labelText: 'Agent Name',
             hintText: 'e.g., Alex, Sarah',
-            // Call notifier method on change
+            // --- ADD VALIDATION ---
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Agent Name cannot be empty';
+              }
+              return null;
+            },
             onChanged: (val) =>
                 ref.read(aiAgentProvider.notifier).updateAgentName(val),
           ),
@@ -353,14 +450,22 @@ class AIAgentScreen extends ConsumerWidget {
 
           // Agent Persona/Role Description Field
           AppTextField(
-            // FIX: Add key to force rebuild when config data changes
-            key: ValueKey('persona_${config.agentPersona.hashCode}'),
+            // key: ValueKey('persona_${config.agentPersona.hashCode}'),
             initialValue: config.agentPersona,
             labelText: 'Agent Persona / Role Description',
             hintText:
                 'Describe in detail how your agent should behave and what its core goal is.',
             maxLines: 8,
-            // Call notifier method on change
+            // --- ADD VALIDATION ---
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Agent Persona cannot be empty';
+              }
+              if (value.length < 50) {
+                return 'Persona must be at least 50 characters';
+              }
+              return null;
+            },
             onChanged: (val) =>
                 ref.read(aiAgentProvider.notifier).updateAgentPersona(val),
           ),
@@ -372,7 +477,7 @@ class AIAgentScreen extends ConsumerWidget {
   }
 
   Widget _buildRoleTags(WidgetRef ref, String currentPersona) {
-    // This can remain as-is, as it just calls the notifier
+    // ... (This widget remains unchanged) ...
     final roleDescriptions = {
       'Sales Lead':
           'Act as an aggressive sales lead qualification specialist, asking targeted questions.',
@@ -413,7 +518,7 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- 4. Conversation Settings (Voice Model Removed) ---
+  // --- 4. Conversation Settings (WITH VALIDATION) ---
   Widget _buildConversationSettingsCard(
       WidgetRef ref, AgentConfig config, BuildContext context) {
     final selectedLanguageCode = config.preferredLanguages.isNotEmpty
@@ -453,6 +558,13 @@ class AIAgentScreen extends ConsumerWidget {
             labelText: 'Agent Greeting Message',
             hintText: 'e.g., Hello! How can I assist you today?',
             maxLines: 2,
+            // --- ADD VALIDATION ---
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Greeting Message cannot be empty';
+              }
+              return null;
+            },
             onChanged: (val) =>
                 ref.read(aiAgentProvider.notifier).updateGreetingMessage(val),
           ),
@@ -501,13 +613,12 @@ class AIAgentScreen extends ConsumerWidget {
               ),
             ],
           ),
-          // --- Voice Model Dropdown REMOVED ---
         ],
       ),
     );
   }
 
-  // --- 5. Live Branding Preview (ChatPreview Fix) ---
+  // --- 5. Live Branding Preview ---
   Widget _buildLiveBrandingPreview(AgentConfig config, File? localImageFile) {
     // Find the associated preset color, or use default
     final preset = presetAgents.firstWhere(
@@ -516,17 +627,29 @@ class AIAgentScreen extends ConsumerWidget {
     );
     final brandingColor = preset.primaryColor;
 
-    // FIX: Determine the correct STRING PATH for ChatPreview
-    String imagePath;
-    if (localImageFile != null) {
-      // 1. Use the path from the locally staged file
-      imagePath = localImageFile.path;
-    } else if (config.agentImage != null) {
-      // 2. Use the path from the config (could be asset or network URL)
-      imagePath = config.agentImage!;
+    // Determine the image source
+    final agentState = ref.watch(aiAgentProvider);
+    final localImageBytes = agentState.localImageBytes;
+
+    // Determine the image source
+    ImageProvider imageProvider;
+    if (localImageBytes != null && kIsWeb) {
+      // HINT: FIX 3b - Use MemoryImage for staged web bytes (fixes blob URL error)
+      imageProvider = MemoryImage(localImageBytes);
+    } else if (localImageFile != null) {
+      // Use FileImage for native platforms
+      imageProvider = FileImage(localImageFile);
+    } else if (config.agentImage != null && config.agentImage!.isNotEmpty) {
+      // 2. Use URL from API
+      // Note: Use NetworkImage for http/https URLs, AssetImage for local assets
+      if (config.agentImage!.startsWith('http')) {
+        imageProvider = NetworkImage(config.agentImage!);
+      } else {
+        imageProvider = AssetImage(config.agentImage!);
+      }
     } else {
-      // 3. Fallback
-      imagePath = 'assets/images/agent-david.jpg';
+      // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
+      imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
     }
 
     return Column(
@@ -537,7 +660,7 @@ class AIAgentScreen extends ConsumerWidget {
             child: ChatPreview(
               agentName: config.agentName,
               // FIX: Pass the 'agentImage' string path, not 'agentImageProvider'
-              agentImage: imagePath,
+              agentImage: imageProvider,
               primaryColor: brandingColor,
             ),
           ),
@@ -546,7 +669,7 @@ class AIAgentScreen extends ConsumerWidget {
     );
   }
 
-  // --- 6. Action Buttons ---
+  // --- 6. Action Buttons (WITH VALIDATION) ---
   Widget _buildActionButtons(WidgetRef ref, bool isSaving) {
     return Row(
       children: [
@@ -555,7 +678,6 @@ class AIAgentScreen extends ConsumerWidget {
           flex: 1,
           child: AppButton(
             text: 'Reset to Default',
-            // Disable reset button while saving
             onPressed: isSaving
                 ? null
                 : () {
@@ -574,7 +696,19 @@ class AIAgentScreen extends ConsumerWidget {
             onPressed: isSaving
                 ? null
                 : () async {
-                    // Show snackbar on success/error
+                    // --- VALIDATE FORM BEFORE SAVING ---
+                    if (!_formKey.currentState!.validate()) {
+                      // If form is invalid, show error and stop.
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ Please fix errors in the form.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // --- Form is valid, proceed to save ---
                     final scaffoldMessenger = ScaffoldMessenger.of(ref.context);
                     try {
                       await ref

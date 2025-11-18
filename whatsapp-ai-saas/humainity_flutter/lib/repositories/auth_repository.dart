@@ -1,10 +1,21 @@
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
+// --- 1. Repository Provider ---
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  // Get the initialized store service
+  final storeUserData = ref.watch(storeUserDataProvider);
+  return AuthRepository(storeUserData);
+});
+
+// --- 2. Repository Class ---
+
 class AuthRepository {
-  final _store = StoreUserData();
+  final StoreUserData? _store;
+  AuthRepository(this._store);
 
   String get _baseUrl {
     final url = dotenv.env['API_BASE_URL'];
@@ -13,10 +24,10 @@ class AuthRepository {
     }
     return url;
   }
-  
+
   // NEW: For App Hydration - Check if a token is present
   Future<bool> getAuthStatus() async {
-    final token = await _store.getToken();
+    final token = await _store!.getToken();
     return token != null && token.isNotEmpty;
   }
 
@@ -91,7 +102,7 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
-    await _store.clear();
+    await _store!.clear();
   }
 
   Future<void> _handleAuthResponse(Map<String, dynamic> data) async {
@@ -100,26 +111,28 @@ class AuthRepository {
       throw Exception('Missing token in response');
     }
 
-    await _store.setToken(token);
+    await _store!.setToken(token);
 
     if (data['tenant_id'] != null) {
-      await _store.setTenantId(data['tenant_id'].toString());
+      await _store!.setTenantId(data['tenant_id'].toString());
     }
 
     if (data['user'] is Map) {
       final user = data['user'] as Map<String, dynamic>;
-      if (user['name'] != null) await _store.setUserName(user['name']);
-      if (user['email'] != null) await _store.setEmail(user['email']);
-      if (user['picture'] != null) await _store.setProfilePic(user['picture']);
+      if (user['name'] != null) await _store!.setUserName(user['name']);
+      if (user['email'] != null) await _store!.setEmail(user['email']);
+      if (user['picture'] != null) await _store!.setProfilePic(user['picture']);
     }
 
-    await _store.setLoggedIn(true);
+    await _store!.setLoggedIn(true);
   }
 
   String _safeError(http.Response res, String context) {
     try {
       final body = jsonDecode(res.body);
-      return body['message']?.toString() ?? body['error']?.toString() ?? '$context (${res.statusCode})';
+      return body['message']?.toString() ??
+          body['error']?.toString() ??
+          '$context (${res.statusCode})';
     } catch (_) {
       // Fallback for non-JSON or unexpected body
       if (res.statusCode >= 500) {

@@ -1,75 +1,80 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// --- 1. Provider for SharedPreferences ---
+// This provider asynchronously gets the SharedPreferences instance, handling initialization
+final sharedPreferencesProvider =
+    FutureProvider<SharedPreferences>((ref) async {
+  return await SharedPreferences.getInstance();
+});
+
 class StoreUserData {
+  final SharedPreferences _prefs;
+  StoreUserData(this._prefs);
+
   // ----------- WRITE DATA -----------
   Future<void> setToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
+    await _prefs.setString('token', token);
   }
 
   Future<void> setTenantId(String tenantId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tenant_id', tenantId);
+    await _prefs.setString('tenant_id', tenantId);
   }
 
   Future<void> setLoggedIn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', value);
+    await _prefs.setBool('is_logged_in', value);
   }
 
   Future<void> setUserName(String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_name', name);
+    await _prefs.setString('user_name', name);
   }
 
   Future<void> setEmail(String email) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('email', email);
+    await _prefs.setString('email', email);
   }
 
   Future<void> setProfilePic(String? url) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (url != null) await prefs.setString('profile_pic', url);
-  }
-
-  Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('tenant_id');
-    await prefs.remove('is_logged_in');
-    await prefs.remove('user_name');
-    await prefs.remove('email');
-    await prefs.remove('profile_pic');
+    if (url != null) await _prefs.setString('profile_pic', url);
   }
 
   // ----------- READ DATA -----------
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+    return _prefs.getString('token');
   }
 
   Future<String?> getTenantId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('tenant_id');
+    return _prefs.getString('tenant_id');
   }
 
   Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('is_logged_in') ?? false;
+    return _prefs.getBool('is_logged_in') ?? false;
   }
 
   Future<String?> getUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('user_name');
+    return _prefs.getString('user_name');
   }
 
   Future<String?> getEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('email');
+    return _prefs.getString('email');
   }
 
   Future<String?> getProfilePic() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('profile_pic');
+    return _prefs.getString('profile_pic');
+  }
+
+  Future<void> clear() async {
+    await _prefs.clear();
   }
 }
+
+// --- 3. Provider for the StoreUserData Service ---
+final storeUserDataProvider = Provider<StoreUserData?>((ref) {
+  final prefsAsync = ref.watch(sharedPreferencesProvider);
+
+  // We return null while SharedPreferences is loading
+  return prefsAsync.when(
+    data: (prefs) => StoreUserData(prefs),
+    loading: () => null,
+    error: (e, s) => null,
+  );
+});

@@ -1,24 +1,29 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/supabase_provider.dart';
-// FIX: Removed unused Supabase import
-// import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:humainity_flutter/repositories/chat_repository.dart';
 
+import '../storage/store_user_data.dart';
+
+// 1. Model for a chat message
 class ChatMessage {
-  final String role;
-  final String content;
+  final String text;
+  final bool isUser;
   final DateTime timestamp;
 
-  ChatMessage({required this.role, required this.content, required this.timestamp});
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+  });
 }
 
+// 2. Model for the chat state
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
   final String? error;
 
   ChatState({
-    required this.messages,
+    this.messages = const [],
     this.isLoading = false,
     this.error,
   });
@@ -36,22 +41,21 @@ class ChatState {
   }
 }
 
-class ChatNotifier extends StateNotifier<ChatState> {
-  final Ref _ref;
+// 3. StateNotifier for chat logic
+class AgentPreviewChatNotifier extends StateNotifier<ChatState> {
+  final ChatRepository _chatRepository;
+  final StoreUserData storeUserData;
 
-  ChatNotifier(this._ref)
-      : super(ChatState(messages: [
-    ChatMessage(
-      role: 'assistant',
-      content: "Hi! Let's train together. Ask me questions or give me scenarios to practice.",
-      timestamp: DateTime.now(),
-    )
-  ]));
+  AgentPreviewChatNotifier(this._chatRepository, this.storeUserData)
+      : super(ChatState());
 
   Future<void> sendMessage(String text) async {
-    final userMessage = ChatMessage(role: 'user', content: text, timestamp: DateTime.now());
-
-    // Add user message to state immediately
+    // Add user message to state
+    final userMessage = ChatMessage(
+      text: text,
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
     state = state.copyWith(
       messages: [...state.messages, userMessage],
       isLoading: true,
@@ -59,38 +63,23 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
 
     try {
-      // Prepare message history for the API
-      final apiMessages = state.messages.map((msg) => {
-        'role': msg.role,
-        'content': msg.content
-      }).toList();
-
-      // Call the Supabase Edge Function
-      final response = await _ref.read(supabaseClientProvider).functions.invoke(
-        'chat',
-        body: {'messages': apiMessages},
-      );
-
-      // FIX: Correct error handling for FunctionResponse
-      if (response.data == null || response.data['error'] != null) {
-        throw Exception(response.data?['error'] ?? 'Unknown function error');
-      }
-
-      final assistantMessage = ChatMessage(
-        role: 'assistant',
-        content: response.data['response'] ?? "Sorry, I couldn't process that.",
+      // Get agent reply from repository
+      final tenantId = await storeUserData.getTenantId();
+      final replyText = await _chatRepository.testAgent(tenantId!, text);
+      final agentMessage = ChatMessage(
+        text: replyText,
+        isUser: false,
         timestamp: DateTime.now(),
       );
-
-      // Add assistant response to state
       state = state.copyWith(
-        messages: [...state.messages, assistantMessage],
+        messages: [...state.messages, agentMessage],
         isLoading: false,
       );
     } catch (e) {
+      // Show error as a message
       final errorMessage = ChatMessage(
-        role: 'assistant',
-        content: "Error: ${e.toString()}",
+        text: 'Error: Could not get reply. $e',
+        isUser: false,
         timestamp: DateTime.now(),
       );
       state = state.copyWith(
@@ -101,21 +90,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
+  // Clear chat history
   void clearChat() {
-    state = state.copyWith(
-      messages: [
-        ChatMessage(
-          role: 'assistant',
-          content: "Hi! Let's train together. Ask me questions or give me scenarios to practice.",
-          timestamp: DateTime.now(),
-        )
-      ],
-      isLoading: false,
-      error: null,
-    );
+    state = ChatState();
   }
 }
 
-final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  return ChatNotifier(ref);
+// 4. Provider
+// RENAMED provider for clarity
+final agentPreviewChatProvider =
+StateNotifierProvider<AgentPreviewChatNotifier, ChatState>((ref) {
+  final chatRepository = ref.watch(chatRepositoryProvider);
+  final storeUserData = ref.watch(storeUserDataProvider);
+  return AgentPreviewChatNotifier(chatRepository, storeUserData!);
 });

@@ -7,7 +7,7 @@ from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
 from services.metrics import inc_message
-from routers import onboarding , catalog
+from routers import onboarding , catalog , agent_config
 from database import Base, engine
 import os
 from fastapi.staticfiles import StaticFiles
@@ -56,7 +56,7 @@ app.include_router(social_auth.router, tags=["social_auth"])
 app.include_router(provisioning.router, prefix="/provision", tags=["provision"])
 app.include_router(templates.router, tags=["Templates"])
 app.include_router(conversation.router, prefix="/conversations", tags=["conversations"])
-app.include_router(rag.router, prefix="/rag", tags=["rag"])
+app.include_router(rag.router)
 app.include_router(wallet.router, prefix="/wallet", tags=["wallet"])
 app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 app.include_router(billing.router, prefix="/billing", tags=["billing"])
@@ -70,6 +70,7 @@ app.include_router(monitoring.router)
 app.include_router(metrics.router)
 app.include_router(whatsapp_webhook.router)
 app.include_router(knowledge.router)
+app.include_router(agent_config.router)
 
 @app.get("/healthz")
 def healthz():
