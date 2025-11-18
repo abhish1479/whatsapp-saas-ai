@@ -72,10 +72,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const IndustriesScreen(),
       ),
       GoRoute(
-        path: '/industries/:industryId',
-        builder: (context, state) => IndustryDetailScreen(
-          industryId: state.pathParameters['industryId']!,
-        ),
+        path: '/industries/:id', 
+        builder: (context, state) => IndustryDetailScreen.fromRoute(context, state),
       ),
 
       // ----- Dashboard Shell -----

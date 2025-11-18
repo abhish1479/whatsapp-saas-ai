@@ -1,87 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainity_flutter/widgets/ui/app_button.dart';
+import 'package:humainity_flutter/core/utils/responsive.dart';
 
 class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
-  const HomeNavigation({super.key});
+  final VoidCallback? onFeaturesTap;
+  final VoidCallback? onSolutionsTap;
+  final VoidCallback? onHowItWorksTap;
+  final VoidCallback? onPricingTap;
+  final VoidCallback? onTestimonialsTap;
+  final VoidCallback? onAgentsTap;
+
+  const HomeNavigation({
+    super.key,
+    this.onFeaturesTap,
+    this.onSolutionsTap,
+    this.onHowItWorksTap,
+    this.onPricingTap,
+    this.onTestimonialsTap,
+    this.onAgentsTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Override: do NOT trust Responsive.isMobile()
+    final double width = MediaQuery.of(context).size.width;
+    final bool showHamburger = width < 768; // Real mobile breakpoint
+
     return AppBar(
-      backgroundColor: AppColors.background.withOpacity(0.8),
+      backgroundColor: Colors.white,
       elevation: 0,
+      automaticallyImplyLeading: false,
       title: WebContainer(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Logo
-            InkWell(
-              onTap: () => context.go('/'),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.gradientPrimary,
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'H',
-                        style: TextStyle(
-                          color: AppColors.primaryForeground,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'HumAInity.ai',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: AppColors.foreground),
-                  ),
-                ],
-              ),
-            ),
+            _buildLogo(context),
 
-            // Desktop Nav
-            if (!isMobile(context))
-              Row(
-                children: [
-                  _navLink(context, 'Features', '/#features'),
-                  _navLink(context, 'Industries', '/industries'),
-                  _navLink(context, 'Pricing', '/#pricing'),
-                  _navLink(context, 'Testimonials', '/#testimonials'),
-                  const SizedBox(width: 16),
-                  AppButton(
-                    text: 'Login',
-                    // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
-                    style: AppButtonStyle.tertiary,
-                    onPressed: () => context.go('/dashboard'),
-                  ),
-                  const SizedBox(width: 8),
-                  AppButton(
-                    text: 'Get Started',
-                    onPressed: () => context.go('/dashboard'),
-                  ),
-                ],
-              ),
+            /// DESKTOP NAV
+            if (!showHamburger) _buildDesktopNav(context),
 
-            // Mobile Nav
-            if (isMobile(context))
+            /// MOBILE ONLY => Hamburger
+            if (showHamburger)
               IconButton(
                 icon: const Icon(LucideIcons.menu),
-                onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
               ),
           ],
         ),
@@ -89,26 +54,80 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _navLink(BuildContext context, String text, String path) {
+  Widget _buildLogo(BuildContext context) {
+    return InkWell(
+      onTap: () => context.go('/'),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+            child: const Center(
+              child: Text(
+                'H',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'HumAInity.ai',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopNav(BuildContext context) {
+    return Row(
+      children: [
+        _navItem("Features", onFeaturesTap),
+        _navItem("Solutions", onSolutionsTap),
+        _navItem("How It Works", onHowItWorksTap),
+        _navItem("Pricing", onPricingTap),
+        _navItem("Testimonials", onTestimonialsTap),
+
+        TextButton(
+          onPressed: () => context.go('/industries'),
+          child: const Text("Industries"),
+        ),
+       
+        const SizedBox(width: 10),
+        AppButton(
+          text: "Get Started",
+          onPressed: () => context.go('/dashboard'),
+        ),
+      ],
+    );
+  }
+
+  Widget _navItem(String text, VoidCallback? onTap) {
     return TextButton(
-      onPressed: () {
-        if (path.startsWith('/#')) {
-          // Handle scroll to section, not implemented in this conversion
-          print('Scroll to ${path.substring(2)}');
-        } else {
-          context.go(path);
-        }
-      },
+      onPressed: onTap,
       child: Text(
         text,
         style: const TextStyle(
-            color: AppColors.foreground, fontWeight: FontWeight.w500),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: AppColors.foreground,
+        ),
       ),
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(64.0);
+  Size get preferredSize => const Size.fromHeight(64);
 }
-
-// TODO: Implement a mobile drawer (EndDrawer) in home_screen.dart
