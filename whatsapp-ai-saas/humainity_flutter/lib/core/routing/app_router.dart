@@ -44,7 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final bool isLoggedIn = authState.isAuthenticated;
       final String location = state.matchedLocation;
       // Define public routes that should be inaccessible when logged in
-      final bool isPublicRoute = location == '/' || location == '/auth';
+      final bool isPublicRoute = location == '/' || location == '/auth' || location == '/industries';
       final bool isDashboardRoute = location.startsWith('/dashboard');
       // 2. If NOT logged in, redirect dashboard routes to auth.
       if (!isLoggedIn && isDashboardRoute) {
