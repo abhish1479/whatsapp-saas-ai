@@ -25,31 +25,13 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Override: do NOT trust Responsive.isMobile()
-    final double width = MediaQuery.of(context).size.width;
-    final bool showHamburger = width < 768; // Real mobile breakpoint
-
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      title: WebContainer(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildLogo(context),
-
-            /// DESKTOP NAV
-            if (!showHamburger) _buildDesktopNav(context),
-
-            /// MOBILE ONLY => Hamburger
-            if (showHamburger)
-              IconButton(
-                icon: const Icon(LucideIcons.menu),
-                onPressed: () => Scaffold.of(context).openEndDrawer(),
-              ),
-          ],
-        ),
+    return WebContainer(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildLogo(context),
+          if (!isMobile(context)) _buildDesktopNav(context),
+        ],
       ),
     );
   }
@@ -99,12 +81,10 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
         _navItem("How It Works", onHowItWorksTap),
         _navItem("Pricing", onPricingTap),
         _navItem("Testimonials", onTestimonialsTap),
-
         TextButton(
           onPressed: () => context.go('/industries'),
           child: const Text("Industries"),
         ),
-       
         const SizedBox(width: 10),
         AppButton(
           text: "Get Started",

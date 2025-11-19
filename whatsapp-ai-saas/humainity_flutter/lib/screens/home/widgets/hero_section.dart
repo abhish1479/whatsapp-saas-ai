@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/screens/home/widgets/features_section.dart';
+import 'package:humainity_flutter/core/utils/responsive.dart'; 
+import 'package:humainity_flutter/screens/home/widgets/features_section.dart'; // This import seems unused but kept for completeness
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
+class AppColors { 
+  static const Color primary = Color(0xFF009BFF);
+}
 
 class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
@@ -69,6 +72,7 @@ class _HeroSectionState extends State<HeroSection>
                     ? CrossAxisAlignment.center
                     : CrossAxisAlignment.start,
                 children: [
+                  // Pass context to the builder methods
                   isMobile
                       ? _buildMobileHero(context)
                       : _buildDesktopHero(context),
@@ -85,7 +89,8 @@ class _HeroSectionState extends State<HeroSection>
 
                   const SizedBox(height: 35),
 
-                  _buildKPISection(),
+                  // Pass context to the KPI section
+                  _buildKPISection(context),
                 ],
               ),
 
@@ -119,7 +124,7 @@ class _HeroSectionState extends State<HeroSection>
       children: [
         Expanded(child: _leftHeroText(context)),
         const SizedBox(width: 40),
-        Expanded(child: _rightHeroImageChats()),
+        Expanded(child: _rightHeroImageChats(context)),
       ],
     );
   }
@@ -132,7 +137,7 @@ class _HeroSectionState extends State<HeroSection>
       children: [
         _leftHeroText(context),
         const SizedBox(height: 40),
-        _rightHeroImageChats(),
+        _rightHeroImageChats(context), // Pass context here
       ],
     );
   }
@@ -157,10 +162,12 @@ class _HeroSectionState extends State<HeroSection>
         ),
         const SizedBox(height: 20),
 
-        const Text(
+        // Responsive font size for the main heading
+        Text(
           "AI that Talks, Sells & Supports — Just Like You.",
+          textAlign: isMobile ? TextAlign.center : TextAlign.start,
           style: TextStyle(
-            fontSize: 66,
+            fontSize: isMobile ? 40 : 66, // Reduced size on mobile
             fontWeight: FontWeight.w900,
             height: 1.15,
             color: Colors.black87,
@@ -168,11 +175,12 @@ class _HeroSectionState extends State<HeroSection>
         ),
         const SizedBox(height: 20),
 
-        const Text(
+        Text(
           "Automate your customer support and sales outreach with AI agents "
           "that understand your business, learn from your data, and engage "
           "across WhatsApp and Voice.",
-          style: TextStyle(
+          textAlign: isMobile ? TextAlign.center : TextAlign.start,
+          style: const TextStyle(
             fontSize: 18,
             height: 1.5,
             color: Colors.black54,
@@ -181,12 +189,23 @@ class _HeroSectionState extends State<HeroSection>
 
         const SizedBox(height: 32),
 
-        AppButton(
-          text: "Create Your AI Agent",
-          onPressed: () => context.go('/auth'),
-          isLg: true,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-        ),
+        // Center button on mobile
+        if (isMobile)
+          Center(
+            child: AppButton(
+              text: "Create Your AI Agent",
+              onPressed: () => context.go('/auth'),
+              isLg: true,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+            ),
+          )
+        else
+          AppButton(
+            text: "Create Your AI Agent",
+            onPressed: () => context.go('/auth'),
+            isLg: true,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+          ),
       ],
     );
   }
@@ -194,21 +213,26 @@ class _HeroSectionState extends State<HeroSection>
   // ---------------------------------------------------------------------------
   // RIGHT IMAGE + CHAT BUBBLES (INSIDE IMAGE CLIPPED)
   // ---------------------------------------------------------------------------
-  Widget _rightHeroImageChats() {
+  Widget _rightHeroImageChats(BuildContext context) { // Accepts context
+    final isMobile = Responsive.isMobile(context);
+    
     return ClipRRect(
       borderRadius: BorderRadius.circular(40),
       child: Stack(
         children: [
           SizedBox(
-            width: 550,
-            height: 620,
+            // FIX 1: Use full width on mobile, fixed width on desktop
+            width: isMobile ? double.infinity : 550, 
+            height: isMobile ? 400 : 620, // Adjusted height for mobile
             child: Image.asset(
+              // NOTE: Ensure this asset path is correct in your project
               "assets/images/ai-sales-agent.jpg",
               fit: BoxFit.cover,
             ),
           ),
 
- Positioned(
+          // Chat bubbles (positioned relative to the responsive SizedBox)
+          Positioned(
             top: 30,
             left: 20,
             child: _chatBubbleWhite(
@@ -242,7 +266,7 @@ class _HeroSectionState extends State<HeroSection>
             ),
           ),
 
-           Positioned(
+          Positioned(
             top: 400,
             left: 20,
             child: _chatBubbleWhite(
@@ -297,6 +321,7 @@ class _HeroSectionState extends State<HeroSection>
   }
 
   Widget _animatedBubble(Widget child) {
+    // This is working correctly for the floating animation
     return AnimatedBuilder(
       animation: floatAnim,
       builder: (_, __) => Transform.translate(
@@ -309,21 +334,38 @@ class _HeroSectionState extends State<HeroSection>
   // ---------------------------------------------------------------------------
   // KPI SECTION
   // ---------------------------------------------------------------------------
-  Widget _buildKPISection() {
+  Widget _buildKPISection(BuildContext context) { // Accepts context
+    final isMobile = Responsive.isMobile(context);
+
+    // FIX 2: Use Wrap on mobile to prevent overflow
+    if (isMobile) {
+      return Wrap(
+        spacing: 40, // Horizontal spacing
+        runSpacing: 20, // Vertical spacing
+        alignment: WrapAlignment.center,
+        children: [
+          _kpi("24/7", "Always Available", true),
+          _kpi("80%", "Faster Response", true),
+          _kpi("45%", "More Bookings", true),
+        ],
+      );
+    }
+    
+    // Desktop Row layout
     return Row(
       children: [
-        _kpi("24/7", "Always Available"),
+        _kpi("24/7", "Always Available", false),
         const SizedBox(width: 60),
-        _kpi("80%", "Faster Response"),
+        _kpi("80%", "Faster Response", false),
         const SizedBox(width: 60),
-        _kpi("45%", "More Bookings"),
+        _kpi("45%", "More Bookings", false),
       ],
     );
   }
 
-  Widget _kpi(String number, String label) {
+  Widget _kpi(String number, String label, bool isMobile) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
           number,
