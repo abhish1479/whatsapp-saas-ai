@@ -34,6 +34,8 @@ dependencies:
   flutter_markdown: ^0.7.1
   url_launcher: ^6.3.0
   visibility_detector: ^0.4.0
+  speech_to_text: ^7.0.0
+  permission_handler: ^11.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

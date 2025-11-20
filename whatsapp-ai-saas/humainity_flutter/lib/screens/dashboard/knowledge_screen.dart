@@ -28,6 +28,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
   final Map<int, bool> _expandedUrls = {};
   final Map<int, bool> _expandedFiles = {};
   bool _showQueryResult = false;
+  PlatformFile? _selectedFile;
 
   @override
   void dispose() {
@@ -36,18 +37,37 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
     super.dispose();
   }
 
-  Future<void> _pickAndUploadFile() async {
+  Future<void> _pickFile() async {
     setState(() { _showQueryResult = false; });
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result != null && result.files.first.bytes != null) {
-        PlatformFile file = result.files.first;
-        await ref.read(knowledgeProvider.notifier).uploadFile(file);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('File ${file.name} uploaded successfully!')),
-          );
-        }
+        setState(() {
+          _selectedFile = result.files.first;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File selection failed: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    }
+  }
+
+  // ADDED: Upload the selected file
+  Future<void> _uploadSelectedFile() async {
+    if (_selectedFile == null) return;
+
+    try {
+      await ref.read(knowledgeProvider.notifier).uploadFile(_selectedFile!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File ${_selectedFile!.name} uploaded successfully!')),
+        );
+        setState(() {
+          _selectedFile = null; // Reset selection
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -56,6 +76,13 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
         );
       }
     }
+  }
+
+  // ADDED: Cancel selection
+  void _cancelSelection() {
+    setState(() {
+      _selectedFile = null;
+    });
   }
 
   void _addUrl() {
@@ -131,39 +158,91 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // MODIFIED: Interactive Dotted Border Area
           DottedBorder(
             borderType: BorderType.RRect,
             radius: const Radius.circular(8.0),
             color: AppColors.border,
             strokeWidth: 2.0,
             dashPattern: const [6, 3],
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                children: [
-                  const Icon(LucideIcons.upload, size: 48, color: AppColors.mutedForeground),
-                  const SizedBox(height: 16),
-                  const Text('Drop files here or click to upload', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Supports PDF, DOC, TXT, and media files up to 50MB',
-                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                      text: 'Choose Files',
-                      icon: const Icon(LucideIcons.upload),
-                      onPressed: _pickAndUploadFile,
-                      style: AppButtonStyle.tertiary
-                  ),
-                ],
+            child: Material( // Added Material for InkWell
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _selectedFile == null ? _pickFile : null, // Click to pick if nothing selected
+                borderRadius: BorderRadius.circular(8.0),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(32.0),
+                  child: _selectedFile == null
+                      ? _buildDropZoneContent() // Show "Drop files here"
+                      : _buildSelectedFileContent(), // Show selected file + Upload button
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+  // ADDED: Extracted drop zone content
+  Widget _buildDropZoneContent() {
+    return Column(
+      children: [
+        const Icon(LucideIcons.upload, size: 48, color: AppColors.mutedForeground),
+        const SizedBox(height: 16),
+        const Text('Click to upload or drag files here', style: TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 4),
+        const Text(
+          'Supports PDF, DOC, TXT, and media files up to 50MB',
+          style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        AppButton(
+            text: 'Choose Files',
+            icon: const Icon(LucideIcons.upload),
+            onPressed: _pickFile, // Trigger pick
+            style: AppButtonStyle.tertiary
+        ),
+      ],
+    );
+  }
+
+  // ADDED: Content when a file is selected but not uploaded
+  Widget _buildSelectedFileContent() {
+    return Column(
+      children: [
+        const Icon(LucideIcons.fileText, size: 48, color: AppColors.primary),
+        const SizedBox(height: 16),
+        Text(
+          _selectedFile!.name,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+        Text(
+          '${(_selectedFile!.size / 1024).toStringAsFixed(2)} KB',
+          style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AppButton(
+              text: 'Cancel',
+              style: AppButtonStyle.destructive, // Or secondary/outline
+              onPressed: _cancelSelection,
+            ),
+            const SizedBox(width: 16),
+            AppButton(
+              text: 'Upload Now',
+              icon: const Icon(LucideIcons.uploadCloud),
+              style: AppButtonStyle.primary,
+              onPressed: _uploadSelectedFile,
+            ),
+          ],
+        ),
+      ],
     );
   }
 

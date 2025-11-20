@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math'; // ADDED: For random animation values
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,13 +8,13 @@ import 'package:humainity_flutter/core/providers/chat_provider.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
 import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
-import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:intl/intl.dart';
 import 'package:toggle_switch/toggle_switch.dart';
+// ADDED: Import for real speech to text (You must add this package)
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class AgentPreviewScreen extends ConsumerStatefulWidget {
   const AgentPreviewScreen({super.key});
@@ -22,12 +23,23 @@ class AgentPreviewScreen extends ConsumerStatefulWidget {
   ConsumerState<AgentPreviewScreen> createState() => _AgentPreviewScreenState();
 }
 
-class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
+class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
+    with TickerProviderStateMixin {
   String _selectedChannel = "voice";
-  bool _isListening = true;
-  int _callDuration = 8;
+  bool _isListening = false;
+  bool _isPaused = false;
+  int _callDuration = 0;
   bool _isMuted = false;
   Timer? _callTimer;
+
+  // Animation Controllers
+  late AnimationController _micController;
+  late AnimationController _rippleController;
+
+  // Speech to Text
+  late stt.SpeechToText _speech;
+  bool _speechAvailable = false;
+  String _lastWords = '';
 
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
@@ -35,41 +47,107 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
   @override
   void initState() {
     super.initState();
-    _startCallTimer();
+    _speech = stt.SpeechToText();
+    _initSpeech();
+
+    _micController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+      lowerBound: 1.0,
+      upperBound: 1.2,
+    );
+
+    _rippleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      _speechAvailable = await _speech.initialize(
+        onStatus: (status) => print('onStatus: $status'),
+        onError: (errorNotification) => print('onError: $errorNotification'),
+      );
+      setState(() {});
+    } catch (e) {
+      print("Speech initialization failed: $e");
+    }
   }
 
   void _startCallTimer() {
     _callTimer?.cancel();
-    if (_isListening && _selectedChannel == "voice") {
-      _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() => _callDuration++);
-      });
-    }
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() => _callDuration++);
+    });
   }
 
   void _stopCallTimer() {
     _callTimer?.cancel();
   }
 
+  void _startListening() async {
+    if (_speechAvailable && !_isPaused) {
+      _speech.listen(
+        onResult: (val) => setState(() {
+          _lastWords = val.recognizedWords;
+          if (val.finalResult) {
+            ref.read(agentPreviewChatProvider.notifier).sendMessage(_lastWords);
+          }
+        }),
+      );
+    }
+
+    setState(() {
+      _isListening = true;
+      _isPaused = false;
+      _startCallTimer();
+      _micController.repeat(reverse: true);
+      _rippleController.repeat();
+    });
+  }
+
+  void _stopListening() {
+    _speech.stop();
+    setState(() {
+      _isListening = false;
+      _isPaused = false;
+      _callDuration = 0;
+      _stopCallTimer();
+      _micController.stop();
+      _micController.reset();
+      _rippleController.stop();
+      _rippleController.reset();
+    });
+  }
+
+  void _pauseListening() {
+    if (_isPaused) {
+      _startListening();
+    } else {
+      _speech.stop();
+      _stopCallTimer();
+      _micController.stop();
+      _rippleController.stop();
+      setState(() => _isPaused = true);
+    }
+  }
+
   @override
   void dispose() {
     _callTimer?.cancel();
+    _micController.dispose();
+    _rippleController.dispose();
     _messageController.dispose();
     _scrollController.dispose();
+    _speech.cancel();
     super.dispose();
   }
 
   void _selectChannel(String channelId) {
     setState(() {
       _selectedChannel = channelId;
-      if (channelId == 'voice') {
-        _isListening = true;
-        _callDuration = 0;
-        _startCallTimer();
-      } else {
-        _isListening = false;
-        _stopCallTimer();
-      }
+      _stopListening();
     });
   }
 
@@ -132,17 +210,17 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
       padding: const EdgeInsets.all(16.0),
       child: ToggleSwitch(
         minWidth: double.infinity,
-        initialLabelIndex: _selectedChannel == 'voice' ? 0 : 1,
+        initialLabelIndex: _selectedChannel == 'whatsapp' ? 0 : 1,
         cornerRadius: 8.0,
         activeBgColor: const [AppColors.primary],
         activeFgColor: AppColors.primaryForeground,
         inactiveBgColor: AppColors.muted,
         inactiveFgColor: AppColors.mutedForeground,
         totalSwitches: 2,
-        labels: const ['Voice Agent', 'WhatsApp Agent'],
-        icons: const [LucideIcons.volume2, LucideIcons.messageSquare],
+        labels: const ['WhatsApp Agent', 'Voice Agent'],
+        icons: const [LucideIcons.messageSquare, LucideIcons.volume2],
         onToggle: (index) {
-          _selectChannel(index == 0 ? 'voice' : 'whatsapp');
+          _selectChannel(index == 0 ? 'whatsapp' : 'voice');
         },
       ),
     );
@@ -156,17 +234,17 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
       child: Column(
         children: [
           _buildChannelButton(
-            id: 'voice',
-            name: 'VOICE AGENT',
-            description: 'Add voice Agent to your website',
-            icon: LucideIcons.volume2,
-          ),
-          const SizedBox(height: 12),
-          _buildChannelButton(
             id: 'whatsapp',
             name: 'WHATSAPP AGENT',
             description: 'Connect your business number',
             icon: LucideIcons.messageSquare,
+          ),
+          const SizedBox(height: 12),
+          _buildChannelButton(
+            id: 'voice',
+            name: 'VOICE AGENT',
+            description: 'Add voice Agent to your website',
+            icon: LucideIcons.volume2,
           ),
         ],
       ),
@@ -257,12 +335,12 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                 ),
             ],
           ),
-          AppButton(
-            text: 'Settings',
-            icon: const Icon(LucideIcons.settings),
-            style: AppButtonStyle.tertiary,
-            onPressed: () => context.go('/dashboard/settings'),
-          ),
+          // AppButton(
+          //   text: 'Settings',
+          //   icon: const Icon(LucideIcons.settings),
+          //   style: AppButtonStyle.tertiary,
+          //   onPressed: () => context.go('/dashboard/settings'),
+          // ),
         ],
       ),
     );
@@ -274,102 +352,27 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
 
     if (isMobile) {
       if (isVoice) {
-        return _buildVoiceAgentVisual();
+        return Center(child: _buildVoiceAgentVisual());
       } else {
         return _buildChatInterface();
       }
     }
 
-    // MODIFIED: Web layout now conditionally shows voice or chat interface
-    return Row(
-      children: [
-        // --- THIS IS THE FIX ---
-        if (isVoice)
-          Expanded(child: _buildVoiceInterface())
-        else
-          Expanded(child: _buildChatInterface()),
-        // -----------------------
-
-        if (isVoice)
-          Container(
-            width: 480,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withOpacity(0.2),
-                  AppColors.primary.withOpacity(0.05)
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              border: const Border(left: BorderSide(color: AppColors.border)),
-            ),
-            child: _buildVoiceAgentVisual(),
-          )
-        else
-          Container(
-            width: 480,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.success.withOpacity(0.1),
-                  AppColors.success.withOpacity(0.05)
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              border: const Border(left: BorderSide(color: AppColors.border)),
-            ),
-            child: _buildWhatsAppAgentVisual(),
-          ),
-      ],
-    );
-  }
-
-  // ADDED: New widget for the voice-only interface (web)
-  Widget _buildVoiceInterface() {
-    return Container(
-      color: AppColors.muted.withOpacity(0.3),
-      child: Column(
-        children: [
-          const Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    LucideIcons.phone,
-                    size: 64,
-                    color: AppColors.mutedForeground,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Voice Agent Panel',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                  Text(
-                    'Press "Start" to begin',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          _buildVoiceControls(), // The existing Start/Pause/Decline buttons
-        ],
-      ),
-    );
+    if (isVoice) {
+      return Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 480),
+          width: double.infinity,
+          child: _buildVoiceAgentVisual(),
+        ),
+      );
+    } else {
+      return _buildChatInterface();
+    }
   }
 
   Widget _buildChatInterface() {
     final chatState = ref.watch(agentPreviewChatProvider);
-    // REMOVED: Unnecessary bool `isVoice` as this widget is now only for chat
 
     ref.listen(agentPreviewChatProvider, (_, __) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -414,14 +417,7 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
                     style: TextStyle(color: AppColors.mutedForeground))
               ]),
             ),
-
-          // MODIFIED: Simplified this logic. It will now only show text input.
-          // The voice controls are handled by _buildVoiceInterface() on web
-          // and _buildVoiceAgentVisual() on mobile.
-          if (Responsive.isMobile(context) && _selectedChannel == 'voice')
-            const SizedBox() // On mobile, voice controls are elsewhere
-          else
-            _buildTextInput(chatState), // Show text input for whatsapp
+          _buildTextInput(chatState),
         ],
       ),
     );
@@ -458,174 +454,203 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen> {
     );
   }
 
-  Widget _buildVoiceControls() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          AppButton(
-            text: 'Start',
-            icon: const Icon(LucideIcons.play),
-            style: AppButtonStyle.primary,
-            onPressed: () {},
+  Widget _buildGoogleMicAnimation() {
+    return AnimatedBuilder(
+      animation: _rippleController,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: RipplePainter(
+            animationValue: _rippleController.value,
+            color: AppColors.primary,
           ),
-          AppButton(
-            text: 'Pause',
-            icon: const Icon(LucideIcons.pause),
-            style: AppButtonStyle.secondary,
-            onPressed: () {},
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                )
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                _isPaused ? LucideIcons.pause : LucideIcons.mic,
+                size: 32,
+                color: _isPaused ? AppColors.mutedForeground : AppColors.primary,
+              ),
+            ),
           ),
-          AppButton(
-            text: 'Decline',
-            icon: const Icon(LucideIcons.phoneOff),
-            style: AppButtonStyle.destructive,
-            onPressed: () {},
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildVoiceAgentVisual() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 300,
-          height: 400,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/agent-sarah.jpg'),
-              fit: BoxFit.cover,
-            ),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5)
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double imageWidth = 300;
+        double imageHeight = 400;
+
+        if (constraints.maxWidth < 340) {
+          imageWidth = constraints.maxWidth * 0.85;
+          imageHeight = imageWidth * 1.33;
+        }
+
+        if (constraints.maxHeight < 700 && constraints.maxHeight > 100) {
+          double availableForImage = constraints.maxHeight * 0.5;
+          if(imageHeight > availableForImage) {
+            imageHeight = availableForImage;
+            imageWidth = imageHeight * 0.75;
+          }
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: imageWidth,
+                height: imageHeight,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/images/agent-sarah.jpg'),
+                    fit: BoxFit.cover,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5)
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text('Ashley',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text('Customer Support Agent',
+                  style: TextStyle(color: AppColors.mutedForeground)),
+              const SizedBox(height: 24),
+
+              if (!_isListening)
+                GestureDetector(
+                  onTap: _startListening,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(LucideIcons.mic, color: Colors.white, size: 32),
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    // 1. Timer MOVED UP
+                    Text(_formatTime(_callDuration),
+                        style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18)),
+                    const SizedBox(height: 24),
+
+                    // 2. Real-time Transcription preview (Middle)
+                    Text(
+                      _isPaused ? "Paused" : "Listening...",
+                      style: const TextStyle(color: AppColors.mutedForeground),
+                    ),
+                    if (_lastWords.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(_lastWords, style: const TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+                      ),
+                    const SizedBox(height: 24),
+
+                    // 3. Row with End Button and Mic Button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center, // Align vertically center
+                      children: [
+                        // End Call Button
+                        GestureDetector(
+                          onTap: _stopListening,
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.3),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(LucideIcons.phoneOff, color: Colors.white, size: 24),
+                          ),
+                        ),
+
+                        const SizedBox(width: 32), // Spacing between buttons
+
+                        // Google-style Mic Animation (Pause/Resume)
+                        GestureDetector(
+                          onTap: _pauseListening,
+                          child: _buildGoogleMicAnimation(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
             ],
           ),
-        ),
-        if (_isListening) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Listening...',
-                    style: TextStyle(
-                        color: AppColors.mutedForeground, fontSize: 12)),
-                const SizedBox(width: 8),
-                Text(_formatTime(_callDuration),
-                    style: const TextStyle(fontFamily: 'monospace')),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 24),
-        const Text('Ashley',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        const Text('Customer Support Agent',
-            style: TextStyle(color: AppColors.mutedForeground)),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: Icon(_isMuted ? LucideIcons.micOff : LucideIcons.mic),
-              iconSize: 24,
-              color: _isMuted ? AppColors.warning : AppColors.foreground,
-              style: IconButton.styleFrom(
-                backgroundColor: _isMuted
-                    ? AppColors.warning.withOpacity(0.1)
-                    : AppColors.muted,
-                padding: const EdgeInsets.all(16),
-              ),
-              onPressed: () => setState(() => _isMuted = !_isMuted),
-            ),
-            const SizedBox(width: 16),
-            IconButton(
-              icon: const Icon(LucideIcons.phoneCall),
-              iconSize: 28,
-              color: AppColors.destructiveForeground,
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.destructive,
-                padding: const EdgeInsets.all(20),
-              ),
-              onPressed: () => setState(() {
-                _isListening = false;
-                _stopCallTimer();
-              }),
-            ),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
+}
 
-  Widget _buildWhatsAppAgentVisual() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 300,
-          height: 400,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/agent-sarah.jpg'),
-              fit: BoxFit.cover,
-            ),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5)
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text('Ashley',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        const Text('Customer Support Agent',
-            style: TextStyle(color: AppColors.mutedForeground)),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: 250,
-          child: Column(
-            children: [
-              AppButton(
-                  text: 'Popular Destinations',
-                  style: AppButtonStyle.tertiary,
-                  onPressed: () {}),
-              const SizedBox(height: 8),
-              AppButton(
-                  text: 'Flight Information',
-                  style: AppButtonStyle.tertiary,
-                  onPressed: () {}),
-              const SizedBox(height: 8),
-              AppButton(
-                  text: 'Hotel Recommendations',
-                  style: AppButtonStyle.tertiary,
-                  onPressed: () {}),
-            ],
-          ),
-        ),
-      ],
-    );
+class RipplePainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+
+  RipplePainter({required this.animationValue, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width * 0.8;
+
+    for (int i = 0; i < 3; i++) {
+      final double opacity = (1.0 - (animationValue + i * 0.33) % 1.0).clamp(0.0, 1.0);
+      final double radius = ((animationValue + i * 0.33) % 1.0) * maxRadius;
+
+      final paint = Paint()
+        ..color = color.withOpacity(opacity * 0.4)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(center, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant RipplePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
   }
 }

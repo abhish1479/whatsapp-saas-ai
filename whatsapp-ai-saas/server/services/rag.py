@@ -25,7 +25,20 @@ class RAGService:
         self._path = os.getenv("CHROMA_PATH", "/data/chroma")  # used by Chroma
         if self.provider != "chroma":
             logger.warning("RAG_PROVIDER=%s currently not implemented; defaulting to Chroma", self.provider)
-
+        # Force initialization immediately
+        try:
+            from chromadb import PersistentClient
+            os.makedirs(self._path, exist_ok=True)
+            self._client = PersistentClient(path=self._path)
+            
+            # Trigger model loading by creating a dummy embedding
+            # This "warms up" the model so the first user doesn't wait
+            self._client.get_or_create_collection("warmup").query(
+                query_texts=["warmup"], n_results=1
+            )
+            logger.info("RAG Service & Model warmed up successfully.")
+        except Exception as e:
+            logger.error(f"Failed to initialize RAG: {e}")
     # ---------- internal helpers ----------
 
     @property
