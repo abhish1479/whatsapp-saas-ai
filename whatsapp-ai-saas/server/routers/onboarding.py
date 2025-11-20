@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
 from deps import get_db
 from services.rag import add_catalog_to_rag, rag
-from models import AgentConfiguration, BusinessCatalog, BusinessProfile , Item, Kyc , Payment, Tenant, User, WebIngestRequest, Workflow
-from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse
+from models import AgentConfiguration, BusinessCatalog, BusinessProfile , Item, KnowledgeSource, Kyc , Payment, Template, Tenant, User, WebIngestRequest, Workflow
+from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse, StatusResponse
 from data_models.request_model import BusinessTypeRequest
 from utils.enums import Onboarding
 import re
@@ -501,6 +501,76 @@ def upsert_agent_configuration(
     
     return result
 
+@router.post("/get_onboarding_status", response_model=StatusResponse, status_code=200)
+async def get_review(
+    tenant_id: int,
+    db: Session = Depends(get_db),
+):
+    # Check if business profile exists
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    user = db.query(User).filter(User.tenant_id == tenant_id).first()
+    if not user:    
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.onboarding_process == Onboarding.COMPLETED:
+        return StatusResponse(
+            tenant_id=tenant_id,
+            onboarding_process=Onboarding.COMPLETED,
+            onboarding_steps={
+                "AI_Agent_Configuration": True,
+                "Knowledge_Base_Ingestion": True,
+                "template_Messages_Setup": True,
+            }
+            )
+
+    agent_config  = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
+    if not agent_config:
+        return StatusResponse(
+            tenant_id=tenant_id,
+            onboarding_process=Onboarding.INPROCESS,
+            onboarding_steps={
+                "AI_Agent_Configuration": False,
+                "Knowledge_Base_Ingestion": False,
+                "template_Messages_Setup": False,
+            }
+            )
+    
+    knowledge_base = db.query(KnowledgeSource).filter(KnowledgeSource.tenant_id == tenant_id).first()
+    if not knowledge_base:
+        return StatusResponse(
+            tenant_id=tenant_id,
+            onboarding_process=Onboarding.INPROCESS,
+            onboarding_steps={
+                "AI_Agent_Configuration": True,
+                "Knowledge_Base_Ingestion": False,
+                "template_Messages_Setup": False,
+            }
+            )
+    template_messages = db.query(Template).filter(Template.tenant_id == tenant_id).first()
+    if not template_messages:
+        return StatusResponse(
+            tenant_id=tenant_id,
+            onboarding_process=Onboarding.INPROCESS,
+            onboarding_steps={
+                "AI_Agent_Configuration": True,
+                "Knowledge_Base_Ingestion": True,
+                "template_Messages_Setup": False,
+            }
+            )
+    
+    return StatusResponse(
+            tenant_id=tenant_id,
+            onboarding_process=Onboarding.INPROCESS,
+            onboarding_steps={
+                "AI_Agent_Configuration": True,
+                "Knowledge_Base_Ingestion": True,
+                "template_Messages_Setup": True,
+            }
+            )
+            
 
 def get_tanant_id_from_receiver(receiver: str) -> int:
     # business_profile = db.query(BusinessProfile).filter(BusinessProfile.business_whatsapp == receiver).first()

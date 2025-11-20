@@ -58,3 +58,15 @@ class AgentConfigurationResponse(AgentConfigurationBase):
 
     class Config:
         from_attributes = True  # For SQLAlchemy ORM compatibility
+
+class onboardingStep(BaseModel):
+    AI_Agent_Configuration: bool = False
+    Knowledge_Base_Ingestion: bool = False
+    template_Messages_Setup: bool = False
+
+
+class StatusResponse(BaseModel):
+    tenant_id: int
+    onboarding_process: str
+    onboarding_steps: onboardingStep
+
