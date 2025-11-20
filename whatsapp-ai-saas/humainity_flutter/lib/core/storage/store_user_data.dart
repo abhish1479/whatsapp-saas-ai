@@ -37,6 +37,10 @@ class StoreUserData {
     if (url != null) await _prefs.setString('profile_pic', url);
   }
 
+  Future<void> setOnboardingProcess(String? onboardingProcess) async {
+    if (onboardingProcess != null) await _prefs.setString('onboarding_process', onboardingProcess);
+  }
+
   // ----------- READ DATA -----------
   Future<String?> getToken() async {
     return _prefs.getString('token');
@@ -60,6 +64,10 @@ class StoreUserData {
 
   Future<String?> getProfilePic() async {
     return _prefs.getString('profile_pic');
+  }
+
+  Future<String?> getOnboardingProcess() async {
+    return _prefs.getString('onboarding_process');
   }
 
   Future<void> clear() async {

@@ -27,6 +27,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="owner")

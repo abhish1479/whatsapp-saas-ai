@@ -1,22 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // ADDED
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart'; // ADDED
-import 'package:humainity_flutter/core/providers/chat_provider.dart'; // ADDED
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
+import 'package:humainity_flutter/core/providers/chat_provider.dart';
+import 'package:humainity_flutter/core/storage/store_user_data.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
 
-// CHANGED to ConsumerWidget
-class SidebarContent extends ConsumerWidget {
+class SidebarContent extends ConsumerStatefulWidget {
   const SidebarContent({super.key});
 
-  static const List<Map<String, dynamic>> navigation = [
+  @override
+  ConsumerState<SidebarContent> createState() => _SidebarContentState();
+}
+
+class _SidebarContentState extends ConsumerState<SidebarContent> {
+  late Future<String?> _onboardingProcessFuture;
+  late Future<String?> _userNameFuture; // ADDED
+  late Future<String?> _emailFuture; // ADDED
+
+  @override
+  void initState() {
+    super.initState();
+    final storeUserData = ref.read(storeUserDataProvider);
+
+    // Initialize futures for onboarding status
+    _onboardingProcessFuture =
+        storeUserData?.getOnboardingProcess() ?? Future.value(null);
+
+    // ADDED: Initialize futures for user details
+    _userNameFuture = storeUserData?.getUserName() ?? Future.value("User Name");
+    _emailFuture = storeUserData?.getEmail() ?? Future.value("user@gmail.com");
+  }
+
+  // 1. Navigation for "Completed" status
+  static const List<Map<String, dynamic>> completedNavigation = [
     {
       'name': 'Dashboard',
       'href': '/dashboard',
       'icon': LucideIcons.layoutDashboard
     },
+    {
+      'name': 'Campaigns',
+      'href': '/dashboard/campaigns',
+      'icon': LucideIcons.megaphone
+    },
+    {'name': 'CRM', 'href': '/dashboard/crm', 'icon': LucideIcons.users},
     {
       'name': 'AI Agent',
       'href': '/dashboard/ai-agent',
@@ -37,23 +67,34 @@ class SidebarContent extends ConsumerWidget {
       'href': '/dashboard/agent-preview',
       'icon': LucideIcons.playCircle
     },
-    {'name': 'Actions', 'href': '/dashboard/actions', 'icon': LucideIcons.zap},
-    {'name': 'Forms', 'href': '/dashboard/forms', 'icon': LucideIcons.fileText},
-    {'name': 'CRM', 'href': '/dashboard/crm', 'icon': LucideIcons.users},
     {
-      'name': 'Campaigns',
-      'href': '/dashboard/campaigns',
-      'icon': LucideIcons.megaphone
+      'name': 'Settings',
+      'href': '/dashboard/settings',
+      'icon': LucideIcons.settings
+    },
+  ];
+
+  // 2. Navigation for "InProcess" status
+  static const List<Map<String, dynamic>> inProcessNavigation = [
+    {
+      'name': 'AI Agent',
+      'href': '/dashboard/ai-agent',
+      'icon': LucideIcons.bot
     },
     {
-      'name': 'Integrations',
-      'href': '/dashboard/integrations',
-      'icon': LucideIcons.link2
+      'name': 'Knowledge',
+      'href': '/dashboard/knowledge',
+      'icon': LucideIcons.bookOpen
     },
     {
-      'name': 'Train Agent',
-      'href': '/dashboard/train-agent',
-      'icon': LucideIcons.graduationCap
+      'name': 'Templates',
+      'href': '/dashboard/templates',
+      'icon': LucideIcons.messageSquare
+    },
+    {
+      'name': 'Test Agent',
+      'href': '/dashboard/agent-preview',
+      'icon': LucideIcons.playCircle
     },
     {
       'name': 'Settings',
@@ -63,7 +104,7 @@ class SidebarContent extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) { // ADDED WidgetRef
+  Widget build(BuildContext context) {
     final String currentLocation = GoRouterState.of(context).matchedLocation;
 
     return Column(
@@ -103,41 +144,48 @@ class SidebarContent extends ConsumerWidget {
             ],
           ),
         ),
-        // Navigation
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(12),
-            children: navigation.map((item) {
-              // FIX: Handle base route matching
-              final bool isActive = (currentLocation == item['href']) ||
-                  (item['href'] == '/dashboard' &&
-                      currentLocation.startsWith('/dashboard') &&
-                      currentLocation != '/dashboard/ai-agent' &&
-                      !currentLocation.startsWith('/dashboard/agent-preview') &&
-                      !currentLocation.startsWith('/dashboard/knowledge') &&
-                      !currentLocation.startsWith('/dashboard/train-agent') &&
-                      !currentLocation.startsWith('/dashboard/actions') &&
-                      !currentLocation.startsWith('/dashboard/forms') &&
-                      !currentLocation.startsWith('/dashboard/templates') &&
-                      !currentLocation.startsWith('/dashboard/campaigns') &&
-                      !currentLocation.startsWith('/dashboard/crm') &&
-                      !currentLocation.startsWith('/dashboard/integrations') &&
-                      !currentLocation.startsWith('/dashboard/settings'));
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: _buildNavItem(
-                  context,
-                  icon: item['icon'] as IconData,
-                  text: item['name'] as String,
-                  href: item['href'] as String,
-                  isActive: isActive,
-                ),
+        // Navigation - Wrapped in FutureBuilder
+        Expanded(
+          child: FutureBuilder<String?>(
+            future: _onboardingProcessFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final onboardingProcess = snapshot.data;
+              List<Map<String, dynamic>> navigationItems;
+
+              if (onboardingProcess == 'Completed') {
+                navigationItems = completedNavigation;
+              } else {
+                navigationItems = inProcessNavigation;
+              }
+
+              return ListView(
+                padding: const EdgeInsets.all(12),
+                children: navigationItems.map((item) {
+                  final bool isActive =
+                  currentLocation.startsWith(item['href']);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: _buildNavItem(
+                      context,
+                      icon: item['icon'] as IconData,
+                      text: item['name'] as String,
+                      href: item['href'] as String,
+                      isActive: isActive,
+                    ),
+                  );
+                }).toList(),
               );
-            }).toList(),
+            },
           ),
         ),
-        // User Section
+
+        // User Section - UPDATED to use Futures
         Container(
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
@@ -164,34 +212,44 @@ class SidebarContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'User Name',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
+                    // Dynamic User Name
+                    FutureBuilder<String?>(
+                      future: _userNameFuture,
+                      builder: (context, snapshot) {
+                        return Text(
+                          snapshot.data ?? 'User Name',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
-                    Text(
-                      'user@example.com',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.mutedForeground),
-                      overflow: TextOverflow.ellipsis,
+                    // Dynamic Email
+                    FutureBuilder<String?>(
+                      future: _emailFuture,
+                      builder: (context, snapshot) {
+                        return Text(
+                          snapshot.data ?? 'user@example.com',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.mutedForeground),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-              // ADDED: Logout Button
+              // Logout Button
               IconButton(
                 icon: const Icon(LucideIcons.logOut,
                     color: AppColors.mutedForeground),
                 tooltip: 'Logout',
                 onPressed: () {
-                  // Call logout from auth provider
                   ref.read(authNotifierProvider.notifier).signOut();
-                  // Clear the agent preview chat
                   ref.read(agentPreviewChatProvider.notifier).clearChat();
                 },
               ),
@@ -203,21 +261,20 @@ class SidebarContent extends ConsumerWidget {
   }
 
   Widget _buildNavItem(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-    required String href,
-    required bool isActive,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String text,
+        required String href,
+        required bool isActive,
+      }) {
     Color itemColor =
-        isActive ? AppColors.primaryForeground : AppColors.mutedForeground;
+    isActive ? AppColors.primaryForeground : AppColors.mutedForeground;
 
     return Material(
       color: isActive ? AppColors.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(8.0),
       child: InkWell(
         onTap: () {
-          // Close drawer if on mobile
           if (Responsive.isMobile(context)) {
             Navigator.of(context).pop();
           }
@@ -225,7 +282,7 @@ class SidebarContent extends ConsumerWidget {
         },
         borderRadius: BorderRadius.circular(8.0),
         hoverColor:
-            isActive ? AppColors.primary.withOpacity(0.9) : AppColors.muted,
+        isActive ? AppColors.primary.withOpacity(0.9) : AppColors.muted,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(

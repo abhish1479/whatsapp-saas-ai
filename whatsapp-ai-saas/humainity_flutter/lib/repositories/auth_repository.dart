@@ -116,6 +116,9 @@ class AuthRepository {
     if (data['tenant_id'] != null) {
       await _store!.setTenantId(data['tenant_id'].toString());
     }
+    if (data['onboarding_process'] != null) {
+      await _store!.setOnboardingProcess(data['onboarding_process'].toString());
+    }
 
     if (data['user'] is Map) {
       final user = data['user'] as Map<String, dynamic>;

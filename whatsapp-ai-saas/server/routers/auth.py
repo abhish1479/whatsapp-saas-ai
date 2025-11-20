@@ -22,7 +22,7 @@ def signup(body:Signup):
             raise HTTPException(400,"Email in use")
         tenant = Tenant(name=body.business_name)
         db.add(tenant); db.flush()
-        user = User(tenant_id=tenant.id, email=body.email, password_hash=body.password)
+        user = User(tenant_id=tenant.id, email=body.email,name=body.business_name, password_hash=body.password)
         db.add(user); db.flush()
         db.add(Wallet(tenant_id=tenant.id, credits_balance=500))
         db.commit()
@@ -40,6 +40,7 @@ def signup(body:Signup):
             "role": user.role,
         },
         "tenant_id": tenant.id,
+        "onboarding_process": user.onboarding_process
         }
     finally:
         db.close()
@@ -63,13 +64,14 @@ def login(body: Login):
         "user": {
             "id": user.id,
             "email": user.email,
-            "name": '',
+            "name": user.name,
             "picture" : '',
             "provider": 'Self',
             "provider_id": 0,
             "role": user.role,
         },
         "tenant_id": user.tenant_id,
+        "onboarding_process": user.onboarding_process
         }
     finally:
         db.close()
