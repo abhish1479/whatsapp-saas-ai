@@ -48,19 +48,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // -------------------------------
-      // TOP NAVIGATION BAR
-      // -------------------------------
-      appBar: HomeNavigation(
-        onFeaturesTap: () => scrollTo(featuresKey),
-        onSolutionsTap: () => scrollTo(solutionsKey),
-        onHowItWorksTap: () => scrollTo(howKey),
-        onPricingTap: () => scrollTo(pricingKey),
-        onTestimonialsTap: () => scrollTo(testimonialsKey),
-        onAgentsTap: () => scrollTo(agentsKey),
-        // onDashboardTap: () => scrollTo(dashboardKey),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: HomeNavigation(
+          onFeaturesTap: () => scrollTo(featuresKey),
+          onSolutionsTap: () => scrollTo(solutionsKey),
+          onHowItWorksTap: () => scrollTo(howKey),
+          onPricingTap: () => scrollTo(pricingKey),
+          onTestimonialsTap: () => scrollTo(testimonialsKey),
+          onAgentsTap: () => scrollTo(agentsKey),
+        ),
       ),
-
       // -------------------------------
       // MOBILE DRAWER
       // -------------------------------
@@ -74,7 +74,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 24),
-
               ListTile(
                 title: const Text("Features"),
                 onTap: () {
@@ -117,18 +116,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   context.go('/industries');
                 },
               ),
-
               const Divider(height: 32),
-
               ListTile(
                 title: const Text("Login"),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go('/dashboard');
-                },
-              ),
-              ListTile(
-                title: const Text("Get Started"),
                 onTap: () {
                   Navigator.pop(context);
                   context.go('/dashboard');

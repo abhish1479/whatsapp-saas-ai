@@ -8,10 +8,6 @@ import 'package:humainity_flutter/screens/home/widgets/navigation.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:humainity_flutter/data/industry_model.dart';
-
-// ⚠️ DELETED: getIndustryById and IndustryDetailScreen definitions were here,
-// which caused the conflict. They now only exist in industry_detail_screen.dart.
-
 class IndustriesScreen extends StatelessWidget {
   const IndustriesScreen({super.key});
 
