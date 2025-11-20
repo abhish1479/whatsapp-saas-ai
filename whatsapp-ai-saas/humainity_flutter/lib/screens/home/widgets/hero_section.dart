@@ -261,7 +261,7 @@ class _HeroSectionState extends State<HeroSection>
           Positioned(
             top: 300,
             right: 20,
-            child: _chatBubbleWhite(
+            child: _chatBubbleBlue(
               "Tuesday works. Do you have any afternoon slots?",
             ),
           ),
@@ -270,7 +270,7 @@ class _HeroSectionState extends State<HeroSection>
             top: 400,
             left: 20,
             child: _chatBubbleWhite(
-              "Absolutely! Here are the available time slots for \n Tuesday afternoon: \n 02:00 PM and 02:30 PM",
+              "Absolutely! Here are the available time slots for\n Tuesday afternoon:\n 02:00 PM and 02:30 PM",
             ),
           ),
         ],
