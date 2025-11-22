@@ -52,7 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
      // 3. If IS logged in, redirect public routes ('/' and '/auth') to dashboard.
       if (isLoggedIn && isPublicRoute) {
-        return '/dashboard';
+        return '/dashboard/ai-agent';
       }
 
       return null; 

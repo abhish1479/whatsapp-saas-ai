@@ -25,37 +25,40 @@ def get_all_subscriptions(db: Session = Depends(get_db)):
     # 🔧 TEMPORARY: Seed default plans if table is empty (for dev/testing only)
     if not subscriptions:
         basic = SubscriptionPlan(
-            name="Basic",
+            name="Starter",
             price=999.0,
             price_per_month=999.0,
             credits=1000,
             duration_days=30,
             billing_cycle="month",
             features='["Basic AI features", "Email support", "5 projects limit"]',
+            category = "whatsapp",  
             is_popular=False,
             created_at=func.now(),
             updated_at=func.now()
         )
         premium = SubscriptionPlan(
-            name="Premium",
+            name="Growth",
             price=1999.0,
             price_per_month=1999.0,
             credits=5000,
             duration_days=30,
             billing_cycle="month",
             features='["Advanced AI features", "Priority support", "Unlimited projects", "Analytics dashboard"]',
+            category = "whatsapp",  
             is_popular=True,
             created_at=func.now(),
             updated_at=func.now()
         )
         mega = SubscriptionPlan(
-            name="Mega",
+            name="Professional",
             price=3999.0,
             price_per_month=3999.0,
             credits=15000,
             duration_days=30,
             billing_cycle="month",
             features='["All premium features", "24/7 phone support", "Custom integrations", "Dedicated account manager"]',
+            category = "whatsapp",  
             is_popular=False,
             created_at=func.now(),
             updated_at=func.now()

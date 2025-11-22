@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: const Text("Login"),
                 onTap: () {
                   Navigator.pop(context);
-                  context.go('/dashboard');
+                  context.go('/dashboard/ai-agent');
                 },
               ),
             ],
