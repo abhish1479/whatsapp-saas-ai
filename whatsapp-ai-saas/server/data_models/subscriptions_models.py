@@ -61,6 +61,7 @@ class SubscriptionPlanResponse(BaseModel):
     is_popular: bool
     created_at: datetime
     updated_at: datetime
+    category: Optional[str]
 
     @field_validator("features", mode="before")
     @classmethod

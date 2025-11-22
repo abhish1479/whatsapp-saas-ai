@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,7 +40,14 @@ class StoreUserData {
   }
 
   Future<void> setOnboardingProcess(String? onboardingProcess) async {
-    if (onboardingProcess != null) await _prefs.setString('onboarding_process', onboardingProcess);
+    if (onboardingProcess != null) {
+      await _prefs.setString('onboarding_process', onboardingProcess);
+    }
+  }
+
+  Future<void> saveOnboardingSteps(Map<String, dynamic> steps) async {
+    if(steps.isEmpty) return;
+    await _prefs.setString("onboarding_steps", jsonEncode(steps));
   }
 
   // ----------- READ DATA -----------
@@ -68,6 +77,34 @@ class StoreUserData {
 
   Future<String?> getOnboardingProcess() async {
     return _prefs.getString('onboarding_process');
+  }
+
+  // Future<Map<String, dynamic>> getOnboardingSteps(tenantId) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final data = prefs.getString("onboarding_steps");
+  //   if (data == null) return {};
+  //   return jsonDecode(data);
+  // }
+
+   Future<Map<String, bool>> getOnboardingSteps() async {
+    final data = _prefs.getString("onboarding_steps");
+    if (data == null) {
+      return {
+        'AI_Agent_Configuration': false,
+        'Knowledge_Base_Ingestion': false,
+        'template_Messages_Setup': false,
+      };
+    }
+    try {
+      final decodedMap = jsonDecode(data) as Map<String, dynamic>;
+      return decodedMap.map((key, value) => MapEntry(key, value == true));
+    } catch (e) {
+      return {
+        'AI_Agent_Configuration': false,
+        'Knowledge_Base_Ingestion': false,
+        'template_Messages_Setup': false,
+      };
+    }
   }
 
   Future<void> clear() async {

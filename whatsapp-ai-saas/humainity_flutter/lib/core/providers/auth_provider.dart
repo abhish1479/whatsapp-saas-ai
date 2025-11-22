@@ -12,20 +12,20 @@ class AuthState {
   const AuthState(
       {required this.isAuthenticated,
       this.isLoading = false,
-      this.isInitialized = false, // Initialize as false
+      this.isInitialized = false,
       this.error});
 
   AuthState copyWith({
     bool? isAuthenticated,
     bool? isLoading,
     String? error,
-    bool? isInitialized, // Add to copyWith
+    bool? isInitialized,
   }) =>
       AuthState(
         isAuthenticated: isAuthenticated ?? this.isAuthenticated,
         isLoading: isLoading ?? this.isLoading,
         error: error,
-        isInitialized: isInitialized ?? this.isInitialized, // Update state
+        isInitialized: isInitialized ?? this.isInitialized,
       );
 
   factory AuthState.initial() => const AuthState(isAuthenticated: false);
@@ -48,12 +48,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final isAuthenticated = await _repo.getAuthStatus();
       _emit(state.copyWith(
         isAuthenticated: isAuthenticated,
-        isInitialized: true, // Mark as initialized
+        isInitialized: true,
         isLoading: false,
       ));
     } catch (_) {
-      // If any error occurs during check (e.g., local storage read fail),
-      // we assume the user is not logged in but mark initialization complete.
       _emit(state.copyWith(
         isAuthenticated: false,
         isInitialized: true,
@@ -67,10 +65,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     streamController.add(newState);
   }
 
+  Future<void> _maybeFetchOnboardingStatus() async {
+    if (_storeUserData == null) return;
+
+    final onboardingProcess = await _storeUserData!.getOnboardingProcess();
+    if (onboardingProcess == 'InProcess') {
+      final tenantId = await _storeUserData!.getTenantId();
+      if (tenantId != null && tenantId.isNotEmpty) {
+        final id = int.tryParse(tenantId);
+        if (id != null) {
+             final status = await _repo.getOnboardingStatus(id);
+              if (status.containsKey("onboarding_steps")) {
+          await _storeUserData!.saveOnboardingSteps(
+            Map<String, dynamic>.from(status["onboarding_steps"]),
+          );
+        }
+        }
+      }
+    }
+  }
+
   Future<void> signIn(String email, String password) async {
     _emit(state.copyWith(isLoading: true, error: null));
     try {
       await _repo.signIn(email, password);
+      // NEW: if onboarding_process == "InProcess", fetch onboarding status
+      await _maybeFetchOnboardingStatus();
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
       _emit(state.copyWith(
@@ -87,6 +107,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repo.signUp(
           email: email, password: password, businessName: businessName);
+      // NEW: if onboarding_process == "InProcess", fetch onboarding status
+      await _maybeFetchOnboardingStatus();
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
       _emit(state.copyWith(
@@ -102,6 +124,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         provider: 'google',
         isLogin: isLogin,
       );
+      // NEW: if onboarding_process == "InProcess", fetch onboarding status
+      await _maybeFetchOnboardingStatus();
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
       _emit(state.copyWith(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as api;
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
 // --- 1. Repository Provider ---
@@ -103,6 +104,27 @@ class AuthRepository {
 
   Future<void> signOut() async {
     await _store!.clear();
+  }
+
+  Future<Map<String, dynamic>> getOnboardingStatus(tenantId) async {
+    try {
+      final url = Uri.parse('$_baseUrl/onboarding/get_onboarding_status?tenant_id=$tenantId');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned: ${response.statusCode}');
+      }
+
+       final decoded = jsonDecode(response.body);
+
+    return Map<String, dynamic>.from(decoded);
+
+    } catch (e) {
+      throw Exception('Failed to fetch onboarding status: $e');
+    }
   }
 
   Future<void> _handleAuthResponse(Map<String, dynamic> data) async {
