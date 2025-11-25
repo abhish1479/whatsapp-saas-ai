@@ -5,6 +5,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as api;
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
+
+// ONBOARDING FLAGS (GLOBAL)
+
+bool _isFetchingOnboarding = false;
+bool _onboardingCompleted = false;
+
 // --- 1. Repository Provider ---
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   // Get the initialized store service
@@ -108,21 +114,37 @@ class AuthRepository {
 
   Future<Map<String, dynamic>> getOnboardingStatus(tenantId) async {
     try {
-      final url = Uri.parse('$_baseUrl/onboarding/get_onboarding_status?tenant_id=$tenantId');
+      if (_isFetchingOnboarding || _onboardingCompleted) {
+        return {};
+      }
+
+      _isFetchingOnboarding = true;
+
+      final url = Uri.parse(
+          '$_baseUrl/onboarding/get_onboarding_status?tenant_id=$tenantId');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode != 200) {
+        _isFetchingOnboarding = false;
         throw Exception('Server returned: ${response.statusCode}');
       }
 
-       final decoded = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      final status = Map<String, dynamic>.from(decoded);
 
-    return Map<String, dynamic>.from(decoded);
+     // If onboarding is completed → never fetch again
 
+      if (status["data"]?["onboarding_process"] == "Completed") {
+        _onboardingCompleted = true;
+      }
+      _isFetchingOnboarding = false;
+      return status;
     } catch (e) {
+      _isFetchingOnboarding = false;
+
       throw Exception('Failed to fetch onboarding status: $e');
     }
   }
@@ -150,6 +172,9 @@ class AuthRepository {
     }
 
     await _store!.setLoggedIn(true);
+     // Reset onboarding flags after new login/signup
+    _onboardingCompleted = false;
+    _isFetchingOnboarding = false;
   }
 
   String _safeError(http.Response res, String context) {

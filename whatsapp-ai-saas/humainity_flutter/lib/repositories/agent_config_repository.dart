@@ -65,7 +65,7 @@ class AgentConfigRepository {
       final response = await http.get(uri, headers: headers);
       final responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200 && responseBody['success'] == true) {
+      if (response.statusCode == 200) {
         // Successful response with data
         return AgentConfig.fromMap(responseBody['data']);
       } else if (response.statusCode != 200) {
@@ -108,7 +108,8 @@ class AgentConfigRepository {
         'agent_name': config.agentName,
         'agent_persona': config.agentPersona,
         'greeting_message': config.greetingMessage,
-        'preferred_languages': config.preferredLanguages.join(','),
+        // 'preferred_languages': config.preferredLanguages.join(','),
+        'preferred_languages': config.preferredLanguages,
         'conversation_tone': config.conversationTone,
       });
 
@@ -142,7 +143,7 @@ class AgentConfigRepository {
       final response = await http.Response.fromStream(streamedResponse);
       final responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200 && responseBody['success'] == true) {
+      if (response.statusCode == 200 && responseBody['status'] == 'success') {
         // Return the new image URL from the saved data
         return responseBody['data']['agent_image'];
       } else {
