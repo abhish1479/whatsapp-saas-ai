@@ -26,14 +26,16 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
     super.initState();
     final storeUserData = ref.read(storeUserDataProvider);
 
-    _onboardingStatusFuture =
-        storeUserData!.getOnboardingSteps().then((steps) async {
-      final process = await storeUserData.getOnboardingProcess();
-      return {
-        'onboarding_steps': steps ?? {},
-        'onboarding_process': process ?? 'InProcess',
-      };
-    });
+    _onboardingStatusFuture = storeUserData!.getOnboardingSteps().then(
+      (steps) async {
+        final process =
+            await storeUserData.getOnboardingProcess() ?? 'InProcess';
+        return {
+          'onboarding_steps': steps,
+          'onboarding_process': process,
+        };
+      },
+    );
 
     _userNameFuture = storeUserData.getUserName();
     _emailFuture = storeUserData.getEmail();
@@ -177,10 +179,12 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
               }
 
               final status = statusSnap.data ?? {};
-              final stepsMap = Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
+              final stepsMap =
+                  Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
 
               final bool step1 = (stepsMap['AI_Agent_Configuration'] ?? false);
-              final bool step2 = (stepsMap['Knowledge_Base_Ingestion'] ?? false);
+              final bool step2 =
+                  (stepsMap['Knowledge_Base_Ingestion'] ?? false);
               final bool step3 = (stepsMap['template_Messages_Setup'] ?? false);
 
               final int completedSteps =
@@ -228,7 +232,9 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
                       case 'Test Agent':
                         // final allDone = step1 && step2 && step3;
                         // completed = allDone;
-                        clickable = step1 && step2 && step3; // unlock only when all 3 done
+                        clickable = step1 &&
+                            step2 &&
+                            step3; // unlock only when all 3 done
                         break;
 
                       // case 'Settings':
@@ -392,15 +398,24 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
               gradient: AppColors.gradientPrimary,
               shape: BoxShape.circle,
             ),
-            child: const Center(
-              child: Text(
-                'U',
-                style: TextStyle(
-                  color: AppColors.primaryForeground,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+            child: FutureBuilder<String?>(
+              future: _userNameFuture,
+              builder: (context, snap) {
+                final name = snap.data;
+                final initial = (name?.trim().isNotEmpty == true)
+                    ? name!.trim()[0].toUpperCase()
+                    : 'U';
+                return Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      color: AppColors.primaryForeground,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(width: 12),

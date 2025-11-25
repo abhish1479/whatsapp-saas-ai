@@ -14,6 +14,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:humainity_flutter/models/knowledge_source.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
 
 class KnowledgeScreen extends ConsumerStatefulWidget {
   const KnowledgeScreen({super.key});
@@ -38,7 +39,9 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
   }
 
   Future<void> _pickFile() async {
-    setState(() { _showQueryResult = false; });
+    setState(() {
+      _showQueryResult = false;
+    });
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result != null && result.files.first.bytes != null) {
@@ -49,7 +52,9 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File selection failed: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(
+              content: Text('File selection failed: $e'),
+              backgroundColor: AppColors.destructive),
         );
       }
     }
@@ -62,8 +67,13 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
     try {
       await ref.read(knowledgeProvider.notifier).uploadFile(_selectedFile!);
       if (mounted) {
+        await ref
+            .read(authNotifierProvider.notifier)
+            .maybeFetchOnboardingStatus();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File ${_selectedFile!.name} uploaded successfully!')),
+          SnackBar(
+              content:
+                  Text('File ${_selectedFile!.name} uploaded successfully!')),
         );
         setState(() {
           _selectedFile = null; // Reset selection
@@ -72,7 +82,9 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File upload failed: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(
+              content: Text('File upload failed: $e'),
+              backgroundColor: AppColors.destructive),
         );
       }
     }
@@ -85,10 +97,16 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
     });
   }
 
-  void _addUrl() {
-    setState(() { _showQueryResult = false; });
+  Future<void> _addUrl() async {
+    setState(() {
+      _showQueryResult = false;
+    });
     if (_urlController.text.isNotEmpty) {
       ref.read(knowledgeProvider.notifier).addUrl(_urlController.text);
+      await ref
+          .read(authNotifierProvider.notifier)
+          .maybeFetchOnboardingStatus();
+
       _urlController.clear();
     }
   }
@@ -96,7 +114,9 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
   void _runTestQuery() {
     if (_queryController.text.isNotEmpty) {
       ref.read(knowledgeProvider.notifier).testQuery(_queryController.text);
-      setState(() { _showQueryResult = true; });
+      setState(() {
+        _showQueryResult = true;
+      });
     }
   }
 
@@ -119,7 +139,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
           ),
           const SizedBox(height: 12),
           if (state.isLoading)
-            const Center(child: Padding(
+            const Center(
+                child: Padding(
               padding: EdgeInsets.all(8.0),
               child: CircularProgressIndicator(),
             )),
@@ -154,7 +175,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             children: [
               Icon(LucideIcons.bookOpen, color: AppColors.primary, size: 20),
               SizedBox(width: 8),
-              Text('Upload Knowledge Base', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              Text('Upload Knowledge Base',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
@@ -166,10 +188,13 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             color: AppColors.border,
             strokeWidth: 2.0,
             dashPattern: const [6, 3],
-            child: Material( // Added Material for InkWell
+            child: Material(
+              // Added Material for InkWell
               color: Colors.transparent,
               child: InkWell(
-                onTap: _selectedFile == null ? _pickFile : null, // Click to pick if nothing selected
+                onTap: _selectedFile == null
+                    ? _pickFile
+                    : null, // Click to pick if nothing selected
                 borderRadius: BorderRadius.circular(8.0),
                 child: Container(
                   width: double.infinity,
@@ -185,13 +210,16 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
       ),
     );
   }
+
   // ADDED: Extracted drop zone content
   Widget _buildDropZoneContent() {
     return Column(
       children: [
-        const Icon(LucideIcons.upload, size: 48, color: AppColors.mutedForeground),
+        const Icon(LucideIcons.upload,
+            size: 48, color: AppColors.mutedForeground),
         const SizedBox(height: 16),
-        const Text('Click to upload or drag files here', style: TextStyle(fontWeight: FontWeight.w500)),
+        const Text('Click to upload or drag files here',
+            style: TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         const Text(
           'Supports PDF, DOC, TXT, and media files up to 50MB',
@@ -203,8 +231,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             text: 'Choose Files',
             icon: const Icon(LucideIcons.upload),
             onPressed: _pickFile, // Trigger pick
-            style: AppButtonStyle.tertiary
-        ),
+            style: AppButtonStyle.tertiary),
       ],
     );
   }
@@ -222,7 +249,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
         ),
         Text(
           '${(_selectedFile!.size / 1024).toStringAsFixed(2)} KB',
-          style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+          style:
+              const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
         ),
         const SizedBox(height: 24),
         Row(
@@ -257,7 +285,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             children: [
               Icon(LucideIcons.link, color: AppColors.primary, size: 20),
               SizedBox(width: 8),
-              Text('Business Website Links', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              Text('Business Website Links',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 4),
@@ -268,19 +297,20 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
           const SizedBox(height: 16),
           Flex(
             direction: mobile ? Axis.vertical : Axis.horizontal,
-            crossAxisAlignment: mobile ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
+            crossAxisAlignment:
+                mobile ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
             children: [
               !mobile
                   ? Expanded(
-                child: AppTextField(
-                    controller: _urlController,
-                    labelText: 'Website URL',
-                    hintText: 'https://yourbusiness.com/about'),
-              )
+                      child: AppTextField(
+                          controller: _urlController,
+                          labelText: 'Website URL',
+                          hintText: 'https://yourbusiness.com/about'),
+                    )
                   : AppTextField(
-                  controller: _urlController,
-                  labelText: 'Website URL',
-                  hintText: 'https://yourbusiness.com/about'),
+                      controller: _urlController,
+                      labelText: 'Website URL',
+                      hintText: 'https://yourbusiness.com/about'),
               SizedBox(width: mobile ? 0 : 8, height: mobile ? 12 : 0),
               AppButton(
                 text: 'Add Link',
@@ -325,14 +355,16 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                  child: const Icon(LucideIcons.externalLink, color: AppColors.primary),
+                  child: const Icon(LucideIcons.externalLink,
+                      color: AppColors.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(link.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(link.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       // Use Wrap for the URL and button to be responsive
                       Wrap(
@@ -342,28 +374,36 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                         children: [
                           Text(
                             link.sourceUri,
-                            style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                            style: const TextStyle(
+                                color: AppColors.mutedForeground, fontSize: 12),
                           ),
                           if (hasSummary)
-                          // Smaller, styled TextButton
+                            // Smaller, styled TextButton
                             TextButton.icon(
                               onPressed: () => setState(() {
                                 _expandedUrls[link.id] = !isExpanded;
                               }),
                               icon: Icon(
-                                isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                                isExpanded
+                                    ? LucideIcons.chevronUp
+                                    : LucideIcons.chevronDown,
                                 size: 14,
                                 color: AppColors.primary,
                               ),
                               label: const Text(
                                 'Summary',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary),
                               ),
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4)),
                               ),
                             ),
                         ],
@@ -377,18 +417,23 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                   children: [
                     AppBadge(
                       text: link.processingStatus,
-                      variant: isScraped ? AppBadgeVariant.success : (isPending ? AppBadgeVariant.secondary : AppBadgeVariant.destructive),
+                      variant: isScraped
+                          ? AppBadgeVariant.success
+                          : (isPending
+                              ? AppBadgeVariant.secondary
+                              : AppBadgeVariant.destructive),
                     ),
                     const SizedBox(height: 8),
                     //if (mobile)
-                      IconButton(
-                        icon: const Icon(LucideIcons.refreshCw, size: 18),
-                        color: AppColors.mutedForeground,
-                        tooltip: 'Refresh',
-                        onPressed: () => ref.read(knowledgeProvider.notifier).loadKnowledge(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      )
+                    IconButton(
+                      icon: const Icon(LucideIcons.refreshCw, size: 18),
+                      color: AppColors.mutedForeground,
+                      tooltip: 'Refresh',
+                      onPressed: () =>
+                          ref.read(knowledgeProvider.notifier).loadKnowledge(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    )
                     // else
                     //   AppButton(
                     //     text: 'Refresh',
@@ -407,17 +452,19 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: AppColors.border))
-              ),
+                  border: Border(top: BorderSide(color: AppColors.border))),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 12),
-                  const Text('Summary', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  const Text('Summary',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                   const SizedBox(height: 4),
                   Text(
                     link.summary ?? "No summary available.",
-                    style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                    style: const TextStyle(
+                        color: AppColors.mutedForeground, fontSize: 14),
                   ),
                 ],
               ),
@@ -477,7 +524,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                             : null,
                       ),
                     ),
@@ -511,20 +558,19 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
           const SizedBox(height: 16),
           Flex(
             direction: mobile ? Axis.vertical : Axis.horizontal,
-            crossAxisAlignment: mobile
-                ? CrossAxisAlignment.stretch
-                : CrossAxisAlignment.center,
+            crossAxisAlignment:
+                mobile ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
             children: [
               !mobile
                   ? Expanded(
-                  child: AppTextField(
+                      child: AppTextField(
+                          controller: _queryController,
+                          labelText: 'Test Query',
+                          hintText: 'Ask a test question...'))
+                  : AppTextField(
                       controller: _queryController,
                       labelText: 'Test Query',
-                      hintText: 'Ask a test question...'))
-                  : AppTextField(
-                  controller: _queryController,
-                  labelText: 'Test Query',
-                  hintText: 'Ask a test question...'),
+                      hintText: 'Ask a test question...'),
               SizedBox(width: mobile ? 0 : 8, height: mobile ? 12 : 0),
               AppButton(
                   text: 'Test Query',
@@ -545,7 +591,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                       color: AppColors.muted,
                       borderRadius: BorderRadius.circular(8.0)),
                   child:
-                  _buildQueryResult(), // <-- Use the new Markdown renderer
+                      _buildQueryResult(), // <-- Use the new Markdown renderer
                 ),
                 Positioned(
                   top: 4,
@@ -558,7 +604,6 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                     }),
                     tooltip: 'Close result',
                   ),
-
                 ),
               ],
             ),
@@ -575,7 +620,7 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
               child: const Text(
                 "Try asking: \"What are your product prices?\" or \"What's your refund policy?\"",
                 style:
-                TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                    TextStyle(color: AppColors.mutedForeground, fontSize: 14),
               ),
             ),
           ),
@@ -596,13 +641,16 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             direction: mobile ? Axis.vertical : Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Uploaded Documents', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              const Text('Uploaded Documents',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
               SizedBox(height: mobile ? 12 : 0),
               AppButton(
                 text: 'Refresh',
                 icon: const Icon(LucideIcons.refreshCw, size: 14),
-                onPressed: () => ref.read(knowledgeProvider.notifier).loadKnowledge(),
-                style: mobile ? AppButtonStyle.primary : AppButtonStyle.tertiary,
+                onPressed: () =>
+                    ref.read(knowledgeProvider.notifier).loadKnowledge(),
+                style:
+                    mobile ? AppButtonStyle.primary : AppButtonStyle.tertiary,
                 width: mobile ? double.infinity : null,
               ),
             ],
@@ -612,7 +660,8 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
             final bool isTrained = item.processingStatus == 'Completed';
             final bool isPending = item.processingStatus == 'Pending';
             final bool isExpanded = _expandedFiles[item.id] ?? false;
-            final bool hasSummary = item.summary != null && item.summary!.isNotEmpty;
+            final bool hasSummary =
+                item.summary != null && item.summary!.isNotEmpty;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -631,15 +680,20 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                         Container(
                           width: 40,
                           height: 40,
-                          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8.0)),
-                          child: const Icon(LucideIcons.fileText, color: AppColors.primary),
+                          decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8.0)),
+                          child: const Icon(LucideIcons.fileText,
+                              color: AppColors.primary),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text(item.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
                               const SizedBox(height: 4),
                               // Use Wrap for the file info and button
                               Wrap(
@@ -649,28 +703,39 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                                 children: [
                                   Text(
                                     "FILE • ${item.formattedSize}",
-                                    style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                                    style: const TextStyle(
+                                        color: AppColors.mutedForeground,
+                                        fontSize: 12),
                                   ),
                                   if (hasSummary)
-                                  // Smaller, styled TextButton
+                                    // Smaller, styled TextButton
                                     TextButton.icon(
                                       onPressed: () => setState(() {
                                         _expandedFiles[item.id] = !isExpanded;
                                       }),
                                       icon: Icon(
-                                        isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                                        isExpanded
+                                            ? LucideIcons.chevronUp
+                                            : LucideIcons.chevronDown,
                                         size: 14,
                                         color: AppColors.primary,
                                       ),
                                       label: const Text(
                                         'Summary',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary),
                                       ),
                                       style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
                                         minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(4)),
                                       ),
                                     ),
                                 ],
@@ -684,15 +749,26 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                           children: [
                             AppBadge(
                               text: item.processingStatus,
-                              variant: isTrained ? AppBadgeVariant.success : (isPending ? AppBadgeVariant.secondary : AppBadgeVariant.destructive),
+                              variant: isTrained
+                                  ? AppBadgeVariant.success
+                                  : (isPending
+                                      ? AppBadgeVariant.secondary
+                                      : AppBadgeVariant.destructive),
                             ),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 4,
                               runSpacing: 4,
                               alignment: WrapAlignment.end,
-                              direction: mobile ? Axis.vertical : Axis.horizontal,
-                              children: item.tags.map((tag) => AppBadge(text: tag, variant: AppBadgeVariant.outline, icon: const Icon(LucideIcons.tag, size: 14))).toList(),
+                              direction:
+                                  mobile ? Axis.vertical : Axis.horizontal,
+                              children: item.tags
+                                  .map((tag) => AppBadge(
+                                      text: tag,
+                                      variant: AppBadgeVariant.outline,
+                                      icon: const Icon(LucideIcons.tag,
+                                          size: 14)))
+                                  .toList(),
                             )
                           ],
                         ),
@@ -704,14 +780,21 @@ class _KnowledgeScreenState extends ConsumerState<KnowledgeScreen> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.border))),
+                      decoration: const BoxDecoration(
+                          border:
+                              Border(top: BorderSide(color: AppColors.border))),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 12),
-                          const Text('Summary', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                          const Text('Summary',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14)),
                           const SizedBox(height: 4),
-                          Text(item.summary ?? "No summary available.", style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+                          Text(item.summary ?? "No summary available.",
+                              style: const TextStyle(
+                                  color: AppColors.mutedForeground,
+                                  fontSize: 14)),
                         ],
                       ),
                     ),

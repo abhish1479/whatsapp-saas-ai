@@ -16,6 +16,7 @@ import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
 import 'package:humainity_flutter/models/agent_config_model.dart';
 import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
 import 'package:flutter/foundation.dart';
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
 
 // --- AIAgentScreen Widget ---
 class AIAgentScreen extends ConsumerStatefulWidget {
@@ -714,16 +715,20 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                       await ref
                           .read(aiAgentProvider.notifier)
                           .saveAgentConfig();
+                           // 🔁 Onboarding refresh after agent config step success
+          await ref
+              .read(authNotifierProvider.notifier)
+              .maybeFetchOnboardingStatus();
                       scaffoldMessenger.showSnackBar(
                         const SnackBar(
-                          content: Text('✅ Configuration Saved!'),
+                          content: Text('✅ Agent Configuration Saved!'),
                           backgroundColor: Colors.green,
                         ),
                       );
                     } catch (e) {
                       scaffoldMessenger.showSnackBar(
                         SnackBar(
-                          content: Text('❌ Save failed: $e'),
+                          content: Text('❌ Failed to save: $e'),
                           backgroundColor: Colors.red,
                         ),
                       );

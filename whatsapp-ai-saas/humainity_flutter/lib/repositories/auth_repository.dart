@@ -5,12 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as api;
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
-
-// ONBOARDING FLAGS (GLOBAL)
-
-bool _isFetchingOnboarding = false;
-bool _onboardingCompleted = false;
-
 // --- 1. Repository Provider ---
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   // Get the initialized store service
@@ -24,6 +18,8 @@ class AuthRepository {
   final StoreUserData? _store;
   AuthRepository(this._store);
 
+  bool _isFetchingOnboarding = false;
+  bool _onboardingCompleted = false;
   String get _baseUrl {
     final url = dotenv.env['API_BASE_URL'];
     if (url == null || url.isEmpty) {
@@ -112,40 +108,51 @@ class AuthRepository {
     await _store!.clear();
   }
 
-  Future<Map<String, dynamic>> getOnboardingStatus(tenantId) async {
+   Future<Map<String, dynamic>> getOnboardingStatus(int tenantId) async {
+    // Avoid duplicate calls and stop once we're done
+    if (_isFetchingOnboarding || _onboardingCompleted) {
+      return {};
+    }
+
+    _isFetchingOnboarding = true;
     try {
-      if (_isFetchingOnboarding || _onboardingCompleted) {
-        return {};
-      }
-
-      _isFetchingOnboarding = true;
-
       final url = Uri.parse(
-          '$_baseUrl/onboarding/get_onboarding_status?tenant_id=$tenantId');
+        '$_baseUrl/onboarding/get_onboarding_status?tenant_id=$tenantId',
+      );
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode != 200) {
-        _isFetchingOnboarding = false;
         throw Exception('Server returned: ${response.statusCode}');
       }
 
       final decoded = jsonDecode(response.body);
       final status = Map<String, dynamic>.from(decoded);
 
-     // If onboarding is completed → never fetch again
+      final process = status['onboarding_process']?.toString();
 
-      if (status["data"]?["onboarding_process"] == "Completed") {
-        _onboardingCompleted = true;
+      if (process != null) {
+        await _store?.setOnboardingProcess(process);
+        if (process == 'Completed') {
+          _onboardingCompleted = true;
+        }
       }
-      _isFetchingOnboarding = false;
+
+      final stepsRaw = status['onboarding_steps'];
+      if (stepsRaw is Map<String, dynamic>) {
+        await _store?.saveOnboardingSteps(
+          Map<String, dynamic>.from(stepsRaw),
+        );
+      }
+
       return status;
     } catch (e) {
-      _isFetchingOnboarding = false;
-
       throw Exception('Failed to fetch onboarding status: $e');
+    } finally {
+      _isFetchingOnboarding = false;
     }
   }
 
@@ -172,7 +179,7 @@ class AuthRepository {
     }
 
     await _store!.setLoggedIn(true);
-     // Reset onboarding flags after new login/signup
+    // Reset onboarding flags after new login/signup
     _onboardingCompleted = false;
     _isFetchingOnboarding = false;
   }

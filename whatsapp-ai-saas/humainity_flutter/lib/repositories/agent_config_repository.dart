@@ -35,7 +35,7 @@ class AgentConfigRepository {
       tenantId: 0,
       agentName: 'Sarah',
       agentPersona:
-      'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
+          'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
       greetingMessage: 'Hello! How can I assist you today?',
       preferredLanguages: ['en'],
       conversationTone: 'friendly',
@@ -65,8 +65,11 @@ class AgentConfigRepository {
       final response = await http.get(uri, headers: headers);
       final responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && responseBody['status'] == 'success') {
         // Successful response with data
+        if (responseBody['data'] == null) {
+          return _defaultEmptyConfig();
+        }
         return AgentConfig.fromMap(responseBody['data']);
       } else if (response.statusCode != 200) {
         return _defaultEmptyConfig();
