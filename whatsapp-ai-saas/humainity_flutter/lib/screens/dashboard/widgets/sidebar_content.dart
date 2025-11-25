@@ -26,16 +26,13 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
     super.initState();
     final storeUserData = ref.read(storeUserDataProvider);
 
-    // Fetch onboarding status from API using tenant_id
-    _onboardingStatusFuture = storeUserData!.getTenantId().then((tenantId) {
-      if (tenantId == null || tenantId.isEmpty) {
-        return <String, dynamic>{};
-      }
-      final id = int.tryParse(tenantId) ?? 0;
-      if (id == 0) {
-        return <String, dynamic>{};
-      }
-      return ref.read(authRepositoryProvider).getOnboardingStatus(id);
+    _onboardingStatusFuture =
+        storeUserData!.getOnboardingSteps().then((steps) async {
+      final process = await storeUserData.getOnboardingProcess();
+      return {
+        'onboarding_steps': steps ?? {},
+        'onboarding_process': process ?? 'InProcess',
+      };
     });
 
     _userNameFuture = storeUserData.getUserName();
@@ -48,41 +45,49 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
       'name': 'Dashboard',
       'href': '/dashboard',
       'icon': LucideIcons.layoutDashboard,
+      'showStepIndicator': false,
     },
     {
       'name': 'Campaigns',
       'href': '/dashboard/campaigns',
       'icon': LucideIcons.megaphone,
+      'showStepIndicator': false,
     },
     {
       'name': 'CRM',
       'href': '/dashboard/crm',
       'icon': LucideIcons.users,
+      'showStepIndicator': false,
     },
     {
       'name': 'AI Agent',
       'href': '/dashboard/ai-agent',
       'icon': LucideIcons.bot,
+      'showStepIndicator': false,
     },
     {
       'name': 'Knowledge',
       'href': '/dashboard/knowledge',
       'icon': LucideIcons.bookOpen,
+      'showStepIndicator': false,
     },
     {
       'name': 'Templates',
       'href': '/dashboard/templates',
       'icon': LucideIcons.messageSquare,
+      'showStepIndicator': false,
     },
     {
       'name': 'Test Agent',
       'href': '/dashboard/agent-preview',
       'icon': LucideIcons.playCircle,
+      'showStepIndicator': false,
     },
     {
       'name': 'Settings',
       'href': '/dashboard/settings',
       'icon': LucideIcons.settings,
+      'showStepIndicator': false,
     },
   ];
 
@@ -92,26 +97,31 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
       'name': 'AI Agent',
       'href': '/dashboard/ai-agent',
       'icon': LucideIcons.bot,
+      'showStepIndicator': true,
     },
     {
       'name': 'Knowledge',
       'href': '/dashboard/knowledge',
       'icon': LucideIcons.bookOpen,
+      'showStepIndicator': true,
     },
     {
       'name': 'Templates',
       'href': '/dashboard/templates',
       'icon': LucideIcons.messageSquare,
+      'showStepIndicator': true,
     },
     {
       'name': 'Test Agent',
       'href': '/dashboard/agent-preview',
       'icon': LucideIcons.playCircle,
+      'showStepIndicator': false,
     },
     {
       'name': 'Settings',
       'href': '/dashboard/settings',
       'icon': LucideIcons.settings,
+      'showStepIndicator': false,
     },
   ];
 
@@ -166,22 +176,18 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final status = statusSnap.data ?? <String, dynamic>{};
-              final stepsMap =
-                  Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
+              final status = statusSnap.data ?? {};
+              final stepsMap = Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
 
-              final bool step1 =
-                  (stepsMap['AI_Agent_Configuration'] ?? false) == true;
-              final bool step2 =
-                  (stepsMap['Knowledge_Base_Ingestion'] ?? false) == true;
-              final bool step3 =
-                  (stepsMap['template_Messages_Setup'] ?? false) == true;
+              final bool step1 = (stepsMap['AI_Agent_Configuration'] ?? false);
+              final bool step2 = (stepsMap['Knowledge_Base_Ingestion'] ?? false);
+              final bool step3 = (stepsMap['template_Messages_Setup'] ?? false);
 
               final int completedSteps =
                   [step1, step2, step3].where((e) => e).length;
 
               final String process =
-                  (status['onboarding_process'] as String?) ?? 'InProcess';
+                  (status['onboarding_process']) ?? 'InProcess';
 
               final navItems = process == 'Completed'
                   ? completedNavigation
@@ -220,15 +226,15 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
                         break;
 
                       case 'Test Agent':
-                        final allDone = step1 && step2 && step3;
-                        completed = allDone;
-                        clickable = allDone; // unlock only when all 3 done
+                        // final allDone = step1 && step2 && step3;
+                        // completed = allDone;
+                        clickable = step1 && step2 && step3; // unlock only when all 3 done
                         break;
 
-                      case 'Settings':
-                        completed = true;
-                        clickable = true;
-                        break;
+                      // case 'Settings':
+                      //   completed = true;
+                      //   clickable = true;
+                      //   break;
 
                       default:
                         completed = true;
@@ -245,6 +251,8 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
                         isActive: isActive,
                         completed: completed,
                         clickable: clickable,
+                        showStepIndicator:
+                            item['showStepIndicator'] as bool? ?? true,
                       ),
                     );
                   }).toList(),
@@ -309,18 +317,16 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
     required bool isActive,
     required bool completed,
     required bool clickable,
+    bool showStepIndicator = true,
   }) {
     final bool disabled = !clickable;
 
     final Color itemColor = disabled
         ? AppColors.mutedForeground.withOpacity(0.3)
-        : (isActive
-            ? AppColors.primaryForeground
-            : AppColors.mutedForeground);
+        : (isActive ? AppColors.primaryForeground : AppColors.mutedForeground);
 
     return Material(
-      color:
-          isActive && clickable ? AppColors.primary : Colors.transparent,
+      color: isActive && clickable ? AppColors.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(8.0),
       child: InkWell(
         onTap: clickable
@@ -333,9 +339,7 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
             : null,
         borderRadius: BorderRadius.circular(8.0),
         hoverColor: clickable
-            ? (isActive
-                ? AppColors.primary.withOpacity(0.9)
-                : AppColors.muted)
+            ? (isActive ? AppColors.primary.withOpacity(0.9) : AppColors.muted)
             : Colors.transparent,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -358,13 +362,12 @@ class _SidebarContentState extends ConsumerState<SidebarContent> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(
-                completed
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
-                color: completed ? Colors.green : Colors.grey,
-                size: 16,
-              ),
+              if (showStepIndicator)
+                Icon(
+                  completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: completed ? Colors.green : Colors.grey,
+                  size: 16,
+                ),
             ],
           ),
         ),

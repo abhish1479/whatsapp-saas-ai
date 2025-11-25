@@ -67,7 +67,11 @@ class AgentConfig {
       agentImage: map['agent_image'],
       agentPersona: map['agent_persona'] ?? '',
       greetingMessage: map['greeting_message'] ?? '',
-      preferredLanguages: _languagesToList(map['preferred_languages'] ?? 'en'),
+      preferredLanguages: (map['preferred_languages'] is List)
+    ? (map['preferred_languages'] as List)
+        .whereType<String>()
+        .toList()
+    : ['en'],
       conversationTone: map['conversation_tone'] ?? 'friendly',
     );
   }

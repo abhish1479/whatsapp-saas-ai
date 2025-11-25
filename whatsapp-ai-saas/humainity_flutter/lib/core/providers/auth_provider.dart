@@ -6,14 +6,15 @@ import 'package:humainity_flutter/repositories/auth_repository.dart';
 class AuthState {
   final bool isAuthenticated;
   final bool isLoading;
-  final bool isInitialized; // NEW: Indicates if initial check is complete
+  final bool isInitialized;
   final String? error;
 
-  const AuthState(
-      {required this.isAuthenticated,
-      this.isLoading = false,
-      this.isInitialized = false,
-      this.error});
+  const AuthState({
+    required this.isAuthenticated,
+    this.isLoading = false,
+    this.isInitialized = false,
+    this.error,
+  });
 
   AuthState copyWith({
     bool? isAuthenticated,
@@ -69,19 +70,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (_storeUserData == null) return;
 
     final onboardingProcess = await _storeUserData!.getOnboardingProcess();
-    if (onboardingProcess == 'InProcess') {
-      final tenantId = await _storeUserData!.getTenantId();
-      if (tenantId != null && tenantId.isNotEmpty) {
-        final id = int.tryParse(tenantId);
-        if (id != null) {
-             final status = await _repo.getOnboardingStatus(id);
-              if (status.containsKey("onboarding_steps")) {
-          await _storeUserData!.saveOnboardingSteps(
-            Map<String, dynamic>.from(status["onboarding_steps"]),
-          );
-        }
-        }
-      }
+    if (onboardingProcess != 'InProcess') return;
+    final tenantId = await _storeUserData!.getTenantId();
+    if (tenantId == null || tenantId.isEmpty) return;
+
+    final id = int.tryParse(tenantId);
+    if (id == null) return;
+    final status = await _repo.getOnboardingStatus(id);
+    if (status["data"] != null && status["data"]["onboarding_steps"] != null) {
+      await _storeUserData!.saveOnboardingSteps(
+        Map<String, dynamic>.from(status["data"]["onboarding_steps"]),
+      );
+    }
+
+    if (status["data"]?["onboarding_process"] == "Completed") {
+      await _storeUserData!.setOnboardingProcess("Completed");
     }
   }
 
