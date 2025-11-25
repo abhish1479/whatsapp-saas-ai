@@ -20,14 +20,11 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
     final tenantId = await store.getTenantId();
     if (tenantId == null) return false;
 
-    final status =
-        await ref.read(authRepositoryProvider).getOnboardingStatus(tenantId);
+  final steps = await store.getOnboardingSteps() ?? {};
 
-    final steps = status["onboarding_steps"] ?? {};
-
-    final step1 = steps["AI_Agent_Configuration"] ?? false;
-    final step2 = steps["Knowledge_Base_Ingestion"] ?? false;
-    final step3 = steps["template_Messages_Setup"] ?? false;
+  final step1 = steps["AI_Agent_Configuration"] == true;
+  final step2 = steps["Knowledge_Base_Ingestion"] == true;
+  final step3 = steps["template_Messages_Setup"] == true;
 
     return step1 && step2 && step3; // ✔ all 3 must be true
   }

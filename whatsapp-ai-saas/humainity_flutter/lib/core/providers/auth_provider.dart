@@ -66,26 +66,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     streamController.add(newState);
   }
 
-  Future<void> _maybeFetchOnboardingStatus() async {
+   Future<void> maybeFetchOnboardingStatus() async {
     if (_storeUserData == null) return;
-
     final onboardingProcess = await _storeUserData!.getOnboardingProcess();
-    if (onboardingProcess != 'InProcess') return;
+    if (onboardingProcess == 'Completed') return;
     final tenantId = await _storeUserData!.getTenantId();
     if (tenantId == null || tenantId.isEmpty) return;
 
     final id = int.tryParse(tenantId);
     if (id == null) return;
-    final status = await _repo.getOnboardingStatus(id);
-    if (status["data"] != null && status["data"]["onboarding_steps"] != null) {
-      await _storeUserData!.saveOnboardingSteps(
-        Map<String, dynamic>.from(status["data"]["onboarding_steps"]),
-      );
-    }
-
-    if (status["data"]?["onboarding_process"] == "Completed") {
-      await _storeUserData!.setOnboardingProcess("Completed");
-    }
+    await _repo.getOnboardingStatus(id);
   }
 
   Future<void> signIn(String email, String password) async {
@@ -93,7 +83,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repo.signIn(email, password);
       // NEW: if onboarding_process == "InProcess", fetch onboarding status
-      await _maybeFetchOnboardingStatus();
+      await maybeFetchOnboardingStatus();
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
       _emit(state.copyWith(
@@ -111,7 +101,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _repo.signUp(
           email: email, password: password, businessName: businessName);
       // NEW: if onboarding_process == "InProcess", fetch onboarding status
-      await _maybeFetchOnboardingStatus();
+      await maybeFetchOnboardingStatus();
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
       _emit(state.copyWith(
@@ -128,7 +118,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLogin: isLogin,
       );
       // NEW: if onboarding_process == "InProcess", fetch onboarding status
-      await _maybeFetchOnboardingStatus();
+      await maybeFetchOnboardingStatus();
       _emit(state.copyWith(isAuthenticated: true, isLoading: false));
     } catch (e) {
       _emit(state.copyWith(

@@ -36,8 +36,11 @@ async def get_agent_configuration(
     config = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
     
     # REQUIRED CHANGE 1: If config not found, return structured 404 error (No auto-creation)
-    if not config: 
-       return StandardResponse(success=False,data=config, message="Agent configuration data not found for user {tenant_id}. Please create a configuration first.")
+    if not config: return StandardResponse(
+        success=False,
+        data=None,
+        message=f"Agent configuration not found for this tenant.",
+    )
 
     if isinstance(config.preferred_languages, str):
         clean = config.preferred_languages.replace("{", "").replace("}", "")
@@ -45,7 +48,7 @@ async def get_agent_configuration(
 
 
     # If found, return successfully
-    return StandardResponse(success=False,data=config, message="Agent configuration retrieved successfully.")
+    return StandardResponse(success=True,data=config, message="Agent configuration retrieved successfully.")
 
 @router.put(
     "/update_agent_configuration",
@@ -54,14 +57,29 @@ async def get_agent_configuration(
     description="Updates existing configuration or creates a new one if none is found for the given tenant."
 )
 def update_agent_configuration(
-    payload: AgentConfigPayload,
+    # payload: AgentConfigPayload,
+    payload: str = Form(...),
+    agent_image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     """
     Updates an existing configuration using only provided fields, 
     or creates a new configuration if none exists.
     """
-    
+    try:
+        payload_dict = json.loads(payload)
+        payload = AgentConfigPayload(**payload_dict)
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            data=None,
+            message="Invalid payload format",
+            error=APIError(
+                code="INVALID_PAYLOAD",
+                details=[ErrorDetail(field="payload", message=str(e))]
+            )
+        )
+
     tenant_id = payload.tenant_id
     
     # Check if the Tenant exists (ensures FK integrity check is passed if not handled by auth middleware)
@@ -76,45 +94,40 @@ def update_agent_configuration(
             detail=error.model_dump_json(exclude_none=True)
         )
 
-    # 1. Prepare data: Only include fields present in the request for UPDATE 
-    # exclude={'tenant_id'} ensures we don't try to change the FK, although it's included in exclude_unset=True logic.
-    update_data = payload.model_dump(exclude_unset=True, exclude={'tenant_id'})
-    
-    # 2. Check for existing configuration
-    config = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
-    
-    # 3. Handle update or create (upsert-like logic)
+    config = db.query(AgentConfiguration).filter(
+        AgentConfiguration.tenant_id == tenant_id
+    ).first()
+
+    update_data = payload.model_dump(exclude_unset=True, exclude={"tenant_id"})
+
+    if agent_image:
+        saved_path = save_image(agent_image, folder="agent_images")
+        update_data["agent_image"] = saved_path
+
+
     if config:
-        # UPDATE: Apply only the provided fields from the payload (update_data already excludes tenant_id)
         for key, value in update_data.items():
             setattr(config, key, value)
-        
         db.commit()
         db.refresh(config)
         message = "Agent configuration updated successfully."
     else:
-        # CREATE: Use the complete payload (including defaults for missing optional fields)
-        try:
-            create_data = payload.model_dump()
-            
-            # Use the SQLAlchemy model instance creation
-            new_config = AgentConfiguration(**create_data) 
-            
-            db.add(new_config)
-            db.commit()
-            db.refresh(new_config)
-            config = new_config
-            message = "New agent configuration created successfully."
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Failed to create new AgentConfiguration for tenant {tenant_id}: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create agent configuration (check integrity): {e}"
-            )
-        
-    if isinstance(config.preferred_languages, str):
-         clean = config.preferred_languages.replace("{", "").replace("}", "")
-         config.preferred_languages = [lang.strip() for lang in clean.split(",") if lang.strip()]
+        new_data = payload.model_dump()
+        if agent_image:
+            new_data["agent_image"] = saved_path
 
-    return APIResponse(data=config, message=message)
+        config = AgentConfiguration(**new_data)
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+        message = "New agent configuration created successfully."
+
+    if isinstance(config.preferred_languages, str):
+        clean = config.preferred_languages.replace("{", "").replace("}", "")
+        config.preferred_languages = [lang.strip() for lang in clean.split(",") if lang.strip()]
+
+    return APIResponse(
+        success=True,
+        data=config,
+        message=message
+    )

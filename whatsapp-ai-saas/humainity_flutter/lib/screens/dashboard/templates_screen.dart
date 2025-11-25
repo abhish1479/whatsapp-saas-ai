@@ -11,6 +11,7 @@ import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart'; // <-- 1. Import responsive util
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
 
 // Convert back to StatefulWidget to manage the tab state
 class TemplatesScreen extends ConsumerStatefulWidget {
@@ -28,7 +29,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(templatesProvider);
     final templates =
-    _showOutbound ? state.outboundTemplates : state.inboundTemplates;
+        _showOutbound ? state.outboundTemplates : state.inboundTemplates;
 
     // 2. Check for mobile screen size
     final bool isMobileScreen = isMobile(context);
@@ -42,7 +43,9 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
           // 2. Use Flex for responsive header
           child: Flex(
             direction: isMobileScreen ? Axis.vertical : Axis.horizontal,
-            crossAxisAlignment: isMobileScreen ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+            crossAxisAlignment: isMobileScreen
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Expanded(
@@ -51,7 +54,8 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                   children: [
                     Text(
                       'Templates',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -101,7 +105,9 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(4.0),
                   // 3. Remove fixed max-width on mobile, keep it for web
-                  constraints: isMobileScreen ? null : const BoxConstraints(maxWidth: 350),
+                  constraints: isMobileScreen
+                      ? null
+                      : const BoxConstraints(maxWidth: 350),
                   decoration: BoxDecoration(
                     color: AppColors.muted,
                     borderRadius: BorderRadius.circular(8.0),
@@ -124,7 +130,8 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                         child: AppButton(
                           text: 'Inbound',
                           icon: const Icon(LucideIcons.arrowDownLeft, size: 16),
-                          onPressed: () => setState(() => _showOutbound = false),
+                          onPressed: () =>
+                              setState(() => _showOutbound = false),
                           style: !_showOutbound
                               ? AppButtonStyle.primary
                               : AppButtonStyle.tertiary,
@@ -232,7 +239,8 @@ class _TemplateCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         // 2. Set mainAxisSize to MainAxisSize.min
-        mainAxisSize: MainAxisSize.min, // Allow column to be as short as its content
+        mainAxisSize:
+            MainAxisSize.min, // Allow column to be as short as its content
         children: [
           // Top Row: Icon & Status
           Row(
@@ -266,7 +274,8 @@ class _TemplateCard extends ConsumerWidget {
               children: [
                 Text(
                   template.body,
-                  style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                  style: const TextStyle(
+                      color: AppColors.mutedForeground, fontSize: 14),
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -284,7 +293,8 @@ class _TemplateCard extends ConsumerWidget {
                           color: AppColors.mutedForeground, fontSize: 12),
                     ),
                     const SizedBox(width: 16),
-                    const Icon(LucideIcons.tag, size: 14, color: AppColors.mutedForeground),
+                    const Icon(LucideIcons.tag,
+                        size: 14, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
                     Text(
                       template.category,
@@ -296,7 +306,6 @@ class _TemplateCard extends ConsumerWidget {
               ],
             ),
           ),
-
 
           // 2. REMOVE Spacer
           // const Spacer(),
@@ -316,7 +325,7 @@ class _TemplateCard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.primary)),
                 style: TextButton.styleFrom(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -332,7 +341,7 @@ class _TemplateCard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.destructive)),
                 style: TextButton.styleFrom(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -438,7 +447,9 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
       return; // Validation failed
     }
 
-    setState(() { _isSaving = true; });
+    setState(() {
+      _isSaving = true;
+    });
 
     final data = _getFormData(status);
     bool success;
@@ -446,7 +457,7 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
     if (widget.template == null) {
       // Create
       success =
-      await widget.ref.read(templatesProvider.notifier).addTemplate(data);
+          await widget.ref.read(templatesProvider.notifier).addTemplate(data);
     } else {
       // Update
       success = await widget.ref
@@ -455,9 +466,14 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
     }
 
     if (mounted) {
-      setState(() { _isSaving = false; });
+      setState(() {
+        _isSaving = false;
+      });
       if (success) {
         Navigator.pop(context); // Close form
+        await widget.ref
+            .read(authNotifierProvider.notifier)
+            .maybeFetchOnboardingStatus();
       }
       // If not success, error is already shown by the provider
     }
@@ -468,8 +484,8 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
     // Check if we are in CREATE mode (template is null)
     if (widget.template == null) {
       // Check if required fields are filled
-      bool requiredDataFilled = _nameController.text.isNotEmpty &&
-          _bodyController.text.isNotEmpty;
+      bool requiredDataFilled =
+          _nameController.text.isNotEmpty && _bodyController.text.isNotEmpty;
 
       if (requiredDataFilled) {
         showAppDialog(
@@ -525,7 +541,7 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
                     ? 'Create new template'
                     : 'Edit Template',
                 style:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
               ),
               IconButton(
                 icon: const Icon(LucideIcons.x),
@@ -545,104 +561,112 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
       ),
       // 2. Make dialog width responsive
       content: SizedBox(
-        width: isMobileScreen ? screenWidth * 0.9 : screenWidth * 0.5, // 90% on mobile, 50% on web
+        width: isMobileScreen
+            ? screenWidth * 0.9
+            : screenWidth * 0.5, // 90% on mobile, 50% on web
         child: _isSaving
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppTextField(
-                  controller: _nameController,
-                  labelText: 'Template Name',
-                  hintText: 'e.g., "Welcome Message"',
-                  validator: (val) =>
-                  val == null || val.isEmpty ? 'Name is required' : null,
-                ),
-                const SizedBox(height: 16),
-                // 2. Use Flex for responsive dropdowns
-                Flex(
-                  direction: isMobileScreen ? Axis.vertical : Axis.horizontal,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: AppDropdown<TemplateType>(
-                        labelText: 'Type',
-                        value: _selectedType,
-                        items: TemplateType.values
-                            .where((t) => t != TemplateType.UNKNOWN)
-                            .map((t) => DropdownMenuItem(
-                            value: t, child: Text(t.displayName)))
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppTextField(
+                        controller: _nameController,
+                        labelText: 'Template Name',
+                        hintText: 'e.g., "Welcome Message"',
+                        validator: (val) => val == null || val.isEmpty
+                            ? 'Name is required'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      // 2. Use Flex for responsive dropdowns
+                      Flex(
+                        direction:
+                            isMobileScreen ? Axis.vertical : Axis.horizontal,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AppDropdown<TemplateType>(
+                              labelText: 'Type',
+                              value: _selectedType,
+                              items: TemplateType.values
+                                  .where((t) => t != TemplateType.UNKNOWN)
+                                  .map((t) => DropdownMenuItem(
+                                      value: t, child: Text(t.displayName)))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedType = val);
+                                }
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                              width: isMobileScreen ? 0 : 16,
+                              height: isMobileScreen ? 16 : 0),
+                          Expanded(
+                            child: AppDropdown<String>(
+                              labelText: 'Language',
+                              value: _selectedLanguage,
+                              items: _languages
+                                  .map((l) => DropdownMenuItem(
+                                      value: l, child: Text(l.toUpperCase())))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedLanguage = val);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      AppDropdown<String>(
+                        labelText: 'Category',
+                        value: _selectedCategory,
+                        items: _categories
+                            .map((c) =>
+                                DropdownMenuItem(value: c, child: Text(c)))
                             .toList(),
                         onChanged: (val) {
                           if (val != null) {
-                            setState(() => _selectedType = val);
+                            setState(() => _selectedCategory = val);
                           }
                         },
                       ),
-                    ),
-                    SizedBox(width: isMobileScreen ? 0 : 16, height: isMobileScreen ? 16 : 0),
-                    Expanded(
-                      child: AppDropdown<String>(
-                        labelText: 'Language',
-                        value: _selectedLanguage,
-                        items: _languages
-                            .map((l) => DropdownMenuItem(
-                            value: l, child: Text(l.toUpperCase())))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _selectedLanguage = val);
-                          }
-                        },
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        controller: _bodyController,
+                        labelText: 'Template Body',
+                        hintText:
+                            'Enter your message body here... Use {{variable}} for placeholders.',
+                        maxLines: 6,
+                        validator: (val) => val == null || val.isEmpty
+                            ? 'Body is required'
+                            : null,
                       ),
-                    ),
-                  ],
+                      const SizedBox(
+                          height: 16), // 2. Add some padding at the bottom
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                AppDropdown<String>(
-                  labelText: 'Category',
-                  value: _selectedCategory,
-                  items: _categories
-                      .map((c) =>
-                      DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedCategory = val);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  controller: _bodyController,
-                  labelText: 'Template Body',
-                  hintText:
-                  'Enter your message body here... Use {{variable}} for placeholders.',
-                  maxLines: 6,
-                  validator: (val) =>
-                  val == null || val.isEmpty ? 'Body is required' : null,
-                ),
-                const SizedBox(height: 16), // 2. Add some padding at the bottom
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
       actionsPadding: const EdgeInsets.all(16.0),
       actions: _isSaving
           ? []
           : [
-        // Only show the "Submit" button as the main action
-        AppButton(
-          text: 'Submit',
-          onPressed: () => _onSave(TemplateStatus.SUBMITTED),
-          // 2. Make button full width on mobile
-          width: isMobileScreen ? double.infinity : null,
-        ),
-      ],
+              // Only show the "Submit" button as the main action
+              AppButton(
+                text: 'Submit',
+                onPressed: () => _onSave(TemplateStatus.SUBMITTED),
+                // 2. Make button full width on mobile
+                width: isMobileScreen ? double.infinity : null,
+              ),
+            ],
     );
   }
 }
