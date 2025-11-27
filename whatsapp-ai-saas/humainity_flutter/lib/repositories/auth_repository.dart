@@ -1,25 +1,31 @@
 import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as api;
+
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
-// --- 1. Repository Provider ---
+/// ---------------------------------------------------------------------------
+/// 1. Repository Provider
+/// ---------------------------------------------------------------------------
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  // Get the initialized store service
   final storeUserData = ref.watch(storeUserDataProvider);
-  return AuthRepository(storeUserData);
+  return AuthRepository(storeUserData, ref);
 });
 
-// --- 2. Repository Class ---
-
+/// ---------------------------------------------------------------------------
+/// 2. Repository Class
+/// ---------------------------------------------------------------------------
 class AuthRepository {
   final StoreUserData? _store;
-  AuthRepository(this._store);
+  final Ref _ref;
+
+  AuthRepository(this._store, this._ref);
 
   bool _isFetchingOnboarding = false;
   bool _onboardingCompleted = false;
+
   String get _baseUrl {
     final url = dotenv.env['API_BASE_URL'];
     if (url == null || url.isEmpty) {
@@ -108,13 +114,16 @@ class AuthRepository {
     await _store!.clear();
   }
 
-   Future<Map<String, dynamic>> getOnboardingStatus(int tenantId) async {
+  /// Fetch onboarding status from backend, cache in SharedPreferences,
+  /// and notify listeners (Sidebar, Header, etc.)
+  Future<Map<String, dynamic>> getOnboardingStatus(int tenantId) async {
     // Avoid duplicate calls and stop once we're done
     if (_isFetchingOnboarding || _onboardingCompleted) {
       return {};
     }
 
     _isFetchingOnboarding = true;
+
     try {
       final url = Uri.parse(
         '$_baseUrl/onboarding/get_onboarding_status?tenant_id=$tenantId',
@@ -130,10 +139,10 @@ class AuthRepository {
       }
 
       final decoded = jsonDecode(response.body);
-      final status = Map<String, dynamic>.from(decoded);
+      final status = Map<String, dynamic>.from(decoded as Map);
 
+      // --- Cache process ---
       final process = status['onboarding_process']?.toString();
-
       if (process != null) {
         await _store?.setOnboardingProcess(process);
         if (process == 'Completed') {
@@ -141,12 +150,14 @@ class AuthRepository {
         }
       }
 
+      // --- Cache steps ---
       final stepsRaw = status['onboarding_steps'];
-      if (stepsRaw is Map<String, dynamic>) {
-        await _store?.saveOnboardingSteps(
-          Map<String, dynamic>.from(stepsRaw),
-        );
+      if (stepsRaw is Map) {
+        await _store?.saveOnboardingSteps(Map<String, dynamic>.from(stepsRaw));
       }
+
+      // Notify UI that onboarding status changed
+      _ref.read(onboardingRefreshProvider.notifier).state++;
 
       return status;
     } catch (e) {
@@ -167,21 +178,39 @@ class AuthRepository {
     if (data['tenant_id'] != null) {
       await _store!.setTenantId(data['tenant_id'].toString());
     }
+
     if (data['onboarding_process'] != null) {
-      await _store!.setOnboardingProcess(data['onboarding_process'].toString());
+      await _store!
+          .setOnboardingProcess(data['onboarding_process'].toString());
+    }
+
+    if (data['onboarding_steps'] is Map) {
+      await _store!.saveOnboardingSteps(
+        Map<String, dynamic>.from(data['onboarding_steps'] as Map),
+      );
     }
 
     if (data['user'] is Map) {
-      final user = data['user'] as Map<String, dynamic>;
-      if (user['name'] != null) await _store!.setUserName(user['name']);
-      if (user['email'] != null) await _store!.setEmail(user['email']);
-      if (user['picture'] != null) await _store!.setProfilePic(user['picture']);
+      final user = data['user'] as Map;
+      if (user['name'] != null) {
+        await _store!.setUserName(user['name']);
+      }
+      if (user['email'] != null) {
+        await _store!.setEmail(user['email']);
+      }
+      if (user['picture'] != null) {
+        await _store!.setProfilePic(user['picture']);
+      }
     }
 
     await _store!.setLoggedIn(true);
+
     // Reset onboarding flags after new login/signup
     _onboardingCompleted = false;
     _isFetchingOnboarding = false;
+
+    // Notify that onboarding data in prefs has changed
+    _ref.read(onboardingRefreshProvider.notifier).state++;
   }
 
   String _safeError(http.Response res, String context) {
@@ -191,7 +220,6 @@ class AuthRepository {
           body['error']?.toString() ??
           '$context (${res.statusCode})';
     } catch (_) {
-      // Fallback for non-JSON or unexpected body
       if (res.statusCode >= 500) {
         return 'Server error (${res.statusCode}). Please try again later.';
       }
