@@ -13,6 +13,97 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   const AppHeader({this.onMenuPressed, super.key});
 
+  // -----------------------------
+  // POPUP FOR GO LIVE
+  // -----------------------------
+void _showGoLivePopup(BuildContext context, WidgetRef ref) {
+  final controller = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text(
+          "Go Live – Enter WhatsApp Number",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Please enter your WhatsApp Business number to activate your agent.",
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                decoration: const InputDecoration(
+                  labelText: "WhatsApp Number",
+                  border: OutlineInputBorder(),
+                  prefixText: "+",
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return "Number is required";
+                  }
+
+                  final trimmed = value.trim();
+
+                  if (!RegExp(r'^[0-9]+$').hasMatch(trimmed)) {
+                    return "Only digits allowed";
+                  }
+
+                  if (trimmed.length < 10 || trimmed.length > 12) {
+                    return "Enter a valid 10–12 digit number";
+                  }
+
+                  return null; // VALID
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+
+          ElevatedButton(
+            child: const Text("Save"),
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) {
+                return; // ❌ Form invalid → prevent closing
+              }
+
+              final number = controller.text.trim();
+
+              // ---- SAVE (Your API call goes here) ----
+              // final repo = ref.read(authRepositoryProvider);
+              // await repo.saveWhatsappNumber(number);
+
+              Navigator.pop(context);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("WhatsApp number saved successfully!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
   Future<bool> _loadGoLiveStatus(WidgetRef ref) async {
     final store = ref.read(storeUserDataProvider);
     if (store == null) return false;
@@ -31,6 +122,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(onboardingRefreshProvider);
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -60,7 +152,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                   // disabled: !enabled,
                   onPressed: enabled
                       ? () {
-                          // 👉 Go Live functionality here
+                          _showGoLivePopup(context, ref);
                         }
                       : null,
                 ),

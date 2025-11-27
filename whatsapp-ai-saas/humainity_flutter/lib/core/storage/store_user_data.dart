@@ -9,10 +9,12 @@ final sharedPreferencesProvider =
     FutureProvider<SharedPreferences>((ref) async {
   return await SharedPreferences.getInstance();
 });
+final onboardingRefreshProvider = StateProvider<int>((ref) => 0);
 
 class StoreUserData {
   final SharedPreferences _prefs;
-  StoreUserData(this._prefs);
+  final Ref ref;
+ StoreUserData(this._prefs, this.ref);
 
   // ----------- WRITE DATA -----------
   Future<void> setToken(String token) async {
@@ -42,12 +44,14 @@ class StoreUserData {
   Future<void> setOnboardingProcess(String? onboardingProcess) async {
     if (onboardingProcess != null) {
       await _prefs.setString('onboarding_process', onboardingProcess);
+      ref.read(onboardingRefreshProvider.notifier).state++;
     }
   }
 
   Future<void> saveOnboardingSteps(Map<String, dynamic> steps) async {
     if(steps.isEmpty) return;
     await _prefs.setString("onboarding_steps", jsonEncode(steps));
+    ref.read(onboardingRefreshProvider.notifier).state++;
   }
 
   // ----------- READ DATA -----------
@@ -114,11 +118,13 @@ class StoreUserData {
 
 // --- 3. Provider for the StoreUserData Service ---
 final storeUserDataProvider = Provider<StoreUserData?>((ref) {
+   ref.watch(onboardingRefreshProvider);
   final prefsAsync = ref.watch(sharedPreferencesProvider);
 
   // We return null while SharedPreferences is loading
   return prefsAsync.when(
-    data: (prefs) => StoreUserData(prefs),
+    // data: (prefs) => StoreUserData(prefs),
+    data: (prefs) => StoreUserData(prefs, ref),
     loading: () => null,
     error: (e, s) => null,
   );

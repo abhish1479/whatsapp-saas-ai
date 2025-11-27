@@ -20,6 +20,7 @@ import 'package:humainity_flutter/screens/dashboard/settings_screen.dart';
 import 'package:humainity_flutter/screens/dashboard/templates_screen.dart';
 import 'package:humainity_flutter/screens/dashboard/train_agent_screen.dart';
 import 'package:humainity_flutter/screens/home/home_screen.dart';
+import 'package:humainity_flutter/screens/home/widgets/experience_demo_screen.dart';
 import 'package:humainity_flutter/screens/industries/industries_screen.dart';
 import 'package:humainity_flutter/screens/industries/industry_detail_screen.dart';
 import 'package:humainity_flutter/screens/not_found_screen.dart';
@@ -74,6 +75,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/industries/:id', 
         builder: (context, state) => IndustryDetailScreen.fromRoute(context, state),
+      ),
+      GoRoute(
+        path: '/experience-demo',
+        builder: (context, state) => const ExperienceDemoScreen(),
       ),
 
       // ----- Dashboard Shell -----
