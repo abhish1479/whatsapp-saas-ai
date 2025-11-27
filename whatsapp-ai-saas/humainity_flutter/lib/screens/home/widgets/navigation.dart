@@ -12,7 +12,7 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onPricingTap;
   final VoidCallback? onTestimonialsTap;
   final VoidCallback? onAgentsTap;
-
+  final VoidCallback? onExperienceTap;
   const HomeNavigation({
     super.key,
     this.onFeaturesTap,
@@ -21,6 +21,7 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
     this.onPricingTap,
     this.onTestimonialsTap,
     this.onAgentsTap,
+    this.onExperienceTap
   });
 
   @override

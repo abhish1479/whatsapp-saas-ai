@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:humainity_flutter/screens/home/widgets/navigation.dart';
 import 'package:humainity_flutter/screens/home/widgets/hero_section.dart';
 import 'package:humainity_flutter/screens/home/widgets/why_humainity_section.dart';
 import 'package:humainity_flutter/screens/home/widgets/solutions_section.dart';
 import 'package:humainity_flutter/screens/home/widgets/meet_agents_section.dart';
+import 'package:humainity_flutter/screens/home/widgets/experience_demo_screen.dart';
 import 'package:humainity_flutter/screens/home/widgets/how_it_works_section.dart';
 import 'package:humainity_flutter/screens/home/widgets/features_section.dart';
 import 'package:humainity_flutter/screens/home/widgets/dashboard_preview_section.dart';
@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final whyKey = GlobalKey();
   final solutionsKey = GlobalKey();
   final agentsKey = GlobalKey();
+  final experienceKey = GlobalKey();
   final howKey = GlobalKey();
   final featuresKey = GlobalKey();
   final dashboardKey = GlobalKey();
@@ -59,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onPricingTap: () => scrollTo(pricingKey),
           onTestimonialsTap: () => scrollTo(testimonialsKey),
           onAgentsTap: () => scrollTo(agentsKey),
+          onExperienceTap: () => scrollTo(experienceKey),
         ),
       ),
       // -------------------------------
@@ -140,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
             WhyHumainitySection(key: whyKey),
             SolutionsSection(key: solutionsKey),
             MeetAgentsSection(key: agentsKey),
+            ExperienceDemoScreen(key: experienceKey),
             HowItWorksSection(key: howKey),
             FeaturesSection(key: featuresKey),
             DashboardPreviewSection(key: dashboardKey),
@@ -152,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onHowItWorksTap: () => scrollTo(howKey),
               onPricingTap: () => scrollTo(pricingKey),
               onTestimonialsTap: () => scrollTo(testimonialsKey),
+              onExperienceTap: () => scrollTo(experienceKey),
             ),
           ],
         ),

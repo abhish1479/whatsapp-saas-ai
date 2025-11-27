@@ -9,6 +9,7 @@ class FooterSection extends StatelessWidget {
   final VoidCallback? onHowItWorksTap;
   final VoidCallback? onPricingTap;
   final VoidCallback? onTestimonialsTap;
+  final VoidCallback? onExperienceTap;
 
   const FooterSection({
     super.key,
@@ -17,6 +18,7 @@ class FooterSection extends StatelessWidget {
     this.onHowItWorksTap,
     this.onPricingTap,
     this.onTestimonialsTap,
+    this.onExperienceTap,
   });
 
   @override
@@ -66,6 +68,7 @@ class FooterSection extends StatelessWidget {
               "How It Works": onHowItWorksTap,
               "Pricing": onPricingTap,
               "Testimonials" : onTestimonialsTap,
+              "Experience Demo": onExperienceTap,
             },
           ),
         ),
