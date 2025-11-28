@@ -124,18 +124,15 @@ class Template(Timestamp,Base):
 
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
-
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"),
-                       primary_key=True, unique=True)
+    
+    id = Column(BigInteger, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     business_name = Column(Text, nullable=False)
-    # CHANGED:
-    business_whatsapp = Column(Text, nullable=False)   # was owner_phone
-    personal_number   = Column(Text, nullable=True)    # NEW
-    language      = Column(String(8), nullable=False, default="en")
-    business_type = Column(String(16))
+    business_whatsapp = Column(Text, nullable=False)  
+    personal_number   = Column(Text, nullable=True)  
+    language      = Column(String(15), nullable=False, default="en")
+    business_type = Column(Text)
     description = Column(Text)
-    custom_business_type = Column(Text)
-    business_category = Column(Text)
     is_active     = Column(Boolean, nullable=False, default=False)
     created_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

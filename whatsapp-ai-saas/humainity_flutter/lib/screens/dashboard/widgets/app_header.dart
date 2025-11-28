@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:go_router/go_router.dart';
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-import 'sidebar_content.dart'; // for onboardingStatusProvider
+import 'go_live_dialog.dart'; // Import the new dialog
+import 'sidebar_content.dart';
+import 'package:go_router/go_router.dart';
 
 class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
@@ -20,10 +19,16 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
     final onboardingAsync = ref.watch(onboardingStatusProvider);
 
     bool goLiveEnabled = false;
+    bool isCompleted = false;
 
     onboardingAsync.whenData((status) {
-      final stepsMap =
-          Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
+      // Check if process is fully completed
+      if (status['onboarding_process'] == 'Completed') {
+        isCompleted = true;
+      }
+
+      // Logic to enable button if steps are done but not yet 'Completed'
+      final stepsMap = Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
       final step1 = stepsMap['AI_Agent_Configuration'] == true;
       final step2 = stepsMap['Knowledge_Base_Ingestion'] == true;
       final step3 = stepsMap['template_Messages_Setup'] == true;
@@ -46,108 +51,37 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
               onPressed: onMenuPressed,
             ),
           const Spacer(),
-          SizedBox(
-            height: 44,
-            child: AppButton(
-              text: 'Go Live',
-              // onPressed:
-              //     goLiveEnabled ? () => _showGoLiveDialog(context) : null,
-                  onPressed: goLiveEnabled ? () => _showGoLiveDialog(context, ref) : null,
 
+          // Only show button if NOT completed
+          if (!isCompleted)
+            SizedBox(
+              height: 44,
+              child: AppButton(
+                text: 'Go Live',
+                // Enable button only if steps are done
+                onPressed: goLiveEnabled
+                    ? () => showDialog(
+                    context: context,
+                    builder: (_) => const GoLiveDialog()
+                )
+                    : null,
+                style: goLiveEnabled ? AppButtonStyle.primary : AppButtonStyle.secondary,
+              ),
+            )
+          else
+            SizedBox(
+              height: 44,
+              child: AppButton(
+                text: 'Test Agent',
+                icon: const Icon(LucideIcons.playCircle, size: 16),
+                style: AppButtonStyle.primary, // Less prominent than Go Live
+                onPressed: () => context.go('/dashboard/agent-preview'),
+              ),
             ),
-          ),
         ],
       ),
     );
   }
-
-void _showGoLiveDialog(BuildContext context, WidgetRef ref) {
-  final controller = TextEditingController();
-  final formKey = GlobalKey<FormState>();
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text(
-          "Go Live – Enter WhatsApp Number",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Please enter your WhatsApp Business number to activate your agent.",
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: controller,
-                keyboardType: TextInputType.phone,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                decoration: const InputDecoration(
-                  labelText: "WhatsApp Number",
-                  border: OutlineInputBorder(),
-                  prefixText: "+",
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Number is required";
-                  }
-
-                  final trimmed = value.trim();
-
-                  if (!RegExp(r'^[0-9]+$').hasMatch(trimmed)) {
-                    return "Only digits allowed";
-                  }
-
-                  if (trimmed.length < 10 || trimmed.length > 12) {
-                    return "Enter a valid 10–12 digit number";
-                  }
-
-                  return null; // VALID
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-
-          ElevatedButton(
-            child: const Text("Save"),
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) {
-                return; 
-              }
-
-              final number = controller.text.trim();
-
-              // === REAL API CALL OPTION ===
-              // final repo = ref.read(authRepositoryProvider);
-              // await repo.saveWhatsappNumber(number);
-
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("WhatsApp number saved successfully!"),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
 
   @override
   Size get preferredSize => const Size.fromHeight(64.0);

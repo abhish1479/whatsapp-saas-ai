@@ -12,13 +12,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// ---------------------------------------------------------------------------
 /// Onboarding status provider
 /// ---------------------------------------------------------------------------
-/// Returns:
-/// {
-///   'onboarding_steps': Map<String,bool>,
-///   'onboarding_process': String,
-/// }
 final onboardingStatusProvider =
-    FutureProvider<Map<String, dynamic>>((ref) async {
+FutureProvider<Map<String, dynamic>>((ref) async {
   // Recompute whenever onboardingRefreshProvider is bumped
   ref.watch(onboardingRefreshProvider);
 
@@ -84,12 +79,12 @@ class SidebarContent extends ConsumerWidget {
       'icon': LucideIcons.messageSquare,
       'showStepIndicator': false,
     },
-    {
-      'name': 'Test Agent',
-      'href': '/dashboard/agent-preview',
-      'icon': LucideIcons.playCircle,
-      'showStepIndicator': false,
-    },
+    // {
+    //   'name': 'Test Agent',
+    //   'href': '/dashboard/agent-preview',
+    //   'icon': LucideIcons.playCircle,
+    //   'showStepIndicator': false,
+    // },
     {
       'name': 'Settings',
       'href': '/dashboard/settings',
@@ -124,12 +119,12 @@ class SidebarContent extends ConsumerWidget {
       'icon': LucideIcons.playCircle,
       'showStepIndicator': false,
     },
-    {
-      'name': 'Settings',
-      'href': '/dashboard/settings',
-      'icon': LucideIcons.settings,
-      'showStepIndicator': false,
-    },
+    // {
+    //   'name': 'Settings',
+    //   'href': '/dashboard/settings',
+    //   'icon': LucideIcons.settings,
+    //   'showStepIndicator': false,
+    // },
   ];
 
   @override
@@ -163,7 +158,7 @@ class SidebarContent extends ConsumerWidget {
         Expanded(
           child: onboardingAsync.when(
             loading: () =>
-                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             error: (err, stack) => Center(
               child: Text(
                 'Failed to load menu',
@@ -188,42 +183,53 @@ class SidebarContent extends ConsumerWidget {
               final String process =
                   (status['onboarding_process'] as String?) ?? 'InProcess';
 
-              final navItems = process == 'Completed'
+              final bool isCompleted = process == 'Completed';
+
+              final navItems = isCompleted
                   ? completedNavigation
                   : inProcessNavigation;
 
               return ListView(
                 padding: const EdgeInsets.all(12),
                 children: [
-                  _buildStepTracker(completedSteps),
-                  const SizedBox(height: 16),
+                  // ✅ Hide Step Tracker if Completed
+                  if (!isCompleted) ...[
+                    _buildStepTracker(completedSteps),
+                    const SizedBox(height: 16),
+                  ],
                   ...navItems.map((item) {
                     final bool isActive =
-                        currentLocation.startsWith(item['href'] as String);
+                    currentLocation.startsWith(item['href'] as String);
 
                     bool completed = false;
                     bool clickable = false;
 
-                    switch (item['name']) {
-                      case 'AI Agent':
-                        completed = step1;
-                        clickable = true; // first step always clickable
-                        break;
-                      case 'Knowledge':
-                        completed = step2;
-                        clickable = step1; // unlock after step 1
-                        break;
-                      case 'Templates':
-                        completed = step3;
-                        clickable = step2; // unlock after step 2
-                        break;
-                      case 'Test Agent':
-                        clickable =
-                            step1 && step2 && step3; // unlock when all done
-                        break;
-                      default:
-                        completed = true;
-                        clickable = true;
+                    // If globally completed, everything is clickable
+                    if (isCompleted) {
+                      completed = true;
+                      clickable = true;
+                    } else {
+                      switch (item['name']) {
+                        case 'AI Agent':
+                          completed = step1;
+                          clickable = true; // first step always clickable
+                          break;
+                        case 'Knowledge':
+                          completed = step2;
+                          clickable = step1; // unlock after step 1
+                          break;
+                        case 'Templates':
+                          completed = step3;
+                          clickable = step2; // unlock after step 2
+                          break;
+                        case 'Test Agent':
+                          clickable =
+                              step1 && step2 && step3; // unlock when all done
+                          break;
+                        default:
+                          completed = true;
+                          clickable = true;
+                      }
                     }
 
                     return Padding(
@@ -237,7 +243,7 @@ class SidebarContent extends ConsumerWidget {
                         completed: completed,
                         clickable: clickable,
                         showStepIndicator:
-                            item['showStepIndicator'] as bool? ?? true,
+                        item['showStepIndicator'] as bool? ?? true,
                       ),
                     );
                   }).toList(),
@@ -292,15 +298,15 @@ class SidebarContent extends ConsumerWidget {
 
   // ---------- NAV ITEM ----------
   static Widget _buildNavItem(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-    required String href,
-    required bool isActive,
-    required bool completed,
-    required bool clickable,
-    bool showStepIndicator = true,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String text,
+        required String href,
+        required bool isActive,
+        required bool completed,
+        required bool clickable,
+        bool showStepIndicator = true,
+      }) {
     final bool disabled = !clickable;
     final Color itemColor = disabled
         ? AppColors.mutedForeground.withOpacity(0.3)
@@ -312,11 +318,11 @@ class SidebarContent extends ConsumerWidget {
       child: InkWell(
         onTap: clickable
             ? () {
-                if (Responsive.isMobile(context)) {
-                  Navigator.of(context).pop();
-                }
-                context.go(href);
-              }
+          if (Responsive.isMobile(context)) {
+            Navigator.of(context).pop();
+          }
+          context.go(href);
+        }
             : null,
         borderRadius: BorderRadius.circular(8.0),
         hoverColor: clickable
