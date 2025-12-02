@@ -25,6 +25,8 @@ import 'package:humainity_flutter/screens/industries/industries_screen.dart';
 import 'package:humainity_flutter/screens/industries/industry_detail_screen.dart';
 import 'package:humainity_flutter/screens/not_found_screen.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
 final _shellNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'DashboardShell');
 
@@ -32,6 +34,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authNotifierProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     errorBuilder: (context, state) => const NotFoundScreen(),
 

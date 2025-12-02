@@ -1,165 +1,85 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:humainity_flutter/models/agent_config_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/foundation.dart'; // HINT: Added for kIsWeb and Uint8List
-// --- CORRECTED IMPORT PATH AND USAGE ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:humainity_flutter/core/utils/api_client.dart';
+import 'package:humainity_flutter/core/providers/api_provider.dart';
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
+import 'package:humainity_flutter/models/agent_config_model.dart';
 
-// --- 1. The Repository Provider (FINAL) ---
-// This provider now watches the storeUserDataProvider
 final agentConfigRepositoryProvider = Provider<AgentConfigRepository>((ref) {
-  final storeUserData = ref.watch(storeUserDataProvider);
-  // Ensure StoreUserData is initialized before accessing it
-  if (storeUserData == null) {
-    throw Exception('StoreUserData provider returned null.');
-  }
-  return AgentConfigRepository(storeUserData);
+  final apiClient = ref.watch(apiClientProvider);
+  final store = ref.watch(storeUserDataProvider);
+  return AgentConfigRepository(apiClient, store);
 });
 
-// --- 2. The Repository Class ---
 class AgentConfigRepository {
-  final StoreUserData storeUserData;
-  final String _baseUrl;
+  final ApiClient _api;
+  final StoreUserData? _store;
 
-  AgentConfigRepository(this.storeUserData)
-      : _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:8000';
+  AgentConfigRepository(this._api, this._store);
 
-  // --- Helper for default empty configuration ---
-  static AgentConfig _defaultEmptyConfig() {
-    return AgentConfig(
-      id: 0,
-      tenantId: 0,
-      agentName: 'Sarah',
-      agentPersona:
-          'Sarah specializes in identifying warm leads, qualifying prospects based on stated needs, and proactively booking follow-up demonstration calls.',
-      greetingMessage: 'Hello! How can I assist you today?',
-      preferredLanguages: ['en'],
-      conversationTone: 'friendly',
-      agentImage: null,
-    );
+  String get _baseUrl {
+    final url = dotenv.env['API_BASE_URL'];
+    if (url == null || url.isEmpty) throw Exception('Missing API_BASE_URL');
+    return url;
   }
 
-  Future<Map<String, String>> _getHeaders() async {
-    final String? token = await storeUserData.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
-
-  /// Fetches the agent configuration from the API
-  Future<AgentConfig> getAgentConfiguration() async {
-    final tenantId = await storeUserData.getTenantId();
-    final Map<String, String> headers = await _getHeaders();
-
-    // Append the tenant_id as a query parameter
-    final uri = Uri.parse(
-        '$_baseUrl/agent-config/get_agent_configuration?tenant_id=$tenantId');
-
+  /// 1. Get Agent by Tenant
+  Future<AgentConfiguration?> getAgentByTenant(int tenantId) async {
     try {
-      final response = await http.get(uri, headers: headers);
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200 && responseBody['status'] == 'success') {
-        // Successful response with data
-        if (responseBody['data'] == null) {
-          return _defaultEmptyConfig();
-        }
-        return AgentConfig.fromMap(responseBody['data']);
-      } else if (response.statusCode != 200) {
-        return _defaultEmptyConfig();
-      } else {
-        // Handle structured error response (e.g., actual server error, permission issue)
-        final errorMessage = responseBody['message'] ?? 'Unknown error';
-        final errorDetails =
-            responseBody['error']?['details']?.join(', ') ?? '';
-
-        return _defaultEmptyConfig();
-      }
+      final data = await _api.get(
+        '/agent-config/get_agent_configs_by_tenant?tenant_id=$tenantId',
+        silent: true,
+      );
+      return AgentConfiguration.fromJson(data);
     } catch (e) {
-      throw Exception('Failed to connect: $e');
+      // 404 means no agent yet, return null so UI knows to show "Create" mode
+      if (e.toString().contains('404')) return null;
+      rethrow;
     }
   }
 
-  /// Saves the agent configuration to the API
-  // HINT: FIX 3c - Updated signature to accept bytes and filename for web upload
-  Future<String?> saveAgentConfiguration({
-    required AgentConfig config,
-    File? agentImageFile,
-    Uint8List? agentImageBytes,
-    String? agentImageFileName,
-  }) async {
-    final tenantId = await storeUserData.getTenantId();
-    final token = await storeUserData.getToken();
+  /// 2. Create Agent
+  Future<AgentConfiguration> createAgent(AgentConfiguration config) async {
+    final data = await _api.post('/agent-config/create', body: config.toJson());
+    return AgentConfiguration.fromJson(data);
+  }
 
-    final uri = Uri.parse('$_baseUrl/agent-config/update_agent_configuration');
+  /// 3. Update Agent
+  Future<AgentConfiguration> updateAgent(AgentConfiguration config) async {
+    final data = await _api.put('/agent-config/update', body: config.toJson());
+    return AgentConfiguration.fromJson(data);
+  }
 
-    try {
-      // HINT: FIX 3 - Changed method from 'POST' to 'PUT' to fix 405 Method Not Allowed
-      final request = http.MultipartRequest('PUT', uri);
-      request.headers['Authorization'] = 'Bearer $token';
+  /// 4. Upload Image (Multipart)
+  /// Returns the URL string of the uploaded image
+  Future<String> uploadImage(File file) async {
+    final uri = Uri.parse('$_baseUrl/catalog/image_upload');
+    final token = await _store?.getToken();
 
-      // --- 1. Create JSON Payload (Matches AgentConfigPayload Pydantic Model) ---
-      final configJsonPayload = json.encode({
-        // Ensure tenant_id is an integer for the Pydantic model
-        'tenant_id': int.parse(tenantId!),
-        'agent_name': config.agentName,
-        'agent_persona': config.agentPersona,
-        'greeting_message': config.greetingMessage,
-        // 'preferred_languages': config.preferredLanguages.join(','),
-        'preferred_languages': config.preferredLanguages,
-        'conversation_tone': config.conversationTone,
-      });
+    final request = http.MultipartRequest('POST', uri);
 
-      // Add the JSON payload as a single field named 'payload'
-      request.fields['payload'] = configJsonPayload;
+    // Add Headers
+    request.headers.addAll({
+      if (token != null) 'Authorization': 'Bearer $token',
+      'accept': 'application/json',
+    });
 
-      // --- 2. Add Optional File (Cross-Platform) ---
-      if (agentImageFile != null && !kIsWeb) {
-        // Native platforms (File access via dart:io)
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'agent_image', // MUST match Python argument name
-            agentImageFile.path,
-            contentType: MediaType('image', 'jpeg'),
-          ),
-        );
-      } else if (agentImageBytes != null && agentImageFileName != null) {
-        // HINT: FIX 3c - Web platform (File access via bytes)
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'agent_image',
-            agentImageBytes,
-            filename: agentImageFileName,
-            contentType: MediaType('image', 'jpeg'),
-          ),
-        );
-      }
+    // Add File
+    // Note: API expects field name 'payload'
+    final multipartFile = await http.MultipartFile.fromPath('payload', file.path);
+    request.files.add(multipartFile);
 
-      // --- 3. Send Request ---
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = json.decode(response.body);
+    // Send
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200 && responseBody['status'] == 'success') {
-        // Return the new image URL from the saved data
-        return responseBody['data']['agent_image'];
-      } else {
-        // Handle structured error response
-        final errorMessage = responseBody['message'] ?? 'Unknown error';
-        final errorDetails =
-            responseBody['error']?['details']?.join(', ') ?? '';
-
-        throw Exception(
-            'Failed to save configuration: $errorMessage. Details: $errorDetails');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect or save: $e');
+    if (response.statusCode == 200 || response.statusCode == 201) {
+        final imageUrl = response['image_url'] as String?;
+      return response.body.replaceAll('"', ''); // Simple cleanup if it's a raw string
+    } else {
+      throw Exception('Image upload failed: ${response.statusCode}');
     }
   }
 }

@@ -67,7 +67,7 @@ def System_Prompt(tenant_id: int) -> str:
             # Construct the final, highly defined system prompt for the LLM
         prompt = f"""
             You are a highly efficient and professional WhatsApp Chat Agent. Your responses must be guided strictly by the provided configuration.
-
+            Also consider the user's intent and context from previous messages and ask questions.
             **ROLE & CONFIGURATION (JSON):**
             {config_str}
 

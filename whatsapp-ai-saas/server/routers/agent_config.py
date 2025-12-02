@@ -1,133 +1,149 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Optional
-import json 
-from deps import get_db
+from typing import List
+
+# Adjust these imports based on your actual file structure
+from deps import get_db 
 from models import AgentConfiguration, Tenant 
-from data_models.agent_config_reponse import AgentConfigResponse, AgentConfigPayload, APIResponse 
-from utils.media import save_image
-from utils.responses import StandardResponse  
+from utils.responses import StandardResponse 
 from data_models.agent_config_reponse import (
-    AgentConfigResponse, 
-    AgentConfigPayload, 
-    APIResponse, 
-    APIError, 
-    ErrorDetail
-)   
-import logging
-
-logger = logging.getLogger(__name__)
-
-
-# Create a new router. This is the "route file" you wanted.
-router = APIRouter(prefix="/agent-config", tags=["agent-config"]
+    AgentConfigurationCreate, 
+    AgentConfigurationUpdate, 
+    AgentConfigurationResponse
 )
 
-# --- GET ENDPOINT (Updated to use APIResponse) ---
-@router.get(
-    "/get_agent_configuration", 
-    response_model=APIResponse[AgentConfigResponse], # Wrap in APIResponse
-    summary="Get Agent Configuration for Tenant"
+router = APIRouter(
+    prefix="/agent-config",
+    tags=["Agent Configuration"]
 )
-async def get_agent_configuration(
-    tenant_id: int, 
-    db: Session = Depends(get_db),
-):
-    config = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
-    
-    # REQUIRED CHANGE 1: If config not found, return structured 404 error (No auto-creation)
-    if not config: return StandardResponse(
-        success=False,
-        data=None,
-        message=f"Agent configuration not found for this tenant.",
-    )
 
-    if isinstance(config.preferred_languages, str):
-        clean = config.preferred_languages.replace("{", "").replace("}", "")
-        config.preferred_languages = [lang.strip() for lang in clean.split(",") if lang.strip()]
-
-
-    # If found, return successfully
-    return StandardResponse(success=True,data=config, message="Agent configuration retrieved successfully.")
-
-@router.put(
-    "/update_agent_configuration",
-    response_model=APIResponse[AgentConfigResponse],
-    summary="Update/Create Agent Configuration (Upsert)",
-    description="Updates existing configuration or creates a new one if none is found for the given tenant."
-)
-def update_agent_configuration(
-    # payload: AgentConfigPayload,
-    payload: str = Form(...),
-    agent_image: Optional[UploadFile] = File(None),
+# 1. CREATE Agent Configuration
+@router.post("/create", response_model=StandardResponse[AgentConfigurationResponse])
+def create_agent_config(
+    config_in: AgentConfigurationCreate, 
     db: Session = Depends(get_db)
 ):
-    """
-    Updates an existing configuration using only provided fields, 
-    or creates a new configuration if none exists.
-    """
-    try:
-        payload_dict = json.loads(payload)
-        payload = AgentConfigPayload(**payload_dict)
-    except Exception as e:
-        return APIResponse(
-            success=False,
-            data=None,
-            message="Invalid payload format",
-            error=APIError(
-                code="INVALID_PAYLOAD",
-                details=[ErrorDetail(field="payload", message=str(e))]
-            )
-        )
-
-    tenant_id = payload.tenant_id
-    
-    # Check if the Tenant exists (ensures FK integrity check is passed if not handled by auth middleware)
-    tenant_check = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    if not tenant_check:
-        error = APIError(
-            code="TENANT_NOT_FOUND",
-            details=[ErrorDetail(field="tenant_id", message=f"User/Tenant with ID {tenant_id} does not exist.")]
-        )
+    # Validate Tenant Exists (to prevent ForeignKey error)
+    tenant = db.query(Tenant).filter(Tenant.id == config_in.tenant_id).first()
+    if not tenant:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=error.model_dump_json(exclude_none=True)
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Tenant with ID {config_in.tenant_id} does not exist."
         )
 
-    config = db.query(AgentConfiguration).filter(
-        AgentConfiguration.tenant_id == tenant_id
+    # Validate Uniqueness (tenant_id + agent_name)
+    existing_agent = db.query(AgentConfiguration).filter(
+        AgentConfiguration.tenant_id == config_in.tenant_id,
+        AgentConfiguration.agent_name == config_in.agent_name
     ).first()
+    
+    if existing_agent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="An agent with this name already exists for this tenant."
+        )
 
-    update_data = payload.model_dump(exclude_unset=True, exclude={"tenant_id"})
-
-    if agent_image:
-        saved_path = save_image(agent_image, folder="agent_images")
-        update_data["agent_image"] = saved_path
-
-
-    if config:
-        for key, value in update_data.items():
-            setattr(config, key, value)
+    # Create new record
+    new_config = AgentConfiguration(**config_in.model_dump())
+    
+    try:
+        db.add(new_config)
         db.commit()
-        db.refresh(config)
-        message = "Agent configuration updated successfully."
-    else:
-        new_data = payload.model_dump()
-        if agent_image:
-            new_data["agent_image"] = saved_path
+        db.refresh(new_config)
+        return StandardResponse(
+            data=new_config, 
+            message="Agent configuration created successfully."
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
-        config = AgentConfiguration(**new_data)
-        db.add(config)
-        db.commit()
-        db.refresh(config)
-        message = "New agent configuration created successfully."
 
-    if isinstance(config.preferred_languages, str):
-        clean = config.preferred_languages.replace("{", "").replace("}", "")
-        config.preferred_languages = [lang.strip() for lang in clean.split(",") if lang.strip()]
-
-    return APIResponse(
-        success=True,
-        data=config,
-        message=message
+# 2. GET Agent Configuration by ID
+@router.get("/get_agent_config_by_id", response_model=StandardResponse[AgentConfigurationResponse])
+def get_agent_config(
+    config_id: int, 
+    db: Session = Depends(get_db)
+):
+    config = db.query(AgentConfiguration).filter(AgentConfiguration.id == config_id).first()
+    
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Agent configuration not found."
+        )
+    
+    return StandardResponse(
+        data=config, 
+        message="Agent configuration retrieved successfully."
     )
+
+
+# 3. GET All Configurations for a specific Tenant
+@router.get("/get_agent_configs_by_tenant", response_model=StandardResponse[AgentConfigurationResponse])
+def get_agent_configs_by_tenant(
+    tenant_id: int, 
+    db: Session = Depends(get_db)
+):
+    # configs = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).all()
+    
+    # return StandardResponse(
+    #     data=configs, 
+    #     message=f"Found {len(configs)} configuration(s) for tenant {tenant_id}."
+    # )
+    config = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
+    
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Agent configuration not found."
+        )
+    
+    return StandardResponse(
+        data=config, 
+        message="Agent configuration retrieved successfully."
+    )
+
+
+# 4. UPDATE Agent Configuration
+@router.put("/update", response_model=StandardResponse[AgentConfigurationResponse])
+def update_agent_config(
+    config_update: AgentConfigurationUpdate, 
+    db: Session = Depends(get_db)
+):
+    # Fetch existing
+    existing_config = db.query(AgentConfiguration).filter(AgentConfiguration.id == config_update.id).first()
+    
+    if not existing_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Agent configuration not found."
+        )
+
+    # Check Name Uniqueness if name is being updated
+    if config_update.agent_name and config_update.agent_name != existing_config.agent_name:
+        duplicate_check = db.query(AgentConfiguration).filter(
+            AgentConfiguration.tenant_id == existing_config.tenant_id,
+            AgentConfiguration.agent_name == config_update.agent_name
+        ).first()
+        if duplicate_check:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An agent with this name already exists for this tenant."
+            )
+
+    # Update fields
+    update_data = config_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(existing_config, field, value)
+
+    try:
+        db.commit()
+        db.refresh(existing_config)
+        return StandardResponse(
+            data=existing_config, 
+            message="Agent configuration updated successfully."
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

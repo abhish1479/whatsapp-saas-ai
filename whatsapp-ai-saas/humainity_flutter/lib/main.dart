@@ -6,6 +6,7 @@ import 'package:humainity_flutter/core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,13 +60,15 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
-    return MaterialApp.router(
+    return ToastificationWrapper( // ✅ Wrap MaterialApp with this
+        child: MaterialApp.router(
       title: 'HumAInity.ai',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light, // Set to light as per index.css
       debugShowCheckedModeBanner: false,
       routerConfig: router,
+        ),
     );
   }
 }

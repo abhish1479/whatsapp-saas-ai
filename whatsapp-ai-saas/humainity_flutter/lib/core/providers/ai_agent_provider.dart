@@ -1,259 +1,123 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:humainity_flutter/core/storage/store_user_data.dart';
 import 'package:humainity_flutter/models/agent_config_model.dart';
-import 'package:humainity_flutter/models/ai_agent.dart';
 import 'package:humainity_flutter/repositories/agent_config_repository.dart';
-import 'package:flutter/foundation.dart'; // HINT: Added for Uint8List
 
-// --- 1. The State Object ---
-// A simple class to hold all the data for the AI Agent Screen.
-class AIAgentState {
-  // The configuration data from the server, wrapped in AsyncValue
-  // to handle loading/error states.
-  final AsyncValue<AgentConfig> config;
+// --- State ---
+class AgentState {
+  final bool isLoading;
+  final bool isSaving;
+  final bool isEditing; // Controls Read-Only vs Edit mode
+  final AgentConfiguration? agent;
+  final File? localImageFile; // For preview before upload
 
-  // HINT: FIX 3 - Added fields for cross-platform file staging
-  final File? localImageFile; // Used on native/for path reference
-  final Uint8List? localImageBytes; // Used on web/for actual upload data
-  final String? localImageFileName; // File name for upload
-
-  // The ID of the currently selected preset (for UI highlighting).
-  final String? selectedPresetId;
-
-  AIAgentState({
-    this.config = const AsyncValue.loading(),
+  AgentState({
+    this.isLoading = false,
+    this.isSaving = false,
+    this.isEditing = true, // Default to true (Create mode) until loaded
+    this.agent,
     this.localImageFile,
-    this.localImageBytes,
-    this.localImageFileName,
-    this.selectedPresetId,
   });
 
-  // Helper method to create a copy of the state
-  AIAgentState copyWith({
-    AsyncValue<AgentConfig>? config,
-    // HINT: FIX 3 - Updated copyWith to manage new file fields
+  AgentState copyWith({
+    bool? isLoading,
+    bool? isSaving,
+    bool? isEditing,
+    AgentConfiguration? agent,
     File? localImageFile,
-    Uint8List? localImageBytes,
-    String? localImageFileName,
-    bool clearLocalImage = false,
-    String? selectedPresetId,
   }) {
-    return AIAgentState(
-      config: config ?? this.config,
-      localImageFile: clearLocalImage ? null : localImageFile ?? this.localImageFile,
-      localImageBytes: clearLocalImage ? null : localImageBytes ?? this.localImageBytes,
-      localImageFileName: clearLocalImage ? null : localImageFileName ?? this.localImageFileName,
-      selectedPresetId: selectedPresetId ?? this.selectedPresetId,
+    return AgentState(
+      isLoading: isLoading ?? this.isLoading,
+      isSaving: isSaving ?? this.isSaving,
+      isEditing: isEditing ?? this.isEditing,
+      agent: agent ?? this.agent,
+      localImageFile: localImageFile ?? this.localImageFile,
     );
   }
 }
 
-// --- 2. The Notifier (The "Brain") ---
-// This class holds the logic. It calls the repository and manages the state.
-class AIAgentNotifier extends StateNotifier<AIAgentState> {
-  final AgentConfigRepository _repository;
+// --- Notifier ---
+class AgentConfigNotifier extends StateNotifier<AgentState> {
+  final AgentConfigRepository _repo;
+  final StoreUserData? _store;
 
-  AIAgentNotifier(this._repository) : super(AIAgentState()) {
-    // Fetch the data as soon as the provider is first read
-    fetchAgentConfig();
-  }
+  AgentConfigNotifier(this._repo, this._store) : super(AgentState());
 
-  /// Fetch initial config from the API
-  Future<void> fetchAgentConfig() async {
-    // Set state to loading
-    state = state.copyWith(config: const AsyncValue.loading());
+  /// Load existing agent. If found, switch to View Mode (isEditing = false).
+  Future<void> loadAgent() async {
+    state = state.copyWith(isLoading: true);
     try {
-      // Call the repository
-      final config = await _repository.getAgentConfiguration();
-
-      // Try to find a matching preset
-      final matchingPreset = _findMatchingPreset(config);
-      final matchingPresetId = matchingPreset?.id;
-
-      // Start with the fetched config and matching ID
-      AgentConfig finalConfig = config;
-      String? finalSelectedPresetId = matchingPresetId;
-
-      // --- MODIFIED LOGIC: Select first default preset if config is a blank slate ---
-      // A "blank slate" is assumed if the agentName is empty AND no preset matched.
-      if (matchingPreset == null &&
-          finalConfig.agentName.isEmpty &&
-          presetAgents.isNotEmpty) {
-        final firstPreset = presetAgents.first;
-
-        // 1. Update the CONFIG fields with the first preset's data (fills the form)
-        finalConfig = config.copyWith(
-          agentName: firstPreset.name,
-          agentPersona: firstPreset.role,
-          agentImage: firstPreset.imagePath,
-        );
-
-        // 2. Update the SELECTED PRESET ID for UI highlighting
-        finalSelectedPresetId = firstPreset.id;
-      } else if (matchingPreset == null && finalConfig.agentName.isNotEmpty) {
-        // If a custom config was loaded (has data, but doesn't match a preset),
-        // use the 'agent-sarah' ID as a proxy for the 'Custom Agent' selection.
-        finalSelectedPresetId = 'agent-sarah';
+      final tenantIdStr = await _store?.getTenantId();
+      if (tenantIdStr == null) {
+        state = state.copyWith(isLoading: false);
+        return;
       }
 
-      // Set state to data
-      state = state.copyWith(
-        config: AsyncValue.data(finalConfig),
-        selectedPresetId: finalSelectedPresetId,
-        clearLocalImage: true, // Clear any stale local image
-      );
-    } catch (e, s) {
-      // Set state to error
-      state = state.copyWith(config: AsyncValue.error(e, s));
-    }
-  }
+      final agent = await _repo.getAgentByTenant(int.parse(tenantIdStr));
 
-  /// Save the current configuration to the API
-  Future<void> saveAgentConfig() async {
-    // We can only save if we have data (not in a loading or error state)
-    if (!state.config.hasValue) return;
-
-    final configToSave = state.config.value!;
-
-    // Set saving state (keeps old data but shows loading indicator)
-    state = state.copyWith(config: AsyncValue.loading());
-
-    try {
-      // HINT: FIX 3 - Pass all staged image properties to the repository
-      final newImageUrl = await _repository.saveAgentConfiguration(
-        config: configToSave,
-        agentImageFile: state.localImageFile,
-        agentImageBytes: state.localImageBytes,
-        agentImageFileName: state.localImageFileName,
-      );
-
-      // On success, update the state with the new config (which may have
-      // a new image URL) and clear the local file.
-      state = state.copyWith(
-        config: AsyncValue.data(newImageUrl != null
-            ? configToSave.copyWith(agentImage: newImageUrl)
-            : configToSave),
-        clearLocalImage: true,
-      );
-    } catch (e, s) {
-      // On error, revert to old data and show error
-      state = state.copyWith(config: AsyncValue.error(e, s));
-    }
-  }
-
-  /// Select a preset, updating the state locally
-  void selectPreset(AiAgent agent) {
-    if (!state.config.hasValue) return; // Guard
-
-    // Update the config in our state with the preset's info
-    state = state.copyWith(
-      config: AsyncValue.data(
-        state.config.value!.copyWith(
-          agentName: agent.name,
-          agentPersona: agent.role,
-          agentImage: agent.imagePath,
-        ),
-      ),
-      selectedPresetId: agent.id,
-      clearLocalImage: true, // Clear local file when selecting preset
-    );
-  }
-
-  /// Stage a local image file for upload
-  // HINT: FIX 3a - Updated signature to handle bytes/path/name for cross-platform
-  void stageLocalImage({
-    File? imageFile,
-    Uint8List? imageBytes,
-    String? path,
-    String? name,
-  }) {
-    if (!state.config.hasValue) return;
-
-    state = state.copyWith(
-      // The File object is still needed for display on native platforms
-      localImageFile: imageFile,
-      localImageBytes: imageBytes,
-      localImageFileName: name,
-      selectedPresetId: null, // Custom
-      config: AsyncValue.data(
-        state.config.value!.copyWith(
-          // Use name if available, otherwise just 'Custom Agent'
-          agentName: name ?? 'Custom Agent',
-          agentPersona: "Design your own AI persona from scratch.",
-        ),
-      ),
-    );
-  }
-
-  // --- Local state update methods ---
-  // These methods update the state *synchronously* as the user types,
-  // making the UI feel instantaneous.
-
-  void updateAgentName(String name) {
-    if (state.config.hasValue) {
-      state = state.copyWith(
-        config: AsyncValue.data(state.config.value!.copyWith(agentName: name)),
-      );
-    }
-  }
-
-  void updateAgentPersona(String persona) {
-    if (state.config.hasValue) {
-      state = state.copyWith(
-        config: AsyncValue.data(
-            state.config.value!.copyWith(agentPersona: persona)),
-      );
-    }
-  }
-
-  void updateGreetingMessage(String message) {
-    if (state.config.hasValue) {
-      state = state.copyWith(
-        config: AsyncValue.data(
-            state.config.value!.copyWith(greetingMessage: message)),
-      );
-    }
-  }
-
-  void updateLanguage(String langCode) {
-    if (state.config.hasValue) {
-      state = state.copyWith(
-        config: AsyncValue.data(
-            state.config.value!.copyWith(preferredLanguages: [langCode])),
-      );
-    }
-  }
-
-  void updateTone(String tone) {
-    if (state.config.hasValue) {
-      state = state.copyWith(
-        config: AsyncValue.data(
-            state.config.value!.copyWith(conversationTone: tone)),
-      );
-    }
-  }
-
-  /// Helper to find a preset that matches the loaded config
-  AiAgent? _findMatchingPreset(AgentConfig config) {
-    try {
-      return presetAgents.firstWhere(
-            (preset) =>
-        preset.name == config.agentName &&
-            preset.role == config.agentPersona ,
-        // && preset.imagePath == config.agentImage,
-      );
+      if (agent != null) {
+        // Agent exists -> Show details, disable editing
+        state = state.copyWith(isLoading: false, agent: agent, isEditing: false);
+      } else {
+        // No agent -> Create mode
+        state = state.copyWith(isLoading: false, agent: null, isEditing: true);
+      }
     } catch (e) {
-      return null; // No match found
+      state = state.copyWith(isLoading: false);
+      // ApiClient handles global error toasts, so we just stop loading
+    }
+  }
+
+  /// Enable editing mode
+  void enableEditing() {
+    state = state.copyWith(isEditing: true);
+  }
+
+  /// Cancel editing (revert to last saved state)
+  void cancelEditing() {
+    // Reload to reset fields
+    loadAgent();
+  }
+
+  /// Stage a local image for preview
+  void setLocalImage(File file) {
+    state = state.copyWith(localImageFile: file);
+  }
+
+  /// Save (Create or Update)
+  Future<void> saveAgent(AgentConfiguration inputConfig) async {
+    state = state.copyWith(isSaving: true);
+    try {
+      String? imageUrl = inputConfig.agentImage;
+
+      // 1. Upload Image if a new local file was picked
+      if (state.localImageFile != null) {
+        imageUrl = await _repo.uploadImage(state.localImageFile!);
+      }
+
+      // 2. Prepare Final Config
+      final finalConfig = inputConfig.copyWith(agentImage: imageUrl);
+
+      // 3. Create or Update
+      if (finalConfig.id != null) {
+        // Update
+        final updated = await _repo.updateAgent(finalConfig);
+        state = state.copyWith(isSaving: false, agent: updated, isEditing: false, localImageFile: null);
+      } else {
+        // Create
+        final created = await _repo.createAgent(finalConfig);
+        state = state.copyWith(isSaving: false, agent: created, isEditing: false, localImageFile: null);
+      }
+    } catch (e) {
+      state = state.copyWith(isSaving: false);
+      rethrow;
     }
   }
 }
 
-// --- 3. The Main Provider (Exposed to UI) ---
-// This is the provider your AIAgentScreen will watch.
-final aiAgentProvider =
-StateNotifierProvider<AIAgentNotifier, AIAgentState>((ref) {
-  // It watches the repository provider...
-  final repository = ref.watch(agentConfigRepositoryProvider);
-  // ...and passes the repository instance to the Notifier.
-  return AIAgentNotifier(repository);
+final agentConfigProvider = StateNotifierProvider<AgentConfigNotifier, AgentState>((ref) {
+  final repo = ref.watch(agentConfigRepositoryProvider);
+  final store = ref.watch(storeUserDataProvider);
+  return AgentConfigNotifier(repo, store);
 });

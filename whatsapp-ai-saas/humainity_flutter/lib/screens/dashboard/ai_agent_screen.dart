@@ -1,24 +1,30 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
+import 'package:humainity_flutter/core/providers/auth_provider.dart';
+import 'package:humainity_flutter/core/storage/store_user_data.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/models/ai_agent.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/preset_agent_card.dart';
+import 'package:humainity_flutter/models/agent_config_model.dart';
+import 'package:humainity_flutter/models/ai_agent.dart'; // For presetAgents
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:humainity_flutter/widgets/ui/app_card.dart';
 import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
-import 'package:humainity_flutter/models/agent_config_model.dart';
 import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
-import 'package:flutter/foundation.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
+import 'package:humainity_flutter/screens/dashboard/widgets/preset_agent_card.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
-// --- AIAgentScreen Widget ---
+// --- Constants ---
+const List<String> _kAccents = ['American', 'British', 'Australian', 'Indian', 'Other'];
+const List<String> _kTones = ['Professional', 'Friendly', 'Formal', 'Casual'];
+const List<String> _kLanguages = ['English', 'Spanish', 'French', 'Hindi'];
+const List<String> _kVoiceModels = ['eleven_turbo_v2_5', 'eleven_multilingual_v2', 'eleven_monolingual_v1'];
+
 class AIAgentScreen extends ConsumerStatefulWidget {
   const AIAgentScreen({super.key});
 
@@ -27,66 +33,99 @@ class AIAgentScreen extends ConsumerStatefulWidget {
 }
 
 class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
-  // --- ADD FORM KEY FOR VALIDATION ---
   final _formKey = GlobalKey<FormState>();
 
-  // Utility function to handle image picking
-  /*Future<void> _pickImage(ImageSource source) async {
+  // Controllers
+  final _nameCtrl = TextEditingController();
+  final _personaCtrl = TextEditingController();
+  final _greetingCtrl = TextEditingController();
+  final _accentOtherCtrl = TextEditingController();
+
+  // Dropdown State
+  String _selectedTone = 'Professional';
+  String _selectedLanguage = 'English';
+  String _selectedAccent = 'American';
+  String _selectedVoiceModel = 'eleven_turbo_v2_5'; // Default
+  String? _selectedPresetId;
+
+  bool _dataLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load agent data on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(agentConfigProvider.notifier).loadAgent();
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _personaCtrl.dispose();
+    _greetingCtrl.dispose();
+    _accentOtherCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
 
     if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      // Call the notifier method to stage the file
-      ref.read(aiAgentProvider.notifier).stageLocalImage(file, pickedFile.path);
-    } else {
-      print('No image selected.');
-    }
-  }*/
-
-  // Utility function to handle image picking
-  Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
-
-    if (pickedFile != null) {
-      final name = pickedFile.name;
-      final path = pickedFile.path;
-
       if (kIsWeb) {
-        // HINT: FIX 3a - On Web, read bytes and stage them directly
-        final bytes = await pickedFile.readAsBytes();
-        ref.read(aiAgentProvider.notifier).stageLocalImage(
-          imageBytes: bytes,
-          path: path,
-          name: name,
-        );
+        // Web logic if needed later
       } else {
-        // HINT: FIX 3a - On Native, stage the File object
-        final file = File(path);
-        ref.read(aiAgentProvider.notifier).stageLocalImage(
-          imageFile: file,
-          path: path,
-          name: name,
-        );
+        ref.read(agentConfigProvider.notifier).setLocalImage(File(pickedFile.path));
       }
-    } else {
-      print('No image selected.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch the single state provider
-    final agentState = ref.watch(aiAgentProvider);
-    final selectedPresetId = agentState.selectedPresetId;
+    final agentState = ref.watch(agentConfigProvider);
+    final isEditing = agentState.isEditing;
+    final agent = agentState.agent;
+
+    // --- Pre-fill Logic (Once Data Arrives) ---
+    if (agent != null && !_dataLoaded) {
+      _nameCtrl.text = agent.agentName;
+      _personaCtrl.text = agent.agentPersona ?? '';
+      _greetingCtrl.text = agent.greetingMessage ?? '';
+
+      if (_kTones.contains(agent.conversationTone)) {
+        _selectedTone = agent.conversationTone;
+      }
+
+      if (_kLanguages.contains(agent.preferredLanguages)) {
+        _selectedLanguage = agent.preferredLanguages;
+      }
+
+      if (agent.voiceModel != null && _kVoiceModels.contains(agent.voiceModel)) {
+        _selectedVoiceModel = agent.voiceModel!;
+      }
+
+      if (agent.voiceAccent != null) {
+        if (_kAccents.contains(agent.voiceAccent)) {
+          _selectedAccent = agent.voiceAccent!;
+        } else {
+          _selectedAccent = 'Other';
+          _accentOtherCtrl.text = agent.voiceAccent!;
+        }
+      }
+      _dataLoaded = true;
+    }
+
+    if (agentState.isLoading) {
+      return const Center(child: Padding(padding: EdgeInsets.all(64), child: CircularProgressIndicator()));
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADING
+          // --- Title Header ---
           const Text(
             'Personalize Your AI Agent',
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
@@ -98,138 +137,62 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
           ),
           const SizedBox(height: 24),
 
-          // AGENT SELECTION CARD
-          _buildAgentSelectionCard(ref, selectedPresetId, context),
-          const SizedBox(height: 24),
+          // --- Preset Selection (Only show if Creating or explicitly Editing) ---
+          if (isEditing)
+            _buildAgentSelectionCard(context),
 
-          // Main Content Area
-          agentState.config.when(
-            // --- LOADING STATE ---
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(64.0),
-                child: CircularProgressIndicator(),
-              ),
-            ),
-            // --- ERROR STATE ---
-            error: (error, stack) => Center(
-              child: AppCard(
-                child: Column(
-                  children: [
-                    Text('Failed to load configuration: $error',
-                        style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 16),
-                    AppButton(
-                      text: 'Retry',
-                      onPressed: () =>
-                          ref.read(aiAgentProvider.notifier).fetchAgentConfig(),
-                    )
-                  ],
-                ),
-              ),
-            ),
+          if (isEditing)
+            const SizedBox(height: 24),
 
-            // --- DATA LOADED STATE ---
-            data: (config) {
-              // isSaving is true if the state is AsyncLoading but still has a value
-              final isSaving =
-                  agentState.config.isLoading && agentState.config.hasValue;
-
-              return Column(
-                children: [
-                  // --- WRAP FORM FIELDS IN A FORM WIDGET ---
-                  Form(
-                    key: _formKey,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left Column: Configuration Panels
-                        Expanded(
-                          flex: Responsive.isDesktop(context) ? 2 : 1,
-                          child: Column(
-                            children: [
-                              _buildAvatarUploadCard(
-                                  config, agentState.localImageFile, context),
-                              const SizedBox(height: 24),
-                              _buildAgentDescriptionCard(ref, config, context),
-                              const SizedBox(height: 24),
-                              _buildConversationSettingsCard(
-                                  ref, config, context),
-                              const SizedBox(height: 24),
-                              _buildActionButtons(ref, isSaving),
-                            ],
-                          ),
-                        ),
-
-                        // Right Column: Live Preview
-                        if (Responsive.isDesktop(context))
-                          const SizedBox(width: 24),
-                        if (Responsive.isDesktop(context))
-                          Expanded(
-                            flex: 1,
-                            child: SizedBox(
-                              height: 700,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Live Preview',
-                                    style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Expanded(
-                                    child: _buildLiveBrandingPreview(
-                                      config,
-                                      agentState.localImageFile,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- NEW: Default Config Banner Widget ---
-  Widget _buildDefaultConfigBanner() {
-    return AppCard(
-      padding: const EdgeInsets.all(16.0),
-      color: AppColors.primary.withOpacity(0.1),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(LucideIcons.info, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+          // --- Main Form Area ---
+          Form(
+            key: _formKey,
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Welcome! Please configure your AI Agent.',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                // Left Column: Config Panels
+                Expanded(
+                  flex: Responsive.isDesktop(context) ? 2 : 1,
+                  child: Column(
+                    children: [
+                      // 1. Avatar Upload (Square & Small)
+                      _buildAvatarUploadCard(agentState, context, isEditing),
+                      const SizedBox(height: 24),
+
+                      // 2. Description
+                      _buildAgentDescriptionCard(context, isEditing),
+                      const SizedBox(height: 24),
+
+                      // 3. Conversation Settings
+                      _buildConversationSettingsCard(context, isEditing),
+                      const SizedBox(height: 24),
+
+                      // 4. Action Buttons
+                      _buildActionButtons(agentState, isEditing),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Your configuration was not found on the server. We have pre-filled the form with the default agent. Please customize the details and click "Save Changes" to activate your new AI assistant.',
-                  style: TextStyle(
-                    color: AppColors.primary.withOpacity(0.8),
-                    fontSize: 14,
+
+                // Right Column: Live Preview (Desktop Only)
+                if (Responsive.isDesktop(context)) ...[
+                  const SizedBox(width: 24),
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: 700,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Live Preview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 16),
+                          Expanded(
+                            child: _buildLiveBrandingPreview(agentState),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ]
               ],
             ),
           ),
@@ -238,505 +201,386 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
     );
   }
 
-  // --- 1. Agent Selection (Responsive Grid/Wrap) ---
-  Widget _buildAgentSelectionCard(
-      WidgetRef ref, String? selectedPresetId, BuildContext context) {
-    // ... (This widget is identical to your provided file) ...
+  // --- 1. Agent Selection ---
+  Widget _buildAgentSelectionCard(BuildContext context) {
     return AppCard(
-      margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            // ... (Header row remains the same) ...
-            crossAxisAlignment: CrossAxisAlignment.center,
+          const Row(
             children: [
-              const Icon(LucideIcons.bot, color: AppColors.primary, size: 16),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  'Choose a Preconfigured Agent',
-                  style: TextStyle(
-                      fontSize: Responsive.isMobile(context) ? 15 : 18,
-                      fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              Icon(LucideIcons.bot, color: AppColors.primary, size: 16),
+              SizedBox(width: 8),
+              Text('Choose a Preconfigured Agent', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             ],
           ),
-          const SizedBox(height: 4),
-          const Text(
-              'Start with a preset to define your core avatar and persona.',
-              style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
           const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: presetAgents.map((agent) {
+                  return SizedBox(
+                    width: isMobile(context) ? (constraints.maxWidth / 2) - 16 :(constraints.maxWidth / 4) - 16, // 2 items per row approx
+                    child: PresetAgentCard(
+                      agent: agent,
+                      isSelected: agent.id == _selectedPresetId,
+                      onTap: () {
+                        setState(() {
+                          _selectedPresetId = agent.id;
+                          _nameCtrl.text = agent.name;
+                          _personaCtrl.text = agent.role;
 
-          // Responsive layout implementation
-          Builder(builder: (context) {
-            // Mobile (2x2 Grid)
-            if (Responsive.isMobile(context)) {
-              return GridView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: presetAgents.length,
-                shrinkWrap: true,
-                primary: false,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  childAspectRatio: 0.5,
-                ),
-                itemBuilder: (context, index) {
-                  final agent = presetAgents[index];
-                  return PresetAgentCard(
-                    agent: agent,
-                    isSelected: agent.id == selectedPresetId,
-                    onTap: () {
-                      // Call notifier method
-                      ref.read(aiAgentProvider.notifier).selectPreset(agent);
-                    },
+                          // Set Defaults based on Persona Logic
+                          if (agent.id == 'agent-sarah') { // Sales
+                            _selectedTone = 'Professional';
+                            _selectedVoiceModel = 'eleven_turbo_v2_5';
+                            _selectedAccent = 'American';
+                            _greetingCtrl.text = "Hi, I'm Sarah! I noticed you're interested in our products. Would you like to schedule a quick demo?";
+                          } else if (agent.id == 'agent-alex') { // Support
+                            _selectedTone = 'Friendly';
+                            _selectedVoiceModel = 'eleven_multilingual_v2';
+                            _selectedAccent = 'British';
+                            _greetingCtrl.text = "Hello there! I'm Alex. I'm here to help you get started or answer any questions you might have.";
+                          } else if (agent.id == 'agent-maya') { // Tech
+                            _selectedTone = 'Formal';
+                            _selectedVoiceModel = 'eleven_monolingual_v1';
+                            _selectedAccent = 'Indian';
+                            _greetingCtrl.text = "Greetings. I am Maya, your technical support specialist. Please describe the issue you are facing.";
+                          } else {
+                            _selectedTone = 'Professional'; // Default
+                            _selectedVoiceModel = 'eleven_turbo_v2_5';
+                            _selectedAccent = 'American';
+                            _greetingCtrl.text = "Hello! How can I assist you today?";
+                          }
+                        });
+                      },
+                    ),
                   );
-                },
+                }).toList(),
               );
-            }
-
-            // Desktop / Tablet (Fluid Wrap)
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                // ... (LayoutBuilder logic remains the same) ...
-                const double minWidth = 200;
-                const double spacing = 16.0;
-                final int crossAxisCount =
-                    (constraints.maxWidth / (minWidth + spacing))
-                        .floor()
-                        .clamp(2, 4);
-
-                final double totalSpacing = spacing * (crossAxisCount - 1);
-                final double cardWidth =
-                    (constraints.maxWidth - totalSpacing) / crossAxisCount;
-
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: presetAgents.map((agent) {
-                    return SizedBox(
-                      width: cardWidth,
-                      child: PresetAgentCard(
-                        agent: agent,
-                        isSelected: agent.id == selectedPresetId,
-                        onTap: () {
-                          // Call notifier method
-                          ref
-                              .read(aiAgentProvider.notifier)
-                              .selectPreset(agent);
-                        },
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            );
-          }),
+            },
+          ),
         ],
       ),
     );
   }
 
-  // --- 2. Avatar Upload ---
-  Widget _buildAvatarUploadCard(
-      AgentConfig config, File? localImageFile, BuildContext context) {
-    // Determine the image source
-    final agentState = ref.watch(aiAgentProvider);
-    final localImageBytes = agentState.localImageBytes;
-
-    // Determine the image source
+  // --- 2. Avatar Upload (Square & Small & Responsive) ---
+  Widget _buildAvatarUploadCard(AgentState state, BuildContext context, bool isEditing) {
     ImageProvider imageProvider;
-    if (localImageBytes != null && kIsWeb) {
-      // HINT: FIX 3b - Use MemoryImage for staged web bytes (fixes blob URL error)
-      imageProvider = MemoryImage(localImageBytes);
-    } else if (localImageFile != null) {
-      // Use FileImage for native platforms
-      imageProvider = FileImage(localImageFile);
-    } else if (config.agentImage != null && config.agentImage!.isNotEmpty) {
-      // 2. Use URL from API
-      // Note: Use NetworkImage for http/https URLs, AssetImage for local assets
-      if (config.agentImage!.startsWith('http')) {
-        imageProvider = NetworkImage(config.agentImage!);
-      } else {
-        imageProvider = AssetImage(config.agentImage!);
-      }
+    if (state.localImageFile != null) {
+      imageProvider = FileImage(state.localImageFile!);
+    } else if (state.agent?.agentImage != null && state.agent!.agentImage!.isNotEmpty) {
+      imageProvider = NetworkImage(state.agent!.agentImage!);
     } else {
-      // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
       imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
     }
 
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.user, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text('Agent Avatar Configuration',
-                  style: TextStyle(
-                      fontSize: Responsive.isMobile(context) ? 15 : 18,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: imageProvider,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                onBackgroundImageError: (exception, stackTrace) =>
-                    print('Failed to load image: $exception'),
+          // Square Avatar - Small & Rounded
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.muted,
+              borderRadius: BorderRadius.circular(40), // Rounded Square
+              image: DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AppButton(
-                  text: 'Upload Agent Avatar',
-                  icon: const Icon(LucideIcons.image),
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  style: AppButtonStyle.tertiary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 3. Agent Description (WITH VALIDATION) ---
-  Widget _buildAgentDescriptionCard(
-      WidgetRef ref, AgentConfig config, BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.pencil,
-                  color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text('Describe Agent',
-                  style: TextStyle(
-                      fontSize: Responsive.isMobile(context) ? 15 : 18,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Agent Name Field
-          AppTextField(
-            // key: ValueKey('name_${config.agentName}'), // Keeps state in sync
-            initialValue: config.agentName,
-            labelText: 'Agent Name',
-            hintText: 'e.g., Alex, Sarah',
-            // --- ADD VALIDATION ---
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Agent Name cannot be empty';
-              }
-              return null;
-            },
-            onChanged: (val) =>
-                ref.read(aiAgentProvider.notifier).updateAgentName(val),
-          ),
-          const SizedBox(height: 16),
-
-          // Agent Persona/Role Description Field
-          AppTextField(
-            // key: ValueKey('persona_${config.agentPersona.hashCode}'),
-            initialValue: config.agentPersona,
-            labelText: 'Agent Persona / Role Description',
-            hintText:
-                'Describe in detail how your agent should behave and what its core goal is.',
-            maxLines: 8,
-            // --- ADD VALIDATION ---
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Agent Persona cannot be empty';
-              }
-              if (value.length < 50) {
-                return 'Persona must be at least 50 characters';
-              }
-              return null;
-            },
-            onChanged: (val) =>
-                ref.read(aiAgentProvider.notifier).updateAgentPersona(val),
-          ),
-          const SizedBox(height: 16),
-          _buildRoleTags(ref, config.agentPersona),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoleTags(WidgetRef ref, String currentPersona) {
-    // ... (This widget remains unchanged) ...
-    final roleDescriptions = {
-      'Sales Lead':
-          'Act as an aggressive sales lead qualification specialist, asking targeted questions.',
-      'Customer Support':
-          'Act as a kind and patient customer support representative, focusing on solutions.',
-      'Technical Expert':
-          'Act as a highly knowledgeable technical expert, using precise and detailed language.',
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Select a Pre-defined Role Tag ',
-            style: TextStyle(fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
-          children: roleDescriptions.keys.map((tag) {
-            final isSelected = currentPersona == roleDescriptions[tag];
-            return InkWell(
-              onTap: () {
-                ref
-                    .read(aiAgentProvider.notifier)
-                    .updateAgentPersona(roleDescriptions[tag]!);
-              },
-              child: AppBadge(
-                text: tag,
-                color: isSelected ? AppColors.primary : AppColors.muted,
-                textColor: isSelected
-                    ? AppColors.primaryForeground
-                    : AppColors.mutedForeground,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  // --- 4. Conversation Settings (WITH VALIDATION) ---
-  Widget _buildConversationSettingsCard(
-      WidgetRef ref, AgentConfig config, BuildContext context) {
-    final selectedLanguageCode = config.preferredLanguages.isNotEmpty
-        ? config.preferredLanguages.first
-        : 'en';
-
-    const List<Map<String, String>> availableLanguages = [
-      {'code': 'en', 'name': 'English'},
-      {'code': 'es', 'name': 'Spanish'},
-      {'code': 'fr', 'name': 'French'},
-      {'code': 'hi', 'name': 'Hindi'},
-      {'code': 'ja', 'name': 'Japanese'},
-      {'code': 'pt', 'name': 'Portuguese'},
-      {'code': 'de', 'name': 'German'},
-    ];
-
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.slidersHorizontal,
-                  color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text('Conversation Settings',
-                  style: TextStyle(
-                      fontSize: Responsive.isMobile(context) ? 15 : 18,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Greeting Message
-          AppTextField(
-            initialValue: config.greetingMessage,
-            labelText: 'Agent Greeting Message',
-            hintText: 'e.g., Hello! How can I assist you today?',
-            maxLines: 2,
-            // --- ADD VALIDATION ---
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Greeting Message cannot be empty';
-              }
-              return null;
-            },
-            onChanged: (val) =>
-                ref.read(aiAgentProvider.notifier).updateGreetingMessage(val),
-          ),
-          const SizedBox(height: 16),
-
-          // Language and Tone Row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: AppDropdown<String>(
-                  labelText: 'Primary Language',
-                  value: selectedLanguageCode,
-                  items: availableLanguages.map((lang) {
-                    return DropdownMenuItem(
-                      value: lang['code']!,
-                      child: Text(lang['name']!),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      ref.read(aiAgentProvider.notifier).updateLanguage(val);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AppDropdown<String>(
-                  labelText: 'Default Tone',
-                  value: config.conversationTone,
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'friendly', child: Text('Friendly')),
-                    DropdownMenuItem(
-                        value: 'professional', child: Text('Professional')),
-                    DropdownMenuItem(value: 'formal', child: Text('Formal')),
-                    DropdownMenuItem(value: 'casual', child: Text('Casual')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      ref.read(aiAgentProvider.notifier).updateTone(val);
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 5. Live Branding Preview ---
-  Widget _buildLiveBrandingPreview(AgentConfig config, File? localImageFile) {
-    // Find the associated preset color, or use default
-    final preset = presetAgents.firstWhere(
-      (p) => p.name == config.agentName,
-      orElse: () => presetAgents.last, // Fallback color
-    );
-    final brandingColor = preset.primaryColor;
-
-    // Determine the image source
-    final agentState = ref.watch(aiAgentProvider);
-    final localImageBytes = agentState.localImageBytes;
-
-    // Determine the image source
-    ImageProvider imageProvider;
-    if (localImageBytes != null && kIsWeb) {
-      // HINT: FIX 3b - Use MemoryImage for staged web bytes (fixes blob URL error)
-      imageProvider = MemoryImage(localImageBytes);
-    } else if (localImageFile != null) {
-      // Use FileImage for native platforms
-      imageProvider = FileImage(localImageFile);
-    } else if (config.agentImage != null && config.agentImage!.isNotEmpty) {
-      // 2. Use URL from API
-      // Note: Use NetworkImage for http/https URLs, AssetImage for local assets
-      if (config.agentImage!.startsWith('http')) {
-        imageProvider = NetworkImage(config.agentImage!);
-      } else {
-        imageProvider = AssetImage(config.agentImage!);
-      }
-    } else {
-      // 3. Fallback (e.g., custom agent 'agent-david' placeholder)
-      imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
-    }
-
-    return Column(
-      children: [
-        Expanded(
-          child: AppCard(
-            padding: EdgeInsets.zero,
-            child: ChatPreview(
-              agentName: config.agentName,
-              // FIX: Pass the 'agentImage' string path, not 'agentImageProvider'
-              agentImage: imageProvider,
-              primaryColor: brandingColor,
+              border: Border.all(color: AppColors.border),
             ),
           ),
+          const SizedBox(width: 16),
+
+          // Action / Label
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Agent Avatar",
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                ),
+                if (isEditing) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 140,
+                    child: AppButton(
+                      text: 'Upload',
+                      icon: const Icon(LucideIcons.upload, size: 14),
+                      onPressed: _pickImage,
+                      style: AppButtonStyle.tertiary,
+                      isLg: false,
+                    ),
+                  ),
+                ] else
+                  const Text(
+                    "Visible in chat.",
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 3. Description (Name, Persona) ---
+  Widget _buildAgentDescriptionCard(BuildContext context, bool isEditing) {
+    return Opacity(
+      opacity: isEditing ? 1.0 : 0.8,
+      child: IgnorePointer(
+        ignoring: !isEditing,
+        child: AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(LucideIcons.pencil, color: AppColors.primary, size: 20),
+                  SizedBox(width: 8),
+                  Text('Describe Agent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _nameCtrl,
+                labelText: 'Agent Name',
+                hintText: 'e.g., Alex, Sarah',
+                validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _personaCtrl,
+                labelText: 'Agent Persona / Role',
+                hintText: 'Describe behavior and goals...',
+                maxLines: 6,
+                validator: (v) => v!.length < 10 ? 'Description too short' : null,
+              ),
+              if (isEditing) ...[
+                const SizedBox(height: 16),
+                _buildRoleTags(),
+              ]
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRoleTags() {
+    final roleDescriptions = {
+      'Sales Lead': 'Act as an aggressive sales lead qualification specialist.',
+      'Customer Support': 'Act as a kind and patient customer support representative.',
+      'Technical Expert': 'Act as a highly knowledgeable technical expert.',
+    };
+
+    return Wrap(
+      spacing: 8.0,
+      runSpacing: 8.0,
+      children: roleDescriptions.keys.map((tag) {
+        return InkWell(
+          onTap: () => _personaCtrl.text = roleDescriptions[tag]!,
+          child: AppBadge(
+            text: tag,
+            color: AppColors.muted,
+            textColor: AppColors.mutedForeground,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // --- 4. Settings (Greeting, Tone, Voice Model, Voice Accent) ---
+  Widget _buildConversationSettingsCard(BuildContext context, bool isEditing) {
+    return Opacity(
+      opacity: isEditing ? 1.0 : 0.8,
+      child: IgnorePointer(
+        ignoring: !isEditing,
+        child: AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(LucideIcons.slidersHorizontal, color: AppColors.primary, size: 20),
+                  SizedBox(width: 8),
+                  Text('Conversation Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _greetingCtrl,
+                labelText: 'Greeting Message',
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+
+              // Row 1: Tone & Language
+              Row(
+                children: [
+                  Expanded(
+                    child: AppDropdown<String>(
+                      labelText: 'Tone',
+                      value: _selectedTone,
+                      items: _kTones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      onChanged: isEditing ? (v) => setState(() => _selectedTone = v!) : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: AppDropdown<String>(
+                      labelText: 'Language',
+                      value: _selectedLanguage,
+                      items: _kLanguages.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      onChanged: isEditing ? (v) => setState(() => _selectedLanguage = v!) : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Row 2: Voice Model & Accent (New Field Added)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Voice Model
+                  Expanded(
+                    child: AppDropdown<String>(
+                      labelText: 'Voice Model',
+                      value: _selectedVoiceModel,
+                      items: _kVoiceModels.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      onChanged: isEditing ? (v) => setState(() => _selectedVoiceModel = v!) : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Voice Accent
+                  Expanded(
+                    child: Column(
+                      children: [
+                        AppDropdown<String>(
+                          labelText: 'Voice Accent',
+                          value: _selectedAccent,
+                          items: _kAccents.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                          onChanged: isEditing ? (v) => setState(() => _selectedAccent = v!) : null,
+                        ),
+                        if (_selectedAccent == 'Other') ...[
+                          const SizedBox(height: 8),
+                          AppTextField(
+                            controller: _accentOtherCtrl,
+                            labelText: 'Specify Accent',
+                          ),
+                        ]
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- 5. Live Preview ---
+  Widget _buildLiveBrandingPreview(AgentState state) {
+    ImageProvider? image;
+    if (state.localImageFile != null) {
+      image = FileImage(state.localImageFile!);
+    } else if (state.agent?.agentImage != null && state.agent!.agentImage!.isNotEmpty) {
+      image = NetworkImage(state.agent!.agentImage!);
+    } else {
+      image = const AssetImage('assets/images/agent-sarah.jpg');
+    }
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: ChatPreview(
+        agentName: _nameCtrl.text.isNotEmpty ? _nameCtrl.text : 'Agent',
+        agentImage: image,
+        primaryColor: AppColors.primary,
+      ),
+    );
+  }
+
+  // --- 6. Action Buttons ---
+  Widget _buildActionButtons(AgentState state, bool isEditing) {
+    return Row(
+      children: [
+        if (!isEditing)
+          Expanded(
+            child: AppButton(
+              text: 'Edit Agent',
+              onPressed: () => ref.read(agentConfigProvider.notifier).enableEditing(),
+              style: AppButtonStyle.primary,
+            ),
+          )
+        else ...[
+          Expanded(
+            child: AppButton(
+              text: 'Cancel',
+              onPressed: () {
+                setState(() => _dataLoaded = false); // Allow reload
+                ref.read(agentConfigProvider.notifier).cancelEditing();
+              },
+              style: AppButtonStyle.tertiary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: AppButton(
+              text: state.isSaving ? 'Saving...' : 'Save Changes',
+              isLoading: state.isSaving,
+              onPressed: state.isSaving ? null : _submit,
+            ),
+          ),
+        ]
       ],
     );
   }
 
-  // --- 6. Action Buttons (WITH VALIDATION) ---
-  Widget _buildActionButtons(WidgetRef ref, bool isSaving) {
-    return Row(
-      children: [
-        // Reset Button
-        Expanded(
-          flex: 1,
-          child: AppButton(
-            text: 'Reset to Default',
-            onPressed: isSaving
-                ? null
-                : () {
-                    // A full reset should re-fetch from the server
-                    ref.read(aiAgentProvider.notifier).fetchAgentConfig();
-                  },
-            style: AppButtonStyle.tertiary,
-          ),
-        ),
-        const SizedBox(width: 16),
-        // Save Button
-        Expanded(
-          flex: 1,
-          child: AppButton(
-            text: isSaving ? 'Saving...' : 'Save Changes',
-            onPressed: isSaving
-                ? null
-                : () async {
-                    // --- VALIDATE FORM BEFORE SAVING ---
-                    if (!_formKey.currentState!.validate()) {
-                      // If form is invalid, show error and stop.
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('❌ Please fix errors in the form.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
 
-                    // --- Form is valid, proceed to save ---
-                    final scaffoldMessenger = ScaffoldMessenger.of(ref.context);
-                    try {
-                      await ref
-                          .read(aiAgentProvider.notifier)
-                          .saveAgentConfig();
-                           // 🔁 Onboarding refresh after agent config step success
-          await ref
-              .read(authNotifierProvider.notifier)
-              .maybeFetchOnboardingStatus();
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Agent Configuration Saved!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } catch (e) {
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text('❌ Failed to save: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-          ),
-        ),
-      ],
-    );
+    try {
+      final store = ref.read(storeUserDataProvider);
+      final tenantIdStr = await store?.getTenantId();
+      if (tenantIdStr == null) return;
+
+      final finalAccent = _selectedAccent == 'Other' ? _accentOtherCtrl.text : _selectedAccent;
+
+      final config = AgentConfiguration(
+        id: ref.read(agentConfigProvider).agent?.id,
+        tenantId: int.parse(tenantIdStr),
+        agentName: _nameCtrl.text,
+        agentPersona: _personaCtrl.text,
+        greetingMessage: _greetingCtrl.text,
+        conversationTone: _selectedTone,
+        preferredLanguages: _selectedLanguage,
+        voiceModel: _selectedVoiceModel, // Save new field
+        voiceAccent: finalAccent,
+        agentImage: ref.read(agentConfigProvider).agent?.agentImage,
+      );
+
+      await ref.read(agentConfigProvider.notifier).saveAgent(config);
+
+      await ref.read(authNotifierProvider.notifier).maybeFetchOnboardingStatus();
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      }
+    }
   }
 }

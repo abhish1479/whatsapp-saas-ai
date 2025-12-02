@@ -5,10 +5,11 @@ class AppDropdown<T> extends StatelessWidget {
   final String labelText;
   final List<DropdownMenuItem<T>> items;
   final T? value;
-  final void Function(T?) onChanged;
+  final ValueChanged<T?>? onChanged;
   final String? Function(T?)? validator;
   // This is the actual Widget used as the hint in the DropdownButtonFormField
   final Widget? hint;
+  final bool enabled;
 
   const AppDropdown({
     super.key,
@@ -19,6 +20,7 @@ class AppDropdown<T> extends StatelessWidget {
     this.validator,
     // FIX: Added 'hint' to the constructor
     this.hint,
+    this.enabled = true,
   });
 
   @override
@@ -37,13 +39,13 @@ class AppDropdown<T> extends StatelessWidget {
         DropdownButtonFormField<T>(
           value: value,
           items: items,
-          onChanged: onChanged,
+          onChanged: enabled ? onChanged : null,
           validator: validator,
           // FIX: Pass the 'hint' property directly to the DropdownButtonFormField
           hint: hint,
           decoration: InputDecoration(
-            filled: true,
-            fillColor: AppColors.background,
+            filled: !enabled,
+            fillColor: enabled ? null : AppColors.muted.withOpacity(0.3),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(

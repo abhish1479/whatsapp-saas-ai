@@ -7,7 +7,7 @@ from requests import Session
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
-from deps import get_db
+from deps import get_db , SessionLocal
 from services.rag import add_catalog_to_rag, rag
 from models import AgentConfiguration, BusinessCatalog, BusinessProfile , Item, KnowledgeSource, Kyc , Payment, Template, Tenant, User, WebIngestRequest, Workflow
 from data_models.onboarding_response_model import AgentConfigurationBase, ReviewResponse ,AgentConfigurationResponse, StatusResponse
@@ -15,6 +15,7 @@ from data_models.request_model import BusinessTypeRequest
 from utils.enums import Onboarding
 import re
 import models
+
 
 from workers.ingest_worker import background_crawl
 
@@ -573,8 +574,14 @@ async def get_review(
             
 
 def get_tanant_id_from_receiver(receiver: str) -> int:
-    # business_profile = db.query(BusinessProfile).filter(BusinessProfile.business_whatsapp == receiver).first()
-    # if business_profile:
-    #     return business_profile.tenant_id
-    # else: return 1
-    return 1
+    db = SessionLocal()
+    try:
+        business_profile = db.query(BusinessProfile).filter(BusinessProfile.business_whatsapp == receiver).first()
+        if business_profile:
+            return business_profile.tenant_id
+        else: return 1
+    except Exception as e:
+        print(f"Error fetching : {e}")
+    finally:
+        db.close()
+    

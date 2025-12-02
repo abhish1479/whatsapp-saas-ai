@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+
 class AppTextField extends StatelessWidget {
   final String labelText;
   final String? hintText;
@@ -13,6 +15,7 @@ class AppTextField extends StatelessWidget {
   final Widget? icon; // This is typically for suffixIcon or old style icon
   final Widget? prefixIcon; // <--- ADDED: Dedicated prefix icon
   final String? initialValue;
+  final bool enabled;
 
   const AppTextField({
     super.key,
@@ -28,6 +31,7 @@ class AppTextField extends StatelessWidget {
     this.icon,
     this.prefixIcon, // <--- ADDED to constructor
     this.initialValue,
+    this.enabled = true,
   });
 
   @override
@@ -41,18 +45,30 @@ class AppTextField extends StatelessWidget {
       onSaved: onSaved,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      enabled: enabled, // ✅ Pass to Flutter widget
+      style: TextStyle(
+        color: enabled ? AppColors.foreground : AppColors.mutedForeground,
+      ),
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
-        // Using prefixIcon property of InputDecoration directly
+        filled: !enabled, // Optional: grey background when disabled
+        fillColor: enabled ? null : AppColors.muted.withOpacity(0.3),
         prefixIcon: prefixIcon != null
             ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: prefixIcon,
-              )
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: prefixIcon, // Keep icon colored or grey it out
+        )
             : null,
-        // The existing 'icon' property is likely intended for the suffix/end
         suffixIcon: icon,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
       ),
     );
   }
