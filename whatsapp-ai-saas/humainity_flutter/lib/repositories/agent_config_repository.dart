@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -76,8 +77,8 @@ class AgentConfigRepository {
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-        final imageUrl = response['image_url'] as String?;
-      return response.body.replaceAll('"', ''); // Simple cleanup if it's a raw string
+        final String imageUrl = jsonDecode(response.body)['image_url'];
+      return imageUrl; // Simple cleanup if it's a raw string
     } else {
       throw Exception('Image upload failed: ${response.statusCode}');
     }

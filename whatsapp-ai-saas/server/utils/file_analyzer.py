@@ -18,7 +18,7 @@ async def analyze_file_from_bytes(tenant_id :int,file_name:str,file_bytes: bytes
 
                         Your goals:
                         1. **Refine the text** — clean, structure, and rewrite it in clear, coherent language while preserving the original meaning. You may add minimal factual or contextual details only if necessary for clarity or completeness.
-                        2. **Segment the text** into meaningful chunks or sections (for example: per paragraph, logical idea, or topic boundary). Each chunk must stand alone semantically.
+                        2. **Segment the text** into meaningful chunks or sections (for example: per paragraph, logical idea, or topic boundary). Each chunk must stand alone semantically.Also inlcude fee ,prices or URL if any.
                         3. **Assign concise metadata** to each chunk, including relevant fields such as:
                         - `title` (if identifiable)
                         - `section` or `topic`
@@ -84,8 +84,9 @@ async def analyze_Web(tenant_id :int,source_url:str, ) -> str:
 
                         Your goals:
                         1. **Refine the text** — clean, structure, and rewrite it in clear, coherent language while preserving the original meaning. You may add minimal factual or contextual details only if necessary for clarity or completeness.
-                        2. **Segment the text** into meaningful chunks or sections (for example: per paragraph, logical idea, or topic boundary). Each chunk must stand alone semantically.
-                        3. **Assign concise metadata** to each chunk, including relevant fields such as:
+                        2. **Segment the text** into meaningful chunks or sections (for example: per paragraph, logical idea,topic boundary). Each chunk must stand alone semantically.
+                        3. **If a text contains pricing , fees, duration, location, or URL, **it must be preserved and highlighted in that chunk.**
+                        4. **Assign concise metadata** to each chunk, including relevant fields such as:
                         - `title` (if identifiable)
                         - `section` or `topic`
                         - `page` or `order`
