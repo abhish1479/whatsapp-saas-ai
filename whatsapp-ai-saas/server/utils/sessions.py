@@ -6,12 +6,13 @@ from typing import Optional
 from fastapi import logger
 from fastapi.responses import JSONResponse
 from deps import SessionLocal
-from utils.enums import Role
+from utils.enums import Role , TemplateTypeEnum
 from services.rag import rag
 from deps import get_db_session
-from models import Template, BusinessProfile, AgentConfiguration, Workflow
+from models import Lead, Template, BusinessProfile, AgentConfiguration, Workflow
+from sqlalchemy import func
 
-SESSION_EXPIRY_SECONDS = 1800  # 30 minutes
+SESSION_EXPIRY_SECONDS = 1200  # 30 minutes
 
 # In-memory session stores
 user_sessions = defaultdict(list)  # {sender: [messages]}
@@ -26,7 +27,7 @@ def safe_to_dict(obj):
     # and excluding private attributes starting with '_'.
     return {c.name: getattr(obj, c.name) for c in obj.__table__.columns if not c.name.startswith('_')}
 
-def System_Prompt(tenant_id: int) -> str:
+def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
     """
     Constructs the dynamic System Prompt for the LLM based on tenant configuration.
     """
@@ -34,6 +35,7 @@ def System_Prompt(tenant_id: int) -> str:
     agent_config = {}
     workflow = {}
     template = {}
+    lead = {}
     db = SessionLocal()
     try:
         # Use the reusable context manager to acquire a database session
@@ -45,18 +47,23 @@ def System_Prompt(tenant_id: int) -> str:
         agent_config = safe_to_dict(ac)
         
             # 3. Fetch Workflow
-        wk = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
-        workflow = safe_to_dict(wk)
-                            
-            # 4. Fetch Default Template (assuming 'Template' model exists)
-        tm = db.query(Template).filter(Template.tenant_id == tenant_id).first()
-        template = safe_to_dict(tm)   
+        # wk = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
+        # workflow = safe_to_dict(wk)
 
+        if sender:
+           lead = db.query(Lead).filter(Lead.tenant_id == tenant_id, func.right(Lead.phone, 10) == sender[-10:]).first()
+           if lead:
+              lead = safe_to_dict(lead)
+           else:
+            tm = db.query(Template).filter(Template.tenant_id == tenant_id,Template.type == TemplateTypeEnum.INBOUND).first()
+            template = safe_to_dict(tm)  
+                           
         config_data = {
                 "business": business_profile,
                 "agent_config": agent_config,
                 "workflow": workflow,
-                "template": template
+                "template": template,
+                "lead": lead
             }
 
 
@@ -76,17 +83,21 @@ def System_Prompt(tenant_id: int) -> str:
                 - Always use the `agent_config` for your tone, business details, and persona.  
                 - If the user message matches a defined workflow step (e.g., product inquiry, pricing question), respond using the relevant workflow instructions and knowledge base content.  
                 - For any inbound message (i.e., user-initiated contact), **always** start your reply using the exact body from the `inbound_template` in the configuration—unless the conversation is already mid-flow.
+                - For any outBound message then you will found template Message in summary field of leads data. you need to use that template message details to talk user.
 
                 2. **Lead Conversion Focus:**  
                 - After addressing the user’s query, **proactively guide** the conversation toward a clear next step (e.g., “Would you like to book a demo?”, “I can reserve your spot—shall I proceed?”, “Here’s a limited-time offer—interested?”).  
                 - Use persuasive, benefit-driven language based on your knowledge base to overcome hesitation and close the interaction with a conversion or qualified lead.
+                - In leads you needs to use following details from lead data if available: Name, Phone, Email, Pitch, Status and Summary.
+                - If leads is outBound then you will found template Message in summary field of leads data. you need to use that template message details to talk user.
+                - Also you need to update summary field with context of conversation for future reference including template if any already present.
 
                 3. **Conciseness & Clarity:**  
                 - Keep responses professional, friendly, and concise.  
                 - Never mention or reference the configuration, templates, or internal logic directly—respond as a natural, human-like agent.
 
                 4. **Context Awareness:**  
-                - Maintain context from previous messages to avoid repetition and personalize your responses.  
+                - Maintain context from previous messages to avoid repetition, share filtered URL and personalize your responses.  
                 - If intent is unclear, ask one focused clarifying question to move the conversation forward.
 
                 Your success is measured by conversion rate—always aim to conclude the chat with an actionable outcome.

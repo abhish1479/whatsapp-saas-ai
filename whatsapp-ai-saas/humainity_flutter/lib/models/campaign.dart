@@ -1,53 +1,58 @@
-// This file was created to resolve build errors.
-// It defines the 'Campaign' model based on fields
-// accessed in other parts of the app.
+import 'package:flutter/material.dart';
 
 class Campaign {
-  final String id;
+  final int id;
   final String name;
-  final String? description; // FIX: Added 'description'
+  final String? description; // Maps to 'default_pitch' from server
   final String status;
   final String channel;
-  final int totalContacts;
-  final int contactsReached;
-  final int successfulDeliveries;
-  final int failedDeliveries;
+  final DateTime createdAt;
 
-  // FIX: Added 'engagementRate'
-  // This is a calculated field, so we add a getter.
-  // Assumes successfulDeliveries is part of contactsReached.
-  double get engagementRate {
-    if (contactsReached == 0) {
-      return 0.0;
-    }
-    // Example logic: (successful / reached) * 100
-    // Adjust logic as needed.
-    return (successfulDeliveries / contactsReached) * 100.0;
-  }
+  // Stats from server response
+  final int totalLeads;
+  final int newLeads;
+  final int sent;
+  final int failed;
+  final int success;
 
-  Campaign({
+  // Extra detail fields
+  final String? templateName;
+
+  const Campaign({
     required this.id,
     required this.name,
     this.description,
     required this.status,
     required this.channel,
-    required this.totalContacts,
-    required this.contactsReached,
-    required this.successfulDeliveries,
-    required this.failedDeliveries,
+    required this.createdAt,
+    required this.totalLeads,
+    required this.newLeads,
+    required this.sent,
+    required this.failed,
+    required this.success,
+    this.templateName,
   });
+
+  // Calculated getter for UI consistency
+  double get engagementRate {
+    if (sent == 0) return 0.0;
+    return (success / sent) * 100.0;
+  }
 
   factory Campaign.fromJson(Map<String, dynamic> json) {
     return Campaign(
-      id: json['id'] as String,
+      id: json['id'] as int,
       name: json['name'] as String,
-      description: json['description'] as String?,
+      description: json['default_pitch'] as String?,
       status: json['status'] as String,
       channel: json['channel'] as String,
-      totalContacts: (json['total_contacts'] as num?)?.toInt() ?? 0,
-      contactsReached: (json['contacts_reached'] as num?)?.toInt() ?? 0,
-      successfulDeliveries: (json['successful_deliveries'] as num?)?.toInt() ?? 0,
-      failedDeliveries: (json['failed_deliveries'] as num?)?.toInt() ?? 0,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      totalLeads: (json['total_leads'] as num?)?.toInt() ?? 0,
+      newLeads: (json['new'] as num?)?.toInt() ?? 0,
+      sent: (json['sent'] as num?)?.toInt() ?? 0,
+      failed: (json['failed'] as num?)?.toInt() ?? 0,
+      success: (json['success'] as num?)?.toInt() ?? 0,
+      templateName: json['template_name'] as String?,
     );
   }
 }

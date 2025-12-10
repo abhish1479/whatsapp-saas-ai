@@ -57,6 +57,117 @@ def send_reply_via_exotel_api(from_number, to_number, message):
         import traceback
         traceback.print_exc()
 
+async def send_whatsapp_message(
+    to_number: str,
+    from_number: str,
+    message_type: str,  # 'text', 'image', 'video', 'audio', 'document'
+    content: str,       # Text body OR Media URL
+    caption: str = None,
+    filename: str = None
+):
+    """
+    Unified function to send ANY type of WhatsApp message via Exotel.
+    """
+    try:
+        # 1. Build the specific content object based on type
+        msg_content = {}
+        
+        if message_type == "text":
+            msg_content = {
+                "type": "text",
+                "text": {"body": content}
+            }
+            
+        elif message_type in ["image", "video", "document", "audio"]:
+            media_object = {"link": content}
+            
+            # Audio does not support captions in WhatsApp API
+            if message_type != "audio" and caption:
+                media_object["caption"] = caption
+                
+            # Documents support filenames
+            if message_type == "document" and filename:
+                media_object["filename"] = filename
+                
+            msg_content = {
+                "type": message_type,
+                message_type: media_object
+            }
+        else:
+            print(f"[EXOTEL API] Unsupported message type: {message_type}")
+            return False
+
+        # 2. Construct the full Exotel payload
+        payload = {
+            "whatsapp": {
+                "messages": [{
+                    "from": from_number,
+                    "to": to_number,
+                    "content": msg_content
+                }]
+            }
+        }
+
+        # 3. Send Request
+        auth = (EXOTEL_API_KEY, EXOTEL_API_TOKEN)
+        headers = {"Content-Type": "application/json"}
+        
+        print(f"[EXOTEL API] Sending {message_type} to {to_number}")
+        
+        response = requests.post(
+            EXOTEL_SEND_SMS_URL, 
+            json=payload, 
+            headers=headers, 
+            auth=auth, 
+            timeout=30
+        )
+        
+        if response.status_code in [200, 201, 202]:
+            return True
+        else:
+            print(f"[EXOTEL API] Error {response.status_code}: {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"[EXOTEL API] Exception: {e}")
+        return False
+    
+async def send_chat_state(from_number, to_number, state="typing"):
+    """
+    Send a chat state (typing indicator) to the user.
+    state can be: 'typing' (shows typing...) or 'stop' (stops typing)
+    """
+    try:
+        # This payload structure attempts to map to Meta's "typing_indicator"
+        # Note: If Exotel strictly validates 'type', this might need adjustment based on their private docs.
+        payload = {
+            "whatsapp": {
+                "messages": [{
+                    "from": from_number,
+                    "to": to_number,
+                    "content": {
+                        # We use the standard Meta type for this
+                        "type": "typing_indicator",
+                        "typing_indicator": {
+                            "type": state  # "typing" or "stop"
+                        }
+                    }
+                }]
+            }
+        }
+        
+        auth = (EXOTEL_API_KEY, EXOTEL_API_TOKEN)
+        headers = {"Content-Type": "application/json"}
+        
+        # We use a short timeout (5s) because this is a cosmetic feature; 
+        # we don't want to block the main thread if it fails.
+        requests.post(EXOTEL_SEND_SMS_URL, json=payload, headers=headers, auth=auth, timeout=5)
+        print(f"[EXOTEL API] Sent chat state '{state}' to {to_number}")
+            
+    except Exception as e:
+        # Fail silently for typing indicators so we don't break the main flow
+        print(f"[EXOTEL API] Failed to send chat state: {e}")
+
 async def whatsapp_msg_send_api(request: Request):
     try:
         data = await request.json()
@@ -364,3 +475,85 @@ async def whatsapp_msg_send_api_bulk(
             status_code=500,
             content={"status": "error", "message": "Internal server error"}
         )
+    
+def send_template_with_media(
+    to_number: str,
+    from_number: str,
+    template_name: str,
+    media_url: str,
+    body_params: List[str],  # List of strings for {{1}}, {{2}}, etc.
+    language: str = "en",
+    media_type: str = "image" # 'image', 'video', or 'document'
+):
+    """
+    Send a WhatsApp template message that includes a Media Header and Body Parameters.
+    """
+    try:
+        # 1. Construct Components
+        components = []
+
+        # --- Header Component (Media) ---
+        if media_url:
+            components.append({
+                "type": "header",
+                "parameters": [
+                    {
+                        "type": media_type,
+                        media_type: {
+                            "link": media_url
+                        }
+                    }
+                ]
+            })
+
+        # --- Body Component (Text Placeholders) ---
+        if body_params:
+            # Convert all params to text parameters
+            parameters = [{"type": "text", "text": str(p)} for p in body_params]
+            components.append({
+                "type": "body",
+                "parameters": parameters
+            })
+
+        # 2. Construct Payload
+        payload = {
+            "whatsapp": {
+                "messages": [{
+                    "from": from_number,
+                    "to": to_number,
+                    "content": {
+                        "type": "template",
+                        "template": {
+                            "name": template_name,
+                            "language": {"code": language},
+                            "components": components
+                        }
+                    }
+                }]
+            }
+        }
+
+        # 3. Send Request
+        auth = (EXOTEL_API_KEY, EXOTEL_API_TOKEN)
+        headers = {"Content-Type": "application/json"}
+        
+        print(f"[EXOTEL API] Sending Template: {template_name} to {to_number}")
+        print(f"[EXOTEL API] Media: {media_url}")
+        print(f"[EXOTEL API] Body Params: {body_params}")
+
+        response = requests.post(
+            EXOTEL_SEND_SMS_URL, 
+            json=payload, 
+            headers=headers, 
+            auth=auth, 
+            timeout=30
+        )
+
+        print(f"[EXOTEL API] Response: {response.status_code} - {response.text}")
+        return response.status_code in [200, 201, 202]
+
+    except Exception as e:
+        print(f"[EXOTEL API] Error sending template: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

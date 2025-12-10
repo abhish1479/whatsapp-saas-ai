@@ -31,8 +31,7 @@ You are a helpful assistant. Whenever you reply to the user:
 """
 
 IMAGE_PROMPT = """
-Analyze this appliance image. List up to 3 visible technical issues (damage, faults) in concise technical terms. Identify product type and model. Extract any text ,brand names in the image.No extra explanations.
- """
+Analyze this image. Identify the primary subject or content type. List up to 4 visible anomalies, defects, or irregularities (e.g., damage, distortion, inconsistencies) in concise technical terms if applicable. Extract all legible text, including labels, signs, brand names, or identifiers. No extra explanations. """
 
 CUSTOMER_SYSTEM_PROMPT = """
 

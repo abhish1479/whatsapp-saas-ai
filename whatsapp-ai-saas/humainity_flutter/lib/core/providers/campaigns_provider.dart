@@ -1,162 +1,73 @@
+import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/supabase_provider.dart';
 import 'package:humainity_flutter/models/campaign.dart';
-import 'package:humainity_flutter/models/template.dart';
-// *** REFACTOR *** - Import repositories
 import 'package:humainity_flutter/repositories/campaigns_repository.dart';
-import 'package:humainity_flutter/repositories/templates_repository.dart';
+// Import your auth/profile providers to get the token/tenant_id
+// import 'package:humainity_flutter/core/providers/auth_provider.dart';
+// import 'package:humainity_flutter/core/providers/business_profile_provider.dart';
 
-// *** REFACTOR ***
-// Provider for the CampaignsRepository
+// 1. Create the Repository Provider
 final campaignsRepositoryProvider = Provider<CampaignsRepository>((ref) {
-  final supabase = ref.watch(supabaseClientProvider);
-  return CampaignsRepository(supabase);
+  // TODO: Retrieve the actual Token and Tenant ID from your Auth/Profile providers
+  // Example:
+  // final user = ref.watch(authNotifierProvider).user;
+  // final profile = ref.watch(businessProfileProvider).profile;
+
+  const String token = "YOUR_AUTH_TOKEN"; // Replace with ref.watch(...)
+  const int tenantId = 1; // Replace with ref.watch(...)
+
+  return CampaignsRepository(token: token, tenantId: tenantId);
 });
 
-// Provider for the TemplatesRepository
-// This can be defined here or in a dedicated templates_provider.dart if it doesn't exist
-// final templatesRepositoryProvider = Provider<templatesRepositoryProvider>((ref) {
-//   final repository = ref.watch(templatesRepositoryProvider);
-//   return TemplatesRepository(repository);
-// });
+// 2. Define the AsyncNotifier Provider
+final campaignsProvider = AsyncNotifierProvider<CampaignsNotifier, List<Campaign>>(() {
+  return CampaignsNotifier();
+});
 
-// 1. State (Unchanged)
-class CampaignsState {
-  final List<Campaign> campaigns;
-  final List<Template> templates;
-  final bool isLoading;
-  final String? error;
+class CampaignsNotifier extends AsyncNotifier<List<Campaign>> {
+  late CampaignsRepository _repository;
 
-  CampaignsState({
-    this.campaigns = const [],
-    this.templates = const [],
-    this.isLoading = false,
-    this.error,
-  });
+  @override
+  FutureOr<List<Campaign>> build() async {
+    _repository = ref.watch(campaignsRepositoryProvider);
+    return _fetchCampaigns();
+  }
 
-  CampaignsState copyWith({
-    List<Campaign>? campaigns,
-    List<Template>? templates,
-    bool? isLoading,
-    String? error,
-  }) {
-    return CampaignsState(
-      campaigns: campaigns ?? this.campaigns,
-      templates: templates ?? this.templates,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
+  Future<List<Campaign>> _fetchCampaigns() async {
+    return await _repository.fetchCampaigns();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _fetchCampaigns());
+  }
+
+  Future<void> createCampaign({
+    required String name,
+    required String? description,
+    required String channel,
+    required int? templateId,
+    required bool runImmediate,
+    required PlatformFile file,
+  }) async {
+    // We don't set state to loading here to avoid full screen flicker,
+    // the UI handles the button loading state.
+    await _repository.createCampaign(
+      name: name,
+      description: description,
+      channel: channel,
+      templateId: templateId,
+      runImmediate: runImmediate,
+      file: file,
     );
+    // Refresh the list after creation
+    await refresh();
+  }
+
+  Future<void> updateStatus(int campaignId, String action) async {
+    // Optimistic update could go here, but for now we just call API and refresh
+    await _repository.updateStatus(campaignId, action);
+    await refresh();
   }
 }
-
-// 2. Notifier (Refactored to use Repositories)
-class CampaignsNotifier extends StateNotifier<CampaignsState> {
-  final Ref _ref;
-  // *** REFACTOR ***
-  final CampaignsRepository _campaignsRepository;
-  final TemplatesRepository _templatesRepository;
-
-  CampaignsNotifier(
-      this._ref, this._campaignsRepository, this._templatesRepository)
-      : super(CampaignsState()) {
-    loadInitialData();
-  }
-
-  Future<void> loadInitialData() async {
-    state = state.copyWith(isLoading: true);
-    try {
-      // *** REFACTOR *** - Use repository methods
-      final campaignsFuture = _campaignsRepository.fetchCampaigns();
-      final templatesFuture =
-      _templatesRepository.getTemplates("1");
-
-      final results = await Future.wait([campaignsFuture, templatesFuture]);
-
-      state = state.copyWith(
-        campaigns: results[0] as List<Campaign>,
-        templates: results[1] as List<Template>,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> fetchCampaigns() async {
-    try {
-      // *** REFACTOR ***
-      final campaigns = await _campaignsRepository.fetchCampaigns();
-      state = state.copyWith(campaigns: campaigns, error: null);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
-  Future<void> fetchTemplates() async {
-    try {
-      // *** REFACTOR ***
-      final templates = await _templatesRepository.getTemplates("1");
-      state = state.copyWith(templates: templates, error: null);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
-  Future<void> createCampaign(Map<String, dynamic> formData) async {
-    try {
-      // *** REFACTOR ***
-      final newCampaign = await _campaignsRepository.createCampaign(formData);
-      state = state.copyWith(campaigns: [newCampaign, ...state.campaigns]);
-    } catch (e) {
-      print('Error adding campaign: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> updateStatus(String id, String newStatus) async {
-    try {
-      // *** REFACTOR ***
-      final updatedCampaign =
-      await _campaignsRepository.updateStatus(id, newStatus);
-      state = state.copyWith(
-          campaigns: state.campaigns
-              .map((c) => c.id == id ? updatedCampaign : c)
-              .toList());
-    } catch (e) {
-      print('Error updating status: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> deleteCampaign(String id) async {
-    try {
-      // *** REFACTOR ***
-      await _campaignsRepository.deleteCampaign(id);
-      state = state.copyWith(
-          campaigns: state.campaigns.where((c) => c.id != id).toList());
-    } catch (e) {
-      print('Error deleting campaign: $e');
-      rethrow;
-    }
-  }
-}
-
-// 3. Provider (Refactored to inject Repositories)
-final campaignsProvider =
-StateNotifierProvider<CampaignsNotifier, CampaignsState>((ref) {
-  // *** REFACTOR ***
-  final campaignsRepo = ref.watch(campaignsRepositoryProvider);
-  final templatesRepo = ref.watch(templatesRepositoryProvider);
-  return CampaignsNotifier(ref, campaignsRepo, templatesRepo);
-});
-
-// ADDED providers for filtering campaigns by channel (Unchanged)
-final whatsappCampaignsProvider = Provider<List<Campaign>>((ref) {
-  final state = ref.watch(campaignsProvider);
-  return state.campaigns.where((c) => c.channel == 'whatsapp').toList();
-});
-
-final voiceCampaignsProvider = Provider<List<Campaign>>((ref) {
-  final state = ref.watch(campaignsProvider);
-  return state.campaigns.where((c) => c.channel == 'voice').toList();
-});

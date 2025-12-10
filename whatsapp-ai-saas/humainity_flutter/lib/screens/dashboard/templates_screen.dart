@@ -10,10 +10,9 @@ import 'package:humainity_flutter/widgets/ui/app_dialog.dart';
 import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
 import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart'; // <-- 1. Import responsive util
+import 'package:humainity_flutter/core/utils/responsive.dart';
 import 'package:humainity_flutter/core/providers/auth_provider.dart';
 
-// Convert back to StatefulWidget to manage the tab state
 class TemplatesScreen extends ConsumerStatefulWidget {
   const TemplatesScreen({super.key});
 
@@ -22,16 +21,13 @@ class TemplatesScreen extends ConsumerStatefulWidget {
 }
 
 class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
-  // true = Outbound, false = Inbound
   bool _showOutbound = true;
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(templatesProvider);
     final templates =
-        _showOutbound ? state.outboundTemplates : state.inboundTemplates;
-
-    // 2. Check for mobile screen size
+    _showOutbound ? state.outboundTemplates : state.inboundTemplates;
     final bool isMobileScreen = isMobile(context);
 
     return Column(
@@ -40,7 +36,6 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
         // Header
         Padding(
           padding: const EdgeInsets.all(16.0),
-          // 2. Use Flex for responsive header
           child: Flex(
             direction: isMobileScreen ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment: isMobileScreen
@@ -55,7 +50,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                     Text(
                       'Templates',
                       style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -65,7 +60,6 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                   ],
                 ),
               ),
-              // 2. Add spacing for mobile stack
               SizedBox(height: isMobileScreen ? 16 : 0),
               AppButton(
                 text: 'Create Template',
@@ -73,7 +67,6 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                 onPressed: () {
                   _showTemplateForm(context, ref, null);
                 },
-                // 2. Make button full width on mobile
                 width: isMobileScreen ? double.infinity : null,
               ),
             ],
@@ -97,14 +90,11 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
         // Custom Tab Buttons
         Padding(
           padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-          // 3. Remove MainAxisAlignment.start
           child: Row(
             children: [
-              // 3. Let container expand
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(4.0),
-                  // 3. Remove fixed max-width on mobile, keep it for web
                   constraints: isMobileScreen
                       ? null
                       : const BoxConstraints(maxWidth: 350),
@@ -161,16 +151,14 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
       BuildContext context, WidgetRef ref, Template? template) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing on tap-outside
+      barrierDismissible: false,
       builder: (context) {
-        // Pass ref to the dialog
         return _TemplateFormDialog(template: template, ref: ref);
       },
     );
   }
 }
 
-// Helper widget for the grid view inside tabs
 class _TemplateList extends StatelessWidget {
   final List<Template> templates;
   final bool isLoading;
@@ -192,18 +180,13 @@ class _TemplateList extends StatelessWidget {
       );
     }
 
-    // Use GridView.builder for a responsive grid
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 350.0, // Max width of each item
-        mainAxisSpacing: 16.0, // Spacing between rows
-        crossAxisSpacing: 16.0, // Spacing between columns
-        // 1. REMOVE childAspectRatio to let cards size themselves
-        // childAspectRatio: 0.85,
-
-        // 1. ADD mainAxisExtent to ensure a minimum height for smaller content
-        mainAxisExtent: 280, // You can adjust this value
+        maxCrossAxisExtent: 350.0,
+        mainAxisSpacing: 16.0,
+        crossAxisSpacing: 16.0,
+        mainAxisExtent: 340, // Increased height for media
       ),
       itemCount: templates.length,
       itemBuilder: (context, index) {
@@ -213,7 +196,6 @@ class _TemplateList extends StatelessWidget {
   }
 }
 
-// 1. Convert back to ConsumerWidget
 class _TemplateCard extends ConsumerWidget {
   const _TemplateCard({required this.template});
 
@@ -232,17 +214,30 @@ class _TemplateCard extends ConsumerWidget {
     }
   }
 
+  IconData _getMediaIcon(MediaType type) {
+    switch (type) {
+      case MediaType.VIDEO:
+        return LucideIcons.video;
+      case MediaType.DOCUMENT:
+        return LucideIcons.fileText;
+      case MediaType.IMAGE:
+        return LucideIcons.image;
+      default:
+        return LucideIcons.link;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bool hasMedia =
+        template.mediaType != MediaType.TEXT && template.mediaLink != null;
+
     return AppCard(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        // 2. Set mainAxisSize to MainAxisSize.min
-        mainAxisSize:
-            MainAxisSize.min, // Allow column to be as short as its content
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Top Row: Icon & Status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -256,7 +251,6 @@ class _TemplateCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
-          // Template Name
           Text(
             template.name,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -265,8 +259,6 @@ class _TemplateCard extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
 
-          // Body Preview
-          // 2. Wrap Body and Tags in Expanded to push buttons down
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,12 +268,71 @@ class _TemplateCard extends ConsumerWidget {
                   template.body,
                   style: const TextStyle(
                       color: AppColors.mutedForeground, fontSize: 14),
-                  maxLines: 5,
+                  maxLines: hasMedia ? 3 : 5,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 12),
 
-                // Tags
+                if (hasMedia)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.muted.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: AppColors.border.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Show Image Preview if type is IMAGE
+                        if (template.mediaType == MediaType.IMAGE)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(
+                              template.mediaLink!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(LucideIcons.imageOff,
+                                    size: 20, color: AppColors.destructive);
+                              },
+                            ),
+                          )
+                        else
+                          Icon(
+                            _getMediaIcon(template.mediaType),
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                template.mediaType.displayName,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.foreground),
+                              ),
+                              Text(
+                                template.mediaLink!,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.mutedForeground),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 Row(
                   children: [
                     const Icon(LucideIcons.globe2,
@@ -307,16 +358,9 @@ class _TemplateCard extends ConsumerWidget {
             ),
           ),
 
-          // 2. REMOVE Spacer
-          // const Spacer(),
-
-          // Footer: Actions
           Row(
-            mainAxisAlignment: MainAxisAlignment.end, // 1. Align all to the end
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // 1. Remove Expand/Collapse button
-
-              // Edit Button
               TextButton.icon(
                 onPressed: () => _showTemplateForm(context, ref, template),
                 icon: const Icon(LucideIcons.edit,
@@ -325,14 +369,13 @@ class _TemplateCard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.primary)),
                 style: TextButton.styleFrom(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              // Delete Button
               TextButton.icon(
                 onPressed: () => _showDeleteConfirm(context, ref),
                 icon: const Icon(LucideIcons.trash2,
@@ -341,7 +384,7 @@ class _TemplateCard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.destructive)),
                 style: TextButton.styleFrom(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -390,10 +433,9 @@ class _TemplateCard extends ConsumerWidget {
   }
 }
 
-// Form Dialog Widget
 class _TemplateFormDialog extends StatefulWidget {
   final Template? template;
-  final WidgetRef ref; // Pass ref
+  final WidgetRef ref;
 
   const _TemplateFormDialog({this.template, required this.ref});
 
@@ -405,11 +447,14 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _bodyController;
+  late TextEditingController _mediaLinkController;
   late TemplateType _selectedType;
   late String _selectedLanguage;
   late String _selectedCategory;
+  late MediaType _selectedMediaType;
 
   bool _isSaving = false;
+  String? _previewImageUrl;
   final List<String> _languages = ['en', 'es', 'fr', 'de'];
   final List<String> _categories = ['MARKETING', 'UTILITY', 'AUTHENTICATION'];
 
@@ -419,15 +464,35 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
     final t = widget.template;
     _nameController = TextEditingController(text: t?.name ?? '');
     _bodyController = TextEditingController(text: t?.body ?? '');
+    _mediaLinkController = TextEditingController(text: t?.mediaLink ?? '');
     _selectedType = t?.type ?? TemplateType.OUTBOUND;
     _selectedLanguage = t?.language ?? _languages.first;
     _selectedCategory = t?.category ?? _categories.first;
+    _selectedMediaType = t?.mediaType ?? MediaType.TEXT;
+
+    // Set initial preview image if applicable
+    if (_selectedMediaType == MediaType.IMAGE &&
+        _mediaLinkController.text.isNotEmpty) {
+      _previewImageUrl = _mediaLinkController.text;
+    }
+
+    // Add listener to update preview on change
+    _mediaLinkController.addListener(() {
+      if (_selectedMediaType == MediaType.IMAGE) {
+        setState(() {
+          _previewImageUrl = _mediaLinkController.text.isNotEmpty
+              ? _mediaLinkController.text
+              : null;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _bodyController.dispose();
+    _mediaLinkController.dispose();
     super.dispose();
   }
 
@@ -439,12 +504,16 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
       'language': _selectedLanguage,
       'category': _selectedCategory,
       'status': status.toJson(),
+      'media_type': _selectedMediaType.toJson(),
+      'media_link': _mediaLinkController.text.isNotEmpty
+          ? _mediaLinkController.text
+          : null,
     };
   }
 
   Future<void> _onSave(TemplateStatus status) async {
     if (!_formKey.currentState!.validate()) {
-      return; // Validation failed
+      return;
     }
 
     setState(() {
@@ -455,11 +524,9 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
     bool success;
 
     if (widget.template == null) {
-      // Create
       success =
-          await widget.ref.read(templatesProvider.notifier).addTemplate(data);
+      await widget.ref.read(templatesProvider.notifier).addTemplate(data);
     } else {
-      // Update
       success = await widget.ref
           .read(templatesProvider.notifier)
           .editTemplate(widget.template!.id, data);
@@ -470,20 +537,16 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
         _isSaving = false;
       });
       if (success) {
-        Navigator.pop(context); // Close form
+        Navigator.pop(context);
         await widget.ref
             .read(authNotifierProvider.notifier)
             .maybeFetchOnboardingStatus();
       }
-      // If not success, error is already shown by the provider
     }
   }
 
-  // 2. Simplify _onClose
   void _onClose() {
-    // Check if we are in CREATE mode (template is null)
     if (widget.template == null) {
-      // Check if required fields are filled
       bool requiredDataFilled =
           _nameController.text.isNotEmpty && _bodyController.text.isNotEmpty;
 
@@ -498,32 +561,29 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
               text: 'Discard',
               style: AppButtonStyle.tertiary,
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Close form
+                Navigator.pop(context);
+                Navigator.pop(context);
               },
             ),
             AppButton(
               text: 'Save as Draft',
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                _onSave(TemplateStatus.DRAFT); // Save as draft
+                Navigator.pop(context);
+                _onSave(TemplateStatus.DRAFT);
               },
             ),
           ],
         );
       } else {
-        // In CREATE mode, but no data, so just close
         Navigator.pop(context);
       }
     } else {
-      // In EDIT mode, just close
       Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 2. Get screen width for responsive dialog
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isMobileScreen = screenWidth < 600;
 
@@ -541,7 +601,7 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
                     ? 'Create new template'
                     : 'Edit Template',
                 style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+                const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
               ),
               IconButton(
                 icon: const Icon(LucideIcons.x),
@@ -559,114 +619,214 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
           ),
         ],
       ),
-      // 2. Make dialog width responsive
       content: SizedBox(
-        width: isMobileScreen
-            ? screenWidth * 0.9
-            : screenWidth * 0.5, // 90% on mobile, 50% on web
-        child: _isSaving
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+        width: isMobileScreen ? screenWidth * 0.9 : screenWidth * 0.5,
+        // Use a ConstrainedBox to ensure the dialog doesn't grow too large
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: _isSaving
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppTextField(
+                    controller: _nameController,
+                    labelText: 'Template Name',
+                    hintText: 'e.g., "Welcome Message"',
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'Name is required'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  Flex(
+                    direction:
+                    isMobileScreen ? Axis.vertical : Axis.horizontal,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppTextField(
-                        controller: _nameController,
-                        labelText: 'Template Name',
-                        hintText: 'e.g., "Welcome Message"',
-                        validator: (val) => val == null || val.isEmpty
-                            ? 'Name is required'
-                            : null,
+                      Expanded(
+                        child: AppDropdown<TemplateType>(
+                          labelText: 'Type',
+                          value: _selectedType,
+                          items: TemplateType.values
+                              .where((t) => t != TemplateType.UNKNOWN)
+                              .map((t) => DropdownMenuItem(
+                              value: t, child: Text(t.displayName)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedType = val);
+                            }
+                          },
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      // 2. Use Flex for responsive dropdowns
-                      Flex(
-                        direction:
-                            isMobileScreen ? Axis.vertical : Axis.horizontal,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: AppDropdown<TemplateType>(
-                              labelText: 'Type',
-                              value: _selectedType,
-                              items: TemplateType.values
-                                  .where((t) => t != TemplateType.UNKNOWN)
-                                  .map((t) => DropdownMenuItem(
-                                      value: t, child: Text(t.displayName)))
-                                  .toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() => _selectedType = val);
-                                }
-                              },
-                            ),
-                          ),
-                          SizedBox(
-                              width: isMobileScreen ? 0 : 16,
-                              height: isMobileScreen ? 16 : 0),
-                          Expanded(
-                            child: AppDropdown<String>(
-                              labelText: 'Language',
-                              value: _selectedLanguage,
-                              items: _languages
-                                  .map((l) => DropdownMenuItem(
-                                      value: l, child: Text(l.toUpperCase())))
-                                  .toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() => _selectedLanguage = val);
-                                }
-                              },
-                            ),
-                          ),
-                        ],
+                      SizedBox(
+                          width: isMobileScreen ? 0 : 16,
+                          height: isMobileScreen ? 16 : 0),
+                      Expanded(
+                        child: AppDropdown<String>(
+                          labelText: 'Language',
+                          value: _selectedLanguage,
+                          items: _languages
+                              .map((l) => DropdownMenuItem(
+                              value: l, child: Text(l.toUpperCase())))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedLanguage = val);
+                            }
+                          },
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      AppDropdown<String>(
-                        labelText: 'Category',
-                        value: _selectedCategory,
-                        items: _categories
-                            .map((c) =>
-                                DropdownMenuItem(value: c, child: Text(c)))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _selectedCategory = val);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        controller: _bodyController,
-                        labelText: 'Template Body',
-                        hintText:
-                            'Enter your message body here... Use {{variable}} for placeholders.',
-                        maxLines: 6,
-                        validator: (val) => val == null || val.isEmpty
-                            ? 'Body is required'
-                            : null,
-                      ),
-                      const SizedBox(
-                          height: 16), // 2. Add some padding at the bottom
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  AppDropdown<MediaType>(
+                    labelText: 'Media Type',
+                    value: _selectedMediaType,
+                    items: [
+                      MediaType.TEXT,
+                      MediaType.VIDEO,
+                      MediaType.DOCUMENT,
+                      MediaType.IMAGE
+                    ]
+                        .map((t) => DropdownMenuItem(
+                        value: t, child: Text(t.displayName)))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedMediaType = val;
+                          if (val == MediaType.TEXT) {
+                            _mediaLinkController.clear();
+                            _previewImageUrl = null;
+                          } else if (val == MediaType.IMAGE &&
+                              _mediaLinkController.text.isNotEmpty) {
+                            _previewImageUrl = _mediaLinkController.text;
+                          } else {
+                            _previewImageUrl = null;
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  if (_selectedMediaType != MediaType.TEXT) ...[
+                    AppTextField(
+                      controller: _mediaLinkController,
+                      labelText: 'Media Link',
+                      hintText: 'e.g., https://example.com/image.png',
+                      prefixIcon: const Icon(LucideIcons.link, size: 16),
+                      validator: (val) {
+                        if (_selectedMediaType != MediaType.TEXT &&
+                            (val == null || val.isEmpty)) {
+                          return 'Media Link is required for ${_selectedMediaType.displayName}';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Image Preview Section
+                    if (_selectedMediaType == MediaType.IMAGE &&
+                        _previewImageUrl != null)
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            _previewImageUrl!,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (BuildContext context,
+                                Widget child,
+                                ImageChunkEvent? loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress
+                                      .expectedTotalBytes !=
+                                      null
+                                      ? loadingProgress
+                                      .cumulativeBytesLoaded /
+                                      loadingProgress
+                                          .expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Column(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  children: [
+                                    Icon(LucideIcons.imageOff,
+                                        size: 32,
+                                        color: AppColors.destructive),
+                                    SizedBox(height: 8),
+                                    Text(
+                                        'Failed to load image preview.',
+                                        style: TextStyle(
+                                            color: AppColors
+                                                .mutedForeground)),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                  ],
+                  AppDropdown<String>(
+                    labelText: 'Category',
+                    value: _selectedCategory,
+                    items: _categories
+                        .map((c) =>
+                        DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedCategory = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    controller: _bodyController,
+                    labelText: 'Template Body',
+                    hintText:
+                    'Enter your message body here... Use {{variable}} for placeholders.',
+                    maxLines: 6,
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'Body is required'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
+            ),
+          ),
+        ),
       ),
       actionsPadding: const EdgeInsets.all(16.0),
       actions: _isSaving
           ? []
           : [
-              // Only show the "Submit" button as the main action
-              AppButton(
-                text: 'Submit',
-                onPressed: () => _onSave(TemplateStatus.SUBMITTED),
-                // 2. Make button full width on mobile
-                width: isMobileScreen ? double.infinity : null,
-              ),
-            ],
+        AppButton(
+          text: 'Submit',
+          onPressed: () => _onSave(TemplateStatus.SUBMITTED),
+          width: isMobileScreen ? double.infinity : null,
+        ),
+      ],
     );
   }
 }

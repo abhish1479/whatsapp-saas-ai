@@ -37,3 +37,7 @@ class TemplateStatusEnum(str,enum.Enum):
 class TemplateTypeEnum(str,enum.Enum):
     INBOUND = "Inbound"
     OUTBOUND = "Outbound"
+
+class Channel(str,enum.Enum):
+    WHATSAPP = "WhatsApp"
+    VOICE = "Voice"

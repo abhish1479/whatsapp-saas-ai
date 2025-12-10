@@ -58,6 +58,8 @@ def create_template(template_in: TemplateCreate, db: Session = Depends(get_db)):
             body=template.body,
             status=template.status,
             type=template.type,
+            media_link=template.media_link,
+            media_type=template.media_type,
             created_at=template.created_at,
             updated_at=template.updated_at,
         )
@@ -93,6 +95,8 @@ def get_template(template_id: int, db: Session = Depends(get_db)):
         body=template.body,
         status=template.status,
         type=template.type,
+        media_link=template.media_link,
+        media_type=template.media_type,
         created_at=template.created_at,
         updated_at=template.updated_at
 
@@ -140,6 +144,8 @@ def update_template(
             body=template.body,
             status=template.status,
             type=template.type,
+            media_link=template.media_link,
+            media_type=template.media_type,
             created_at=template.created_at,
             updated_at=template.updated_at
         )
@@ -208,6 +214,8 @@ def get_templates_by_tenant(
             body=template.body,
             status=template.status,
             type=template.type,
+            media_link=template.media_link,
+            media_type=template.media_type,
             created_at=template.created_at,
             updated_at=template.updated_at,
         )

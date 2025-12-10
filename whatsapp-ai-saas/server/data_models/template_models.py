@@ -8,6 +8,8 @@ class TemplateBase(BaseModel):
     language: Optional[str] = "en"
     category: Optional[str] = "MARKETING"
     body: str
+    media_link: Optional[str] = None
+    media_type: Optional[str] = "text"
     status: TemplateStatusEnum = TemplateStatusEnum.DRAFT
     type: TemplateTypeEnum
 
@@ -19,6 +21,8 @@ class TemplateUpdate(BaseModel):
     language: Optional[str] = None
     category: Optional[str] = None
     body: Optional[str] = None
+    media_link: Optional[str] = None
+    media_type: Optional[str] = None
     status: Optional[TemplateStatusEnum] = None
     type: Optional[TemplateTypeEnum] = None
 

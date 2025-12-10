@@ -4,7 +4,7 @@ from sqlalchemy import UUID, Column, Enum, Float, Index, Integer, Numeric, Strin
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
-from utils.enums import Onboarding, ProcessingStatusEnum, SourceTypeEnum , TemplateStatusEnum , TemplateTypeEnum
+from utils.enums import Onboarding, ProcessingStatusEnum, SourceTypeEnum , TemplateStatusEnum , TemplateTypeEnum ,Channel
 
 class Timestamp:
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -118,6 +118,8 @@ class Template(Timestamp,Base):
     language = Column(String, default="en")
     category = Column(String, default="MARKETING")
     body = Column(Text, nullable=False)
+    media_link = Column(Text, nullable=True)
+    media_type = Column(String(15), nullable=True)  # image, video, document, audio
     status = Column(Enum(TemplateStatusEnum), nullable=False, default=TemplateStatusEnum.DRAFT, index=True)
     type = Column(Enum(TemplateTypeEnum), nullable=False, index=True)
 
@@ -159,19 +161,19 @@ class Item(Base):
 # -------------------------------
 # Workflows
 # -------------------------------
-class Workflow(Base):
-    __tablename__ = "workflows"
+# class Workflow(Base):
+#     __tablename__ = "workflows"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-    template = Column(Text, nullable=False)
-    ask_name = Column(Boolean, nullable=False, default=True)
-    ask_location = Column(Boolean, nullable=False, default=False)
-    offer_payment = Column(Boolean, nullable=False, default=True)
-    qr_image_url = Column(Text, nullable=True)  # URL to QR code image
-    upi_id = Column(Text, nullable=True)        # e.g., "user@upi"
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+#     id = Column(BigInteger, primary_key=True, index=True)
+#     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+#     template = Column(Text, nullable=False)
+#     ask_name = Column(Boolean, nullable=False, default=True)
+#     ask_location = Column(Boolean, nullable=False, default=False)
+#     offer_payment = Column(Boolean, nullable=False, default=True)
+#     qr_image_url = Column(Text, nullable=True)  # URL to QR code image
+#     upi_id = Column(Text, nullable=True)        # e.g., "user@upi"
+#     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+#     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
 
 # -------------------------------
@@ -295,11 +297,12 @@ class Lead(Base):
     __tablename__ = "leads"
     id = Column(BigInteger, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(Text, nullable=True)
     phone = Column(Text, nullable=False)
     email = Column(Text, nullable=True)
     tags = Column(JSON, default=list)
-    product_service = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
     pitch = Column(Text, nullable=True)
     workflow_id = Column(BigInteger, ForeignKey("workflows.id"), nullable=True)
     status = Column(Text, default="New")
@@ -311,13 +314,13 @@ class Lead(Base):
         UniqueConstraint("tenant_id", "phone", name="uq_tenant_phone"),
     )
 
-# class Workflow(Base):
-#     __tablename__ = "workflows"
-#     id = Column(BigInteger, primary_key=True, index=True)
-#     tenant_id = Column(BigInteger, index=True, nullable=False)
-#     name = Column(Text, nullable=False)
-#     json = Column(JSON, nullable=False, default=dict)
-#     is_default = Column(Boolean, default=False)
+class Workflow(Timestamp,Base):
+    __tablename__ = "workflows"
+    id = Column(BigInteger, primary_key=True, index=True)
+    tenant_id = Column(BigInteger, index=True, nullable=False)
+    name = Column(Text, nullable=False)
+    json = Column(JSON, nullable=False, default=dict)
+    is_default = Column(Boolean, default=False)
 
 class Campaign(Base):
     __tablename__ = "campaigns"
@@ -328,13 +331,12 @@ class Campaign(Base):
     schedule_at = Column(DateTime(timezone=True), nullable=True)
     auto_schedule_json = Column(JSON, nullable=True)
     audience_filter_json = Column(JSON, nullable=True)
-    template_id = Column(BigInteger, nullable=True)
+    template_id = Column(BigInteger, ForeignKey("templates.id"), nullable=True)
     default_pitch = Column(Text, nullable=True)
+    channel = Column(Enum(Channel), nullable=False, default=Channel.WHATSAPP, index=True)
     default_workflow_id = Column(BigInteger, ForeignKey("workflows.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
-
-    recipients = relationship("CampaignRecipient", back_populates="campaign", lazy="selectin")
 
 class CampaignRecipient(Base):
     __tablename__ = "campaign_recipients"
@@ -350,8 +352,6 @@ class CampaignRecipient(Base):
     error_code = Column(Text, nullable=True)
     credit_units = Column(Integer, default=0)
     meta = Column(JSON, default=dict)
-
-    campaign = relationship("Campaign", back_populates="recipients")
     lead = relationship("Lead", back_populates="recipients")
 
 

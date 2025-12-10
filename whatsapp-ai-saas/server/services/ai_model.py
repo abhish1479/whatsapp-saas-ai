@@ -144,16 +144,17 @@ async def intelligence_model(sender,tenant_id):
                 temperature=0.2,
                 messages=get_history(sender) + [choice.message] + tool_msgs + [{
                     "role": "system",
-                    "content": "Rewrite the tool results for the end user in the same language/style they used also add new line in proper formate,Use *single asterisk* for bold.Use relevant emojis in your responses to improve readability.Summarize clearly: ticket_id, status, any assignee/ETA/last_update if present. for tool `get_all_tickets` alos show ticket_summary, for create_ticket only check MobiForceTicketId if null or empty then ticket creation failed else success."
+                    "content": "Rewrite the tool results for the end user in the same language/style they used also add new line in proper formate,Use *single asterisk* for bold.Use relevant emojis in your responses to improve readability"
                 }],
             )
             usage = getattr(refined, "usage", None)
             # asyncio.create_task(append_usage(sender, usage.total_tokens, "token"))
+            print(f"[BACKGROUND] Refinement usage: {usage.total_tokens}")
             ai_reply = extract_gpt_reply(refined.choices[0])
         else:
             # No tool call: just use the model's text reply
             ai_reply = extract_gpt_reply(choice) or (
-                "I can help you with appliance troubleshooting. Could you tell me more about the problem?"
+                "I can help you with your query. Could you tell me more?"
             )
 
         # Save assistant reply to history

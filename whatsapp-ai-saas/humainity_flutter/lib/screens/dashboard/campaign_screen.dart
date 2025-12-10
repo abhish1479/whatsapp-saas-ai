@@ -1,11 +1,13 @@
+import 'package:dotted_border/dotted_border.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:humainity_flutter/core/providers/campaigns_provider.dart';
+import 'package:humainity_flutter/core/providers/templates_provider.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/core/utils/status_helpers.dart';
 import 'package:humainity_flutter/models/campaign.dart';
-import 'package:humainity_flutter/models/template.dart';
 import 'package:humainity_flutter/widgets/ui/app_badge.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
 import 'package:humainity_flutter/widgets/ui/app_card.dart';
@@ -23,13 +25,11 @@ class CampaignScreen extends ConsumerStatefulWidget {
 }
 
 class _CampaignScreenState extends ConsumerState<CampaignScreen> {
-  String _selectedTab = 'whatsapp';
+  String _selectedTab = 'WHATSAPP';
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(campaignsProvider);
-    final whatsappCampaigns = ref.watch(whatsappCampaignsProvider);
-    final voiceCampaigns = ref.watch(voiceCampaignsProvider);
+    final campaignsAsync = ref.watch(campaignsProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -40,12 +40,16 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
           const SizedBox(height: 24),
           _buildTabs(context),
           const SizedBox(height: 16),
-          if (state.isLoading)
-            const Center(child: CircularProgressIndicator())
-          else
-            _selectedTab == 'whatsapp'
-                ? _buildCampaignList(whatsappCampaigns)
-                : _buildCampaignList(voiceCampaigns),
+          campaignsAsync.when(
+            data: (campaigns) {
+              final filtered = campaigns
+                  .where((c) => c.channel.toUpperCase() == _selectedTab)
+                  .toList();
+              return _buildCampaignList(filtered, ref);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
+          ),
         ],
       ),
     );
@@ -90,11 +94,10 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             child: AppButton(
               text: 'WhatsApp',
               icon: const Icon(LucideIcons.messageCircle),
-              // FIX: Replaced 'variant' with 'style' and used ternary logic with AppButtonStyle.tertiary for ghost
-              style: _selectedTab == 'whatsapp'
+              style: _selectedTab == 'WHATSAPP'
                   ? AppButtonStyle.primary
                   : AppButtonStyle.tertiary,
-              onPressed: () => setState(() => _selectedTab = 'whatsapp'),
+              onPressed: () => setState(() => _selectedTab = 'WHATSAPP'),
             ),
           ),
           const SizedBox(width: 8),
@@ -102,11 +105,10 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             child: AppButton(
               text: 'Voice',
               icon: const Icon(LucideIcons.phone),
-              // FIX: Replaced 'variant' with 'style' and used ternary logic with AppButtonStyle.tertiary for ghost
-              style: _selectedTab == 'voice'
+              style: _selectedTab == 'VOICE'
                   ? AppButtonStyle.primary
                   : AppButtonStyle.tertiary,
-              onPressed: () => setState(() => _selectedTab = 'voice'),
+              onPressed: () => setState(() => _selectedTab = 'VOICE'),
             ),
           ),
         ],
@@ -114,7 +116,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
     );
   }
 
-  Widget _buildCampaignList(List<Campaign> campaigns) {
+  Widget _buildCampaignList(List<Campaign> campaigns, WidgetRef ref) {
     if (campaigns.isEmpty) {
       return const AppCard(
         child: Center(
@@ -141,35 +143,51 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(campaign.name,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w600)),
-                    AppBadge(
-                      text: campaign.status,
-                      color: getStatusColor(campaign.status),
+                    Expanded(
+                      child: Text(campaign.name,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w600)),
+                    ),
+                    Row(
+                      children: [
+                        if (campaign.status == 'Running')
+                          IconButton(
+                            icon: const Icon(LucideIcons.pauseCircle,
+                                color: Colors.orange),
+                            onPressed: () => ref
+                                .read(campaignsProvider.notifier)
+                                .updateStatus(campaign.id, 'pause'),
+                          )
+                        else if (campaign.status != 'Completed')
+                          IconButton(
+                            icon: const Icon(LucideIcons.playCircle,
+                                color: Colors.green),
+                            onPressed: () => ref
+                                .read(campaignsProvider.notifier)
+                                .updateStatus(campaign.id, 'start'),
+                          ),
+                        const SizedBox(width: 8),
+                        AppBadge(
+                          text: campaign.status,
+                          color: getStatusColor(campaign.status),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                // *** FIX: Use 'description' field from fixed model ***
                 Text(campaign.description ?? 'No description',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: AppColors.mutedForeground)),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildStat(
-                        LucideIcons.users, 'Total', campaign.totalContacts),
-                    _buildStat(
-                        LucideIcons.send, 'Reached', campaign.contactsReached),
-                    _buildStat(LucideIcons.check, 'Successful',
-                        campaign.successfulDeliveries),
-                    _buildStat(
-                        LucideIcons.x, 'Failed', campaign.failedDeliveries),
-                    // *** FIX: Use 'engagementRate' getter from fixed model ***
-                    _buildStat(LucideIcons.activity, 'Engagement',
-                        campaign.engagementRate,
-                        isPercent: true),
+                    _buildStat(LucideIcons.users, 'Total', campaign.totalLeads),
+                    _buildStat(LucideIcons.send, 'Sent', campaign.sent),
+                    _buildStat(LucideIcons.check, 'Success', campaign.success),
+                    _buildStat(LucideIcons.x, 'Failed', campaign.failed),
                   ],
                 ),
               ],
@@ -180,16 +198,15 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
     );
   }
 
-  Widget _buildStat(IconData icon, String label, num value,
-      {bool isPercent = false}) {
+  Widget _buildStat(IconData icon, String label, num value) {
     return Row(
       children: [
         Icon(icon, size: 14, color: AppColors.mutedForeground),
         const SizedBox(width: 4),
         Text(
-          '$label: ${isPercent ? '${value.toStringAsFixed(1)}%' : value}',
+          '$label: $value',
           style:
-              const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+          const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
       ],
     );
@@ -201,7 +218,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
       title: 'Create New Campaign',
       description: const Text('Set up a new WhatsApp or Voice campaign.'),
       content: CampaignForm(
-        onSubmit: () => Navigator.of(context).pop(),
+        onSubmit: () {},
       ),
     );
   }
@@ -219,53 +236,81 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
   final _formKey = GlobalKey<FormState>();
   String _name = '';
   String _description = '';
-  String _channel = 'whatsapp';
-  String _status = 'draft';
+  String _channel = 'WHATSAPP';
   String? _templateId;
+  bool _runImmediate = false;
+  PlatformFile? _selectedFile;
+  bool _isUploading = false;
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedFile = result.files.first;
+      });
+    }
+  }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload a CSV file')),
+      );
+      return;
+    }
     _formKey.currentState!.save();
 
-    final formData = {
-      'name': _name,
-      'description': _description,
-      'channel': _channel,
-      'status': _status,
-      'template_id': _templateId,
-      'ai_agent_id': null, // TODO: Add agent selection
-      'customer_list_id': null, // TODO: Add list selection
-    };
+    setState(() => _isUploading = true);
 
     try {
-      await ref.read(campaignsProvider.notifier).createCampaign(formData);
+      await ref.read(campaignsProvider.notifier).createCampaign(
+        name: _name,
+        description: _description,
+        channel: _channel,
+        templateId: _templateId != null ? int.parse(_templateId!) : null,
+        runImmediate: _runImmediate,
+        file: _selectedFile!,
+      );
       widget.onSubmit();
+      if (!mounted) return;
+
+      // 6. Close the Dialog explicitly using CURRENT context
+      // This ensures we close the dialog, not the screen behind it
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Campaign created successfully')),
       );
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('Error: $e'), backgroundColor: AppColors.destructive),
       );
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // *** FIX: Get templates from the main campaignsProvider state ***
-    final templates = ref.watch(campaignsProvider).templates;
+    final templatesState = ref.watch(templatesProvider);
+    final templates = templatesState.outboundTemplates;
 
     final templateItems = templates
-        .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name)))
+        .map((t) => DropdownMenuItem(
+        value: t.id.toString(), child: Text(t.name)))
         .toList();
 
     return Form(
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment:
-            CrossAxisAlignment.start, // Align labels to the left
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(
             labelText: 'Campaign Name',
@@ -273,49 +318,80 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
             validator: (val) => val!.isEmpty ? 'Name is required' : null,
           ),
           const SizedBox(height: 16),
+          // FIX: Fixed height of 4 lines to prevent dialog resizing
           AppTextField(
-            labelText: 'Description',
-            maxLines: 3,
+            labelText: 'Description (Default Pitch)',
+            keyboardType: TextInputType.multiline,
+            maxLines: 4,
             onSaved: (val) => _description = val!,
           ),
           const SizedBox(height: 16),
-          // *** FIX: Removed 'labelText' and wrapped in a Column ***
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Channel',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.mutedForeground)),
-              const SizedBox(height: 8),
-              AppRadioGroup<String>(
-                groupValue: _channel,
-                onChanged: (val) => setState(() => _channel = val!),
-                // *** FIX: Must be a List<AppRadioItem> ***
-                items: const [
-                  AppRadioItem(value: 'whatsapp', label: Text('WhatsApp')),
-                  AppRadioItem(value: 'voice', label: Text('Voice')),
-                ],
-              ),
+          const Text('Channel',
+              style: TextStyle(fontSize: 12, color: AppColors.mutedForeground)),
+          const SizedBox(height: 8),
+          AppRadioGroup<String>(
+            groupValue: _channel,
+            onChanged: (val) => setState(() => _channel = val!),
+            items: const [
+              AppRadioItem(value: 'WHATSAPP', label: Text('WhatsApp')),
+              AppRadioItem(value: 'VOICE', label: Text('Voice')),
             ],
           ),
           const SizedBox(height: 16),
-          // AppDropdown<String>(
-          //   labelText: 'Message Template',
-          //   hint: const Text('Select a template'),
-          //   value: _templateId,
-          //   onChanged: (val) => setState(() => _templateId = val),
-          //   items: templateItems,
-          //   validator: (val) => val == null ? 'Template is required' : null,
-          // ),
-          const SizedBox(height: 16),
           AppDropdown<String>(
-            labelText: 'Initial Status',
-            value: _status,
-            onChanged: (val) => setState(() => _status = val!),
-            items: const [
-              DropdownMenuItem(value: 'draft', child: Text('Draft')),
-              DropdownMenuItem(
-                  value: 'running', child: Text('Run Immediately')),
+            labelText: 'Message Template',
+            hint: const Text('Select a template'),
+            value: _templateId,
+            onChanged: (val) => setState(() => _templateId = val),
+            items: templateItems,
+          ),
+          const SizedBox(height: 16),
+          const Text('Recipients (CSV)',
+              style: TextStyle(fontSize: 12, color: AppColors.mutedForeground)),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: _pickFile,
+            child: DottedBorder(
+              color: AppColors.mutedForeground.withOpacity(0.5),
+              strokeWidth: 1,
+              dashPattern: const [6, 3],
+              borderType: BorderType.RRect,
+              radius: const Radius.circular(8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  children: [
+                    Icon(LucideIcons.uploadCloud,
+                        size: 32, color: AppColors.primary),
+                    const SizedBox(height: 8),
+                    Text(
+                      _selectedFile != null
+                          ? _selectedFile!.name
+                          : 'Click to upload CSV',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    if (_selectedFile == null)
+                      const Text(
+                        'Columns: name, phone, email, pitch',
+                        style: TextStyle(
+                            fontSize: 10, color: AppColors.mutedForeground),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Run Immediately?',
+                  style: TextStyle(fontWeight: FontWeight.w500)),
+              Switch(
+                value: _runImmediate,
+                onChanged: (val) => setState(() => _runImmediate = val),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -324,15 +400,17 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
             children: [
               AppButton(
                 text: 'Cancel',
-                // FIX: Replaced variant: AppButtonVariant.outline with style: AppButtonStyle.tertiary
                 style: AppButtonStyle.tertiary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),
-              AppButton(
-                text: 'Create Campaign',
-                onPressed: _handleSubmit,
-              ),
+              if (_isUploading)
+                const CircularProgressIndicator()
+              else
+                AppButton(
+                  text: 'Create Campaign',
+                  onPressed: _handleSubmit,
+                ),
             ],
           ),
         ],
