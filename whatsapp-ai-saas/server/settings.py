@@ -3,6 +3,9 @@ import os
 from pathlib import Path
 
 class Settings:
+    ERP_URL: str = "http://host.docker.internal:8788"
+    ERP_ADMIN_API_KEY: str = "cf8a748714a3282" 
+    ERP_ADMIN_API_SECRET: str = "f590414e7a7efc1"
     APP_ENV = os.getenv("APP_ENV","dev")
     API_HOST = os.getenv("API_HOST","0.0.0.0")
     API_PORT = int(os.getenv("API_PORT","8000"))
