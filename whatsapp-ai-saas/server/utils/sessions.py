@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from collections import defaultdict
 from typing import Optional
@@ -6,7 +7,7 @@ from typing import Optional
 from fastapi import logger
 from fastapi.responses import JSONResponse
 from deps import SessionLocal
-from utils.enums import Role , TemplateTypeEnum
+from utils.enums import Role , TemplateTypeEnum , TemplateStatusEnum
 from services.rag import rag
 from deps import get_db_session
 from models import Lead, Template, BusinessProfile, AgentConfiguration, Workflow
@@ -49,14 +50,19 @@ def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
             # 3. Fetch Workflow
         # wk = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
         # workflow = safe_to_dict(wk)
-
-        if sender:
-           lead = db.query(Lead).filter(Lead.tenant_id == tenant_id, func.right(Lead.phone, 10) == sender[-10:]).first()
+        
+        if sender and len(sender) >= 10:
+           phone_number = re.sub(r"\D", "", sender) if sender else ""
+           phone_number = phone_number[-10:] if len(phone_number) >= 10 else phone_number
+           lead = db.query(Lead).filter(Lead.tenant_id == tenant_id,  func.right(func.regexp_replace(Lead.phone, r'\D', '', 'g'), 10) == phone_number).first()
            if lead:
               lead = safe_to_dict(lead)
            else:
-            tm = db.query(Template).filter(Template.tenant_id == tenant_id,Template.type == TemplateTypeEnum.INBOUND).first()
-            template = safe_to_dict(tm)  
+            tm = db.query(Template).filter(Template.tenant_id == tenant_id,Template.type == TemplateTypeEnum.INBOUND,Template.status == TemplateStatusEnum.SUBMITTED).first()
+            template = safe_to_dict(tm)
+        else:
+            tm = db.query(Template).filter(Template.tenant_id == tenant_id,Template.type == TemplateTypeEnum.INBOUND,Template.status == TemplateStatusEnum.SUBMITTED).first()
+            template = safe_to_dict(tm) 
                            
         config_data = {
                 "business": business_profile,
@@ -70,7 +76,7 @@ def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
             # Use json.dumps to convert the Python dict to a string. 
             # Use 'indent=None, separators=(',', ':')' for conciseness.
         config_str = json.dumps(config_data, default=str, indent=None, separators=(',', ':'))
-
+        print(f"""Config str :-----",{config_str}""")
             # Construct the final, highly defined system prompt for the LLM
         prompt = f"""
                 You are a highly professional and results-oriented WhatsApp Chat Agent. Your primary objective is to engage users effectively, qualify their interest, and guide them toward a successful conversion (e.g., purchasing a product, signing up for a service, enrolling in a course, or completing another desired action) based strictly on the provided configuration.
@@ -121,9 +127,9 @@ def get_history(sender: str,tenant_id: Optional[int] = None):
             user_sessions[sender] = []  # expired
     if not user_sessions[sender]:
         if Role.TECHNICAN.value in sender:
-            user_sessions[sender].append({"role": "system", "content": System_Prompt(tenant_id)})
+            user_sessions[sender].append({"role": "system", "content": System_Prompt(tenant_id,sender)})
         else:
-            user_sessions[sender].append({"role": "system", "content": System_Prompt(tenant_id)})
+            user_sessions[sender].append({"role": "system", "content": System_Prompt(tenant_id,sender)})
     last_message_time[sender] = now
     return user_sessions[sender]
 
@@ -132,7 +138,7 @@ async def append_user(sender: str, content , tenant_id: Optional[int] = None):
     get_history(sender,tenant_id).append({"role": "user", "content": content})
     rag_context = ""
     if content and tenant_id:
-        rag_results = await rag.search(tenant_id=tenant_id, query=content, k=3)
+        rag_results = await rag.search(tenant_id=tenant_id, query=content, k=4)
         if rag_results:
             snippets = [
                     f"• {r['text']}" for r in rag_results[:3]

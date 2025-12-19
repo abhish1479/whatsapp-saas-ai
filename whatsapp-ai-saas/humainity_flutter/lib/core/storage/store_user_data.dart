@@ -78,6 +78,18 @@ class StoreUserData {
   Future<String?> getOnboardingProcess() async {
     return _prefs.getString('onboarding_process');
   }
+  // --- NEW: ERP Keys Storage ---
+  Future<void> setErpKeys(String key, String secret) async {
+    await _prefs.setString('erp_api_key', key);
+    await _prefs.setString('erp_api_secret', secret);
+  }
+
+  Future<Map<String, String?>> getErpKeys() async {
+    return {
+      'key': _prefs.getString('erp_api_key'),
+      'secret': _prefs.getString('erp_api_secret'),
+    };
+  }
 
   Future<Map<String, bool>> getOnboardingSteps() async {
     final data = _prefs.getString('onboarding_steps');

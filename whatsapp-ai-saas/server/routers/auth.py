@@ -4,6 +4,7 @@ from database import SessionLocal
 from models import Tenant, User, Wallet
 from deps import create_token
 from services.erp import ERPNextClient
+from services.social_auth_service import generate_fresh_erp_keys
 
 router = APIRouter()
 
@@ -65,6 +66,35 @@ def signup(body: Signup):
             },
             "tenant_id": tenant.id,
             "onboarding_process": user.onboarding_process,
+        }
+    finally:
+        db.close()
+
+
+@router.post("/login")
+async def login(body: Login):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter_by(email=body.email).first()
+        if not user or body.password != user.password_hash:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        # return {"token": create_token(u.id, u.tenant_id)}
+    
+        return {
+        "access_token": create_token(user.id, user.tenant_id),
+        "crm_token": await generate_fresh_erp_keys(user.email),
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "picture" : '',
+            "provider": 'Self',
+            "provider_id": 0,
+            "role": user.role,
+        },
+        "tenant_id": user.tenant_id,
+        "onboarding_process": user.onboarding_process
         }
     finally:
         db.close()

@@ -86,6 +86,24 @@ class SidebarContent extends ConsumerWidget {
     //   'showStepIndicator': false,
     // },
     {
+      'name': 'Leads',
+      'href': '/dashboard/leads', // New Route
+      'icon': LucideIcons.users,
+      'showStepIndicator': false,
+    },
+    {
+      'name': 'Campaigns (ERP)',
+      'href': '/dashboard/ext-campaigns', // New Route
+      'icon': LucideIcons.megaphone,
+      'showStepIndicator': false,
+    },
+    {
+      'name': 'Mini CRM',
+      'href': '/dashboard/mini-crm',
+      'icon': LucideIcons.appWindow,
+      'showStepIndicator': false,
+    },
+    {
       'name': 'Settings',
       'href': '/dashboard/settings',
       'icon': LucideIcons.settings,

@@ -4,6 +4,8 @@ import os
 from dotenv import load_dotenv
 import httpx
 from typing import Dict, Any
+
+import requests
 from utils.enums import SocialProvider
 from utils.google_jwt import verify_google_id_token
 from google_auth_oauthlib.flow import Flow
@@ -15,6 +17,7 @@ load_dotenv()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+ERP_BASE_URL = os.getenv("ERP_BASE_URL", "http://localhost:8090")
 
 if not all([GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI]):
     raise ValueError(
@@ -163,3 +166,33 @@ class SocialAuthService:
             "access_token": access_token,
             "extra_data": {**user_data, "emailAddress": email},
         }
+    
+async def generate_fresh_erp_keys(user_email: str):
+    """
+    Calls ERPNext to generate fresh API keys for the given user.
+    """
+    url = f"{ERP_BASE_URL}/api/method/mymobi_whatsapp_saas.mymobi_whatsapp_saas.session.create_fresh_api_keys"
+    
+    try:
+        response = requests.get(
+            url, 
+            params={'email': user_email},
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            # The message format is "API_KEY:API_SECRET"
+            keys_str = data.get("message")
+            if keys_str and ":" in keys_str:
+                api_key, api_secret = keys_str.split(":")
+                return {"api_key": api_key, "api_secret": api_secret}
+            else:
+                print("Invalid key format from ERP:", keys_str)
+                return None
+        else:
+            print(f"ERP returned error {response.status_code}: {response.text}")
+            return None
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to connect to ERP: {str(e)}")
+        return None

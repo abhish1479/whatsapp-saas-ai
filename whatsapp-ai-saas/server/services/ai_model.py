@@ -3,6 +3,7 @@ import json
 import re
 from fastapi.responses import Response
 from typing import Optional
+from services.rag import rag
 from services.llm import client
 from utils.gpt_helpers import extract_gpt_reply
 from utils.sessions import get_history, append_user, append_assistant
@@ -45,7 +46,7 @@ async def process_message_background(sender, receiver, user_input, content):
             else:
                 await append_user(sender, user_input or "Hi")
         else:
-            await append_user(sender, user_input or "Hi",tenant_id)
+            await append_user(sender, user_input or "Hi")
 
         # Call intelligence model to get AI response
         ai_reply = await intelligence_model(sender,tenant_id)
@@ -115,15 +116,25 @@ async def intelligence_model(sender,tenant_id):
                 phone_number = re.sub(r"\D", "", sender) if sender else ""
                 phone_number = phone_number[-10:] if len(phone_number) >= 10 else phone_number
                 
-                if name == "get_ticket_status":
-                    ticket_id = args.get("ticket_id")
-                    if not ticket_id:
-                        ai_reply = "Please share your Ticket ID."
+                if name == "find_rag_info":
+                    query = args.get("query")
+                    print(f"[RAG TOOL] Query: {query}")
+                    if not query:
+                        ai_reply = extract_gpt_reply(choice) or (
+                                "I can help you with your query. Could you tell me more?"
+                            )
                         append_assistant(sender, ai_reply)
                         return ai_reply
 
                     # Call your external API
-                    result = None # get_ticket_status_external(ticket_id=ticket_id, phone_number=phone_number)
+                    rag_context = ""
+                    result = await rag.search(tenant_id=tenant_id, query=query, k=4)
+                    if result:
+                        snippets = [
+                                f"• {r['text']}" for r in result[:4]
+                            ]
+                        rag_context = "\n".join(snippets)
+                    get_history(sender,tenant_id).append({"role": "system", "content": rag_context})  
                     tool_msgs.append({
                         "role": "tool",
                         "tool_call_id": tc.id,

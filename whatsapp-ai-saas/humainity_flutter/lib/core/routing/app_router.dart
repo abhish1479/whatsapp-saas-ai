@@ -24,6 +24,9 @@ import 'package:humainity_flutter/screens/home/widgets/experience_demo_screen.da
 import 'package:humainity_flutter/screens/industries/industries_screen.dart';
 import 'package:humainity_flutter/screens/industries/industry_detail_screen.dart';
 import 'package:humainity_flutter/screens/not_found_screen.dart';
+import 'package:humainity_flutter/screens/dashboard/mini_crm_screen.dart';
+
+import '../../screens/dashboard/widgets/iframe_view.dart.dart'; // NEW Import
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -141,6 +144,27 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'crm/:id',
                 builder: (context, state) => CustomerDetailScreen(
                   customerId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
+                path: 'mini-crm',
+                builder: (context, state) => const CommonIframeView(
+                  title: 'Mini CRM',
+                  targetUrl: 'http://localhost:8090/app/customer',
+                ),
+              ),
+              GoRoute(
+                path: 'leads',
+                builder: (context, state) => const CommonIframeView(
+                  title: 'Leads',
+                  targetUrl: 'http://localhost:8090/app/lead',
+                ),
+              ),
+              GoRoute(
+                path: 'ext-campaigns',
+                builder: (context, state) => const CommonIframeView(
+                  title: 'External Campaigns',
+                  targetUrl: 'http://localhost:8090/app/campaign',
                 ),
               ),
               GoRoute(

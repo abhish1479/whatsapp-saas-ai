@@ -6,6 +6,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:humainity_flutter/core/storage/store_user_data.dart';
 
+import 'mini_crm_repository.dart';
+
 /// ---------------------------------------------------------------------------
 /// 1. Repository Provider
 /// ---------------------------------------------------------------------------
@@ -25,7 +27,7 @@ class AuthRepository {
 
   bool _isFetchingOnboarding = false;
   bool _onboardingCompleted = false;
-
+  String get _erpBaseUrl => 'http://localhost:8090';
   String get _baseUrl {
     final url = dotenv.env['API_BASE_URL'];
     if (url == null || url.isEmpty) {
@@ -201,16 +203,44 @@ class AuthRepository {
       if (user['picture'] != null) {
         await _store!.setProfilePic(user['picture']);
       }
+
+      if (data['crm_token'] is Map) {
+        final crmToken = data['crm_token'] as Map;
+        final apiKey = crmToken['api_key']?.toString();
+        final apiSecret = crmToken['api_secret']?.toString();
+
+        if (apiKey != null && apiSecret != null) {
+          await _store!.setErpKeys(apiKey, apiSecret);
+          print("ERP Keys stored from login response.");
+        }
+      }
     }
 
     await _store!.setLoggedIn(true);
 
+    _stabilizeSessionInBackground();
     // Reset onboarding flags after new login/signup
     _onboardingCompleted = false;
     _isFetchingOnboarding = false;
 
     // Notify that onboarding data in prefs has changed
     _ref.read(onboardingRefreshProvider.notifier).state++;
+  }
+
+  /// Attempts to hit the magic link endpoint in the background to ensure session readiness
+  void _stabilizeSessionInBackground() {
+    // We don't await this because we don't want to block the user from entering the dashboard
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      try {
+        print("Stabilizing CRM session in background...");
+        final miniCrmRepo = _ref.read(miniCrmRepositoryProvider);
+        // Simply fetching the link validates credentials and readiness
+        await miniCrmRepo.getMagicLink();
+        print("CRM session stabilized.");
+      } catch (e) {
+        print("Background session stabilization warning: $e");
+      }
+    });
   }
 
   String _safeError(http.Response res, String context) {

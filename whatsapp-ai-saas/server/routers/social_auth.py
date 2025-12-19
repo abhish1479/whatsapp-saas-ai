@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from data_models.social_auth_model import SocialLoginRequest
 from utils.google_jwt import verify_google_id_token
 from utils.enums import Onboarding, SocialProvider
-from services.social_auth_service import SocialAuthService
+from services.social_auth_service import SocialAuthService, generate_fresh_erp_keys
 from utils.jwt_utils import create_access_token
 from models import BusinessProfile, Tenant, User, Identity  # Import your DB setup
 from pydantic import BaseModel
@@ -99,6 +99,7 @@ async def oauth_callback(
     access_token_jwt = create_access_token(token_payload)
     return {
         "access_token": access_token_jwt,
+        "crm_token": generate_fresh_erp_keys(user.email),
         "token_type": "bearer",
         "user": {
             "id": user.id,
@@ -219,6 +220,7 @@ async def oauth_callback(
     # Step 5: Return response
     return {
         "access_token": access_token_jwt,
+        "crm_token": generate_fresh_erp_keys(user.email),
         "token_type": "bearer",
         "user": {
             "id": user.id,
