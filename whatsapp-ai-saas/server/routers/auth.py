@@ -13,6 +13,9 @@ class Signup(BaseModel):
     email: EmailStr
     password: str
 
+class Login(BaseModel):
+    email:EmailStr
+    password:str
 
 @router.post("/signup")
 def signup(body: Signup):  
