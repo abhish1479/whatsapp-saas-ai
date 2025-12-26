@@ -12,7 +12,7 @@ class WhyHumainitySection extends StatelessWidget {
       "icon": LucideIcons.bot,
       "title": "Conversational AI",
       "desc":
-          "Handles FAQs, service requests, and lead nurturing naturally with context-aware responses.",
+          "Handles FAQs, service requests, and lead nurturing naturally with context-aware responses that drive customer engagement.",
       "color": Color(0xFF009BFF),
       "bg": Color(0xFFE6F3FF),
     },
@@ -36,7 +36,7 @@ class WhyHumainitySection extends StatelessWidget {
       "icon": LucideIcons.heart,
       "title": "Human + AI Synergy",
       "desc":
-          "Your agents focus on empathy while AI handles efficiency, creating the perfect balance.",
+          "Your agents focus on empathy while AI handles efficiency, creating the perfect balance for modern enterprise workflows.",
       "color": Color(0xFFFF5C5C),
       "bg": Color(0xFFFFE9EB),
     },

@@ -87,10 +87,10 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
           child: const Text("Industries"),
         ),
         const SizedBox(width: 10),
-        AppButton(
-          text: "Get Started",
-          onPressed: () => context.go('/dashboard/ai-agent'),
-        ),
+        // AppButton(
+        //   text: "Get Started",
+        //   onPressed: () => context.go('/dashboard/ai-agent'),
+        // ),
       ],
     );
   }

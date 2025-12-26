@@ -190,22 +190,22 @@ class _HeroSectionState extends State<HeroSection>
         const SizedBox(height: 32),
 
         // Center button on mobile
-        if (isMobile)
-          Center(
-            child: AppButton(
-              text: "Create Your AI Agent",
-              onPressed: () => context.go('/auth'),
-              isLg: true,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-            ),
-          )
-        else
-          AppButton(
-            text: "Create Your AI Agent",
-            onPressed: () => context.go('/auth'),
-            isLg: true,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-          ),
+        // if (isMobile)
+        //   Center(
+        //     child: AppButton(
+        //       text: "Create Your AI Agent",
+        //       onPressed: () => context.go('/auth'),
+        //       isLg: true,
+        //       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        //     ),
+        //   )
+        // else
+        //   AppButton(
+        //     text: "Create Your AI Agent",
+        //     onPressed: () => context.go('/auth'),
+        //     isLg: true,
+        //     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        //   ),
       ],
     );
   }
