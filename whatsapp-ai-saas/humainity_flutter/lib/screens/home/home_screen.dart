@@ -118,14 +118,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   context.go('/industries');
                 },
               ),
-              const Divider(height: 32),
-              ListTile(
-                title: const Text("Login"),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go('/dashboard/ai-agent');
-                },
-              ),
+              // const Divider(height: 32),
+              // ListTile(
+              //   title: const Text("Login"),
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     context.go('/dashboard/ai-agent');
+              //   },
+              // ),
             ],
           ),
         ),

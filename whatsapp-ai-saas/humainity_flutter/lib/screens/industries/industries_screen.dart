@@ -161,10 +161,9 @@ class IndustriesScreen extends StatelessWidget {
                           runSpacing: 16,
                           alignment: WrapAlignment.center,
                           children: [
-                            // Primary Button
-                            AppButton(
+                            const AppButton(
                               text: 'Launch Your AI Agent Now',
-                              onPressed: () => context.go('/auth'),
+                              // onPressed: () => context.go('/auth'),
                               isLg: true,
                               backgroundColor: Colors.white,
                               textColor: AppColors.primary,
