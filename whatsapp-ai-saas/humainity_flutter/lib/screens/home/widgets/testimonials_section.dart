@@ -9,7 +9,7 @@ class TestimonialsSection extends StatelessWidget {
   static final _data = [
     const _Testimonial(
       quote:
-          "HumAInity.ai transformed how we handle customer support. Our response time dropped from hours to minutes, and customer satisfaction increased by 45%.",
+          "HumAInise.ai transformed how we handle customer support. Our response time dropped from hours to minutes, and customer satisfaction increased by 45%.",
       name: "Rajesh Kumar",
       title: "CEO, TechStart Solutions",
       avatar: "assets/images/agent-david.jpg",
@@ -67,7 +67,7 @@ class TestimonialsSection extends StatelessWidget {
               const SizedBox(height: 12),
 
               const Text(
-                "See how businesses like yours are growing with HumAInity.ai",
+                "See how businesses like yours are growing with HumAInise.ai",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,

@@ -7,7 +7,7 @@ from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
 from services.metrics import inc_message
-from routers import onboarding , catalog , agent_config
+from server.routers import onboarding , catalog , agent_config
 from database import Base, engine
 import os
 from fastapi.staticfiles import StaticFiles

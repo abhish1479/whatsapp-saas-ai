@@ -165,7 +165,7 @@ class SidebarContent extends ConsumerWidget {
               _LogoBox(),
               SizedBox(width: 8),
               Text(
-                'HumAInity.ai',
+                'HumAInise.ai',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],

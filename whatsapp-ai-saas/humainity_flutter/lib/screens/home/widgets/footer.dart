@@ -66,7 +66,7 @@ class FooterSection extends StatelessWidget {
               "Features": onFeaturesTap,
               "Solutions": onSolutionsTap,
               "How It Works": onHowItWorksTap,
-              "Pricing": onPricingTap,
+              // "Pricing": onPricingTap,
               "Testimonials" : onTestimonialsTap,
               "Experience Demo": onExperienceTap,
             },
@@ -92,7 +92,7 @@ class FooterSection extends StatelessWidget {
             "Features": onFeaturesTap,
             "Solutions": onSolutionsTap,
             "How It Works": onHowItWorksTap,
-            "Pricing": onPricingTap,
+            // "Pricing": onPricingTap,
           },
         ),
       ],
@@ -104,7 +104,7 @@ class FooterSection extends StatelessWidget {
     return const Column(
       children: [
         Text(
-          "© 2025 HumAInity.ai. All rights reserved.",
+          "© 2025 HumAInise.ai. All rights reserved.",
           style: TextStyle(
             fontSize: 14,
             color: Color(0xFF7A8694),
@@ -158,7 +158,7 @@ class _LogoColumn extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             const Text(
-              "HumAInity.ai",
+              "HumAInise.ai",
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,

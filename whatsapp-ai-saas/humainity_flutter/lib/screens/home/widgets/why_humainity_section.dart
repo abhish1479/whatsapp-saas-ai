@@ -70,7 +70,7 @@ class WhyHumainitySection extends StatelessWidget {
                       ),
                     ),
                     TextSpan(
-                      text: "HumAInity.AI",
+                      text: "HumAInise.ai",
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.w700,
