@@ -98,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               // ListTile(
+              // simran
               //   title: const Text("Pricing"),
               //   onTap: () {
               //     Navigator.pop(context);
