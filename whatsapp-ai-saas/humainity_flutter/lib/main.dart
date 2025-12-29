@@ -62,7 +62,7 @@ class MyApp extends ConsumerWidget {
 
     return ToastificationWrapper( // ✅ Wrap MaterialApp with this
         child: MaterialApp.router(
-      title: 'HumAInity.ai',
+      title: 'HumAInise.ai',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light, // Set to light as per index.css

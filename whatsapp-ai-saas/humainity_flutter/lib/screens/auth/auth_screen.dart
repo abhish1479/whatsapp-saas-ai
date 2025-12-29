@@ -488,7 +488,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             children: [
               // Title
               const Text(
-                'HumAInity.ai',
+                'HumAInise.ai',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w900,

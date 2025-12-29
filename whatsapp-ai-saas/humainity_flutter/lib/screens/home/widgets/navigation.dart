@@ -62,7 +62,7 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
           ),
           const SizedBox(width: 10),
           const Text(
-            'HumAInity.ai',
+            'HumAInise.ai',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -80,17 +80,17 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
         _navItem("Features", onFeaturesTap),
         _navItem("Solutions", onSolutionsTap),
         _navItem("How It Works", onHowItWorksTap),
-        _navItem("Pricing", onPricingTap),
+        // _navItem("Pricing", onPricingTap),
         _navItem("Testimonials", onTestimonialsTap),
         TextButton(
           onPressed: () => context.go('/industries'),
           child: const Text("Industries"),
         ),
         const SizedBox(width: 10),
-        // AppButton(
-        //   text: "Get Started",
-        //   onPressed: () => context.go('/dashboard/ai-agent'),
-        // ),
+        AppButton(
+          text: "Get Started",
+          onPressed: () => context.go('/dashboard/ai-agent'),
+        ),
       ],
     );
   }

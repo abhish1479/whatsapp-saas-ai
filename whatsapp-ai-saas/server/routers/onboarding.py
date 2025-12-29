@@ -584,3 +584,40 @@ def get_tanant_id_from_receiver(receiver: str) -> int:
         print(f"Error fetching : {e}")
     finally:
         db.close()
+
+@router.get("/get_workflows_by_email")
+def get_workflows_by_email(
+        email: str,
+        db: Session = Depends(get_db),
+    ):
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    
+        workflows = db.query(Workflow).filter(Workflow.tenant_id == user.tenant_id).all()
+        return {"workflows": workflows}
+    
+@router.get("/get_templates_by_email")
+def get_templates_by_email(
+        email: str,
+        db: Session = Depends(get_db),
+    ):
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    
+        templates = db.query(Template).filter(Template.tenant_id == user.tenant_id).all()
+        return {"templates": templates}
+    
+@router.get("/get_agents_by_email")
+def get_agents_by_email(
+        email: str,
+            db: Session = Depends(get_db),
+        ):
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    
+        agents = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == user.tenant_id).all()
+        return {"agents": agents}
+	
