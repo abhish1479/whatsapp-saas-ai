@@ -153,7 +153,7 @@ class _HeroSectionState extends State<HeroSection>
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         const Text(
-          "HumAInity.ai",
+          "HumAInise.ai",
           style: TextStyle(
             color: Color(0xFF009BFF),
             fontSize: 20,

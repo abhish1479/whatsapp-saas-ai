@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             children: [
               const Text(
-                "HumAInity.ai",
+                "HumAInise.ai",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 24),
@@ -97,13 +97,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   scrollTo(howKey);
                 },
               ),
-              ListTile(
-                title: const Text("Pricing"),
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(pricingKey);
-                },
-              ),
+              // ListTile(
+              //   title: const Text("Pricing"),
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     scrollTo(pricingKey);
+              //   },
+              // ),
               ListTile(
                 title: const Text("Testimonials"),
                 onTap: () {
@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
             HowItWorksSection(key: howKey),
             FeaturesSection(key: featuresKey),
             DashboardPreviewSection(key: dashboardKey),
-            PricingSection(key: pricingKey),
+            // PricingSection(key: pricingKey),
             TestimonialsSection(key: testimonialsKey),
             FooterSection(
               key: footerKey,

@@ -89,7 +89,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'HumAInity.ai',
+                    'HumAInise.ai',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
