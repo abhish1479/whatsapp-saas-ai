@@ -584,4 +584,3 @@ def get_tanant_id_from_receiver(receiver: str) -> int:
         print(f"Error fetching : {e}")
     finally:
         db.close()
-    
