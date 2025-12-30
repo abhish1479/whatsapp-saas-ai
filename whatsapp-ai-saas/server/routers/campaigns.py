@@ -8,7 +8,7 @@ import io
 from deps import get_db
 from models import Campaign, Lead, Template
 from data_models.campaign_req_res import CampaignListResponse, CampaignDetailResponse, CampaignStatusUpdate
-from services.campaigns import CampaignService
+from services.campaigns import CampaignService, process_campaign_run_erp
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 
@@ -171,3 +171,11 @@ def change_campaign_status(
         message = "Campaign paused"
     
     return {"success": True, "message": message, "current_status": camp.status}
+
+
+@router.post("/start_campaign")
+async def start_campaign(campaign_id: str, background_tasks: BackgroundTasks):
+    # Trigger sending logic in background
+    background_tasks.add_task(process_campaign_run_erp, campaign_id)
+    
+    return {"success": True, "message": "Campaign started successfully"}
