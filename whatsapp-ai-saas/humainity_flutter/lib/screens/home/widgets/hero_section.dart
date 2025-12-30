@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart'; 
+import 'package:humainity_flutter/core/utils/responsive.dart';
 import 'package:humainity_flutter/screens/home/widgets/features_section.dart'; // This import seems unused but kept for completeness
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
-class AppColors { 
+
+class AppColors {
   static const Color primary = Color(0xFF009BFF);
 }
 
@@ -213,16 +214,17 @@ class _HeroSectionState extends State<HeroSection>
   // ---------------------------------------------------------------------------
   // RIGHT IMAGE + CHAT BUBBLES (INSIDE IMAGE CLIPPED)
   // ---------------------------------------------------------------------------
-  Widget _rightHeroImageChats(BuildContext context) { // Accepts context
+  Widget _rightHeroImageChats(BuildContext context) {
+    // Accepts context
     final isMobile = Responsive.isMobile(context);
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(40),
       child: Stack(
         children: [
           SizedBox(
             // FIX 1: Use full width on mobile, fixed width on desktop
-            width: isMobile ? double.infinity : 550, 
+            width: isMobile ? double.infinity : 550,
             height: isMobile ? 400 : 620, // Adjusted height for mobile
             child: Image.asset(
               // NOTE: Ensure this asset path is correct in your project
@@ -239,6 +241,7 @@ class _HeroSectionState extends State<HeroSection>
               "Hi! 😊 I'm your AI Sales Agent. \n How can I help you today?",
             ),
           ),
+
           /// BLUE bubble (Top Right)
           Positioned(
             top: 120,
@@ -334,7 +337,8 @@ class _HeroSectionState extends State<HeroSection>
   // ---------------------------------------------------------------------------
   // KPI SECTION
   // ---------------------------------------------------------------------------
-  Widget _buildKPISection(BuildContext context) { // Accepts context
+  Widget _buildKPISection(BuildContext context) {
+    // Accepts context
     final isMobile = Responsive.isMobile(context);
 
     // FIX 2: Use Wrap on mobile to prevent overflow
@@ -350,7 +354,7 @@ class _HeroSectionState extends State<HeroSection>
         ],
       );
     }
-    
+
     // Desktop Row layout
     return Row(
       children: [
@@ -365,15 +369,15 @@ class _HeroSectionState extends State<HeroSection>
 
   Widget _kpi(String number, String label, bool isMobile) {
     return Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
           number,
           style: const TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w900,
-            color: AppColors.primary
-          ),
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              color: AppColors.primary),
         ),
         Text(
           label,
