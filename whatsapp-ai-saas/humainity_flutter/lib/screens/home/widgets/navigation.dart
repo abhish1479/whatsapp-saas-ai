@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:humainity_flutter/config.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:humainity_flutter/core/theme/app_colors.dart';
 import 'package:humainity_flutter/widgets/ui/app_button.dart';
@@ -13,16 +14,15 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onTestimonialsTap;
   final VoidCallback? onAgentsTap;
   final VoidCallback? onExperienceTap;
-  const HomeNavigation({
-    super.key,
-    this.onFeaturesTap,
-    this.onSolutionsTap,
-    this.onHowItWorksTap,
-    this.onPricingTap,
-    this.onTestimonialsTap,
-    this.onAgentsTap,
-    this.onExperienceTap
-  });
+  const HomeNavigation(
+      {super.key,
+      this.onFeaturesTap,
+      this.onSolutionsTap,
+      this.onHowItWorksTap,
+      this.onPricingTap,
+      this.onTestimonialsTap,
+      this.onAgentsTap,
+      this.onExperienceTap});
 
   @override
   Widget build(BuildContext context) {
@@ -87,10 +87,11 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
           child: const Text("Industries"),
         ),
         const SizedBox(width: 10),
-        AppButton(
-          text: "Get Started",
-          onPressed: () => context.go('/dashboard/ai-agent'),
-        ),
+        if (!AppConfig.isDemo)
+          AppButton(
+            text: "Get Started",
+            onPressed: () => context.go('/dashboard/ai-agent'),
+          ),
       ],
     );
   }
