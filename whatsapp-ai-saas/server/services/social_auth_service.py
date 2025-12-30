@@ -11,13 +11,14 @@ from utils.google_jwt import verify_google_id_token
 from google_auth_oauthlib.flow import Flow
 from sqlalchemy.orm import Session
 from models import User, Identity
+from settings import settings
 
 load_dotenv()
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-ERP_BASE_URL = os.getenv("ERP_BASE_URL", "http://localhost:8090")
+ERP_BASE_URL = settings.ERP_URL
 
 if not all([GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI]):
     raise ValueError(

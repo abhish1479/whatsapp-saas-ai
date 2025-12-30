@@ -66,71 +66,75 @@ class _HomeScreenState extends State<HomeScreen> {
       // -------------------------------
       // MOBILE DRAWER
       // -------------------------------
-      endDrawer: Drawer(
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-            children: [
-              const Text(
-                "HumAInise.ai",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+      endDrawer: isMobile(context)
+          ? Drawer(
+              child: SafeArea(
+                child: ListView(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  children: [
+                    const Text(
+                      "HumAInise.ai",
+                      style:
+                          TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 24),
+                    ListTile(
+                      title: const Text("Features"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        scrollTo(featuresKey);
+                      },
+                    ),
+                    ListTile(
+                      title: const Text("Solutions"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        scrollTo(solutionsKey);
+                      },
+                    ),
+                    ListTile(
+                      title: const Text("How It Works"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        scrollTo(howKey);
+                      },
+                    ),
+                    // ListTile(
+                    // simran
+                    //   title: const Text("Pricing"),
+                    //   onTap: () {
+                    //     Navigator.pop(context);
+                    //     scrollTo(pricingKey);
+                    //   },
+                    // ),
+                    ListTile(
+                      title: const Text("Testimonials"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        scrollTo(testimonialsKey);
+                      },
+                    ),
+                    ListTile(
+                      title: const Text("Industries"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.go('/industries');
+                      },
+                    ),
+                    // const Divider(height: 32),
+                    // ListTile(
+                    //   title: const Text("Login"),
+                    //   onTap: () {
+                    //     Navigator.pop(context);
+                    //     context.go('/dashboard/ai-agent');
+                    //   },
+                    // ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-              ListTile(
-                title: const Text("Features"),
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(featuresKey);
-                },
-              ),
-              ListTile(
-                title: const Text("Solutions"),
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(solutionsKey);
-                },
-              ),
-              ListTile(
-                title: const Text("How It Works"),
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(howKey);
-                },
-              ),
-              // ListTile(
-              // simran
-              //   title: const Text("Pricing"),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     scrollTo(pricingKey);
-              //   },
-              // ),
-              ListTile(
-                title: const Text("Testimonials"),
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(testimonialsKey);
-                },
-              ),
-              ListTile(
-                title: const Text("Industries"),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go('/industries');
-                },
-              ),
-              // const Divider(height: 32),
-              // ListTile(
-              //   title: const Text("Login"),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     context.go('/dashboard/ai-agent');
-              //   },
-              // ),
-            ],
-          ),
-        ),
-      ),
+            )
+          : null,
 
       // -------------------------------
       // MAIN SCROLL CONTENT
