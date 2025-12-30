@@ -2,28 +2,38 @@ import 'dart:io';
 import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/ai_agent_provider.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/models/agent_config_model.dart';
-import 'package:humainity_flutter/models/ai_agent.dart'; // For presetAgents
-import 'package:humainity_flutter/widgets/ui/app_badge.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
-import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/chat_preview.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/preset_agent_card.dart';
+import 'package:humainise_ai/core/providers/ai_agent_provider.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/models/agent_config_model.dart';
+import 'package:humainise_ai/models/ai_agent.dart'; // For presetAgents
+import 'package:humainise_ai/widgets/ui/app_badge.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
+import 'package:humainise_ai/widgets/ui/app_dropdown.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
+import 'package:humainise_ai/screens/dashboard/widgets/chat_preview.dart';
+import 'package:humainise_ai/screens/dashboard/widgets/preset_agent_card.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // --- Constants ---
-const List<String> _kAccents = ['American', 'British', 'Australian', 'Indian', 'Other'];
+const List<String> _kAccents = [
+  'American',
+  'British',
+  'Australian',
+  'Indian',
+  'Other'
+];
 const List<String> _kTones = ['Professional', 'Friendly', 'Formal', 'Casual'];
 const List<String> _kLanguages = ['English', 'Spanish', 'French', 'Hindi'];
-const List<String> _kVoiceModels = ['eleven_turbo_v2_5', 'eleven_multilingual_v2', 'eleven_monolingual_v1'];
+const List<String> _kVoiceModels = [
+  'eleven_turbo_v2_5',
+  'eleven_multilingual_v2',
+  'eleven_monolingual_v1'
+];
 
 class AIAgentScreen extends ConsumerStatefulWidget {
   const AIAgentScreen({super.key});
@@ -70,13 +80,16 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final pickedFile =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
 
     if (pickedFile != null) {
       if (kIsWeb) {
         // Web logic if needed later
       } else {
-        ref.read(agentConfigProvider.notifier).setLocalImage(File(pickedFile.path));
+        ref
+            .read(agentConfigProvider.notifier)
+            .setLocalImage(File(pickedFile.path));
       }
     }
   }
@@ -101,7 +114,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
         _selectedLanguage = agent.preferredLanguages;
       }
 
-      if (agent.voiceModel != null && _kVoiceModels.contains(agent.voiceModel)) {
+      if (agent.voiceModel != null &&
+          _kVoiceModels.contains(agent.voiceModel)) {
         _selectedVoiceModel = agent.voiceModel!;
       }
 
@@ -117,7 +131,9 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
     }
 
     if (agentState.isLoading) {
-      return const Center(child: Padding(padding: EdgeInsets.all(64), child: CircularProgressIndicator()));
+      return const Center(
+          child: Padding(
+              padding: EdgeInsets.all(64), child: CircularProgressIndicator()));
     }
 
     return SingleChildScrollView(
@@ -138,11 +154,9 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
           const SizedBox(height: 24),
 
           // --- Preset Selection (Only show if Creating or explicitly Editing) ---
-          if (isEditing)
-            _buildAgentSelectionCard(context),
+          if (isEditing) _buildAgentSelectionCard(context),
 
-          if (isEditing)
-            const SizedBox(height: 24),
+          if (isEditing) const SizedBox(height: 24),
 
           // --- Main Form Area ---
           Form(
@@ -183,7 +197,9 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Live Preview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                          const Text('Live Preview',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 16),
                           Expanded(
                             child: _buildLiveBrandingPreview(agentState),
@@ -212,7 +228,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
             children: [
               Icon(LucideIcons.bot, color: AppColors.primary, size: 16),
               SizedBox(width: 8),
-              Text('Choose a Preconfigured Agent', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              Text('Choose a Preconfigured Agent',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 16),
@@ -223,7 +240,10 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                 runSpacing: 16,
                 children: presetAgents.map((agent) {
                   return SizedBox(
-                    width: isMobile(context) ? (constraints.maxWidth / 2) - 16 :(constraints.maxWidth / 4) - 16, // 2 items per row approx
+                    width: isMobile(context)
+                        ? (constraints.maxWidth / 2) - 16
+                        : (constraints.maxWidth / 4) -
+                            16, // 2 items per row approx
                     child: PresetAgentCard(
                       agent: agent,
                       isSelected: agent.id == _selectedPresetId,
@@ -234,26 +254,33 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                           _personaCtrl.text = agent.role;
 
                           // Set Defaults based on Persona Logic
-                          if (agent.id == 'agent-sarah') { // Sales
+                          if (agent.id == 'agent-sarah') {
+                            // Sales
                             _selectedTone = 'Professional';
                             _selectedVoiceModel = 'eleven_turbo_v2_5';
                             _selectedAccent = 'American';
-                            _greetingCtrl.text = "Hi, I'm Sarah! I noticed you're interested in our products. Would you like to schedule a quick demo?";
-                          } else if (agent.id == 'agent-alex') { // Support
+                            _greetingCtrl.text =
+                                "Hi, I'm Sarah! I noticed you're interested in our products. Would you like to schedule a quick demo?";
+                          } else if (agent.id == 'agent-alex') {
+                            // Support
                             _selectedTone = 'Friendly';
                             _selectedVoiceModel = 'eleven_multilingual_v2';
                             _selectedAccent = 'British';
-                            _greetingCtrl.text = "Hello there! I'm Alex. I'm here to help you get started or answer any questions you might have.";
-                          } else if (agent.id == 'agent-maya') { // Tech
+                            _greetingCtrl.text =
+                                "Hello there! I'm Alex. I'm here to help you get started or answer any questions you might have.";
+                          } else if (agent.id == 'agent-maya') {
+                            // Tech
                             _selectedTone = 'Formal';
                             _selectedVoiceModel = 'eleven_monolingual_v1';
                             _selectedAccent = 'Indian';
-                            _greetingCtrl.text = "Greetings. I am Maya, your technical support specialist. Please describe the issue you are facing.";
+                            _greetingCtrl.text =
+                                "Greetings. I am Maya, your technical support specialist. Please describe the issue you are facing.";
                           } else {
                             _selectedTone = 'Professional'; // Default
                             _selectedVoiceModel = 'eleven_turbo_v2_5';
                             _selectedAccent = 'American';
-                            _greetingCtrl.text = "Hello! How can I assist you today?";
+                            _greetingCtrl.text =
+                                "Hello! How can I assist you today?";
                           }
                         });
                       },
@@ -269,11 +296,13 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   }
 
   // --- 2. Avatar Upload (Square & Small & Responsive) ---
-  Widget _buildAvatarUploadCard(AgentState state, BuildContext context, bool isEditing) {
+  Widget _buildAvatarUploadCard(
+      AgentState state, BuildContext context, bool isEditing) {
     ImageProvider imageProvider;
     if (state.localImageFile != null) {
       imageProvider = FileImage(state.localImageFile!);
-    } else if (state.agent?.agentImage != null && state.agent!.agentImage!.isNotEmpty) {
+    } else if (state.agent?.agentImage != null &&
+        state.agent!.agentImage!.isNotEmpty) {
       imageProvider = NetworkImage(state.agent!.agentImage!);
     } else {
       imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
@@ -324,7 +353,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                 ] else
                   const Text(
                     "Visible in chat.",
-                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                    style: TextStyle(
+                        color: AppColors.mutedForeground, fontSize: 13),
                   ),
               ],
             ),
@@ -348,7 +378,9 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                 children: [
                   Icon(LucideIcons.pencil, color: AppColors.primary, size: 20),
                   SizedBox(width: 8),
-                  Text('Describe Agent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text('Describe Agent',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -364,7 +396,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                 labelText: 'Agent Persona / Role',
                 hintText: 'Describe behavior and goals...',
                 maxLines: 6,
-                validator: (v) => v!.length < 10 ? 'Description too short' : null,
+                validator: (v) =>
+                    v!.length < 10 ? 'Description too short' : null,
               ),
               if (isEditing) ...[
                 const SizedBox(height: 16),
@@ -380,7 +413,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   Widget _buildRoleTags() {
     final roleDescriptions = {
       'Sales Lead': 'Act as an aggressive sales lead qualification specialist.',
-      'Customer Support': 'Act as a kind and patient customer support representative.',
+      'Customer Support':
+          'Act as a kind and patient customer support representative.',
       'Technical Expert': 'Act as a highly knowledgeable technical expert.',
     };
 
@@ -412,9 +446,12 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(LucideIcons.slidersHorizontal, color: AppColors.primary, size: 20),
+                  Icon(LucideIcons.slidersHorizontal,
+                      color: AppColors.primary, size: 20),
                   SizedBox(width: 8),
-                  Text('Conversation Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text('Conversation Settings',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -432,8 +469,13 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                     child: AppDropdown<String>(
                       labelText: 'Tone',
                       value: _selectedTone,
-                      items: _kTones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: isEditing ? (v) => setState(() => _selectedTone = v!) : null,
+                      items: _kTones
+                          .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      onChanged: isEditing
+                          ? (v) => setState(() => _selectedTone = v!)
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -441,8 +483,13 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                     child: AppDropdown<String>(
                       labelText: 'Language',
                       value: _selectedLanguage,
-                      items: _kLanguages.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: isEditing ? (v) => setState(() => _selectedLanguage = v!) : null,
+                      items: _kLanguages
+                          .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      onChanged: isEditing
+                          ? (v) => setState(() => _selectedLanguage = v!)
+                          : null,
                     ),
                   ),
                 ],
@@ -458,8 +505,13 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                     child: AppDropdown<String>(
                       labelText: 'Voice Model',
                       value: _selectedVoiceModel,
-                      items: _kVoiceModels.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: isEditing ? (v) => setState(() => _selectedVoiceModel = v!) : null,
+                      items: _kVoiceModels
+                          .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      onChanged: isEditing
+                          ? (v) => setState(() => _selectedVoiceModel = v!)
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -471,8 +523,13 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                         AppDropdown<String>(
                           labelText: 'Voice Accent',
                           value: _selectedAccent,
-                          items: _kAccents.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                          onChanged: isEditing ? (v) => setState(() => _selectedAccent = v!) : null,
+                          items: _kAccents
+                              .map((e) =>
+                                  DropdownMenuItem(value: e, child: Text(e)))
+                              .toList(),
+                          onChanged: isEditing
+                              ? (v) => setState(() => _selectedAccent = v!)
+                              : null,
                         ),
                         if (_selectedAccent == 'Other') ...[
                           const SizedBox(height: 8),
@@ -498,7 +555,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
     ImageProvider? image;
     if (state.localImageFile != null) {
       image = FileImage(state.localImageFile!);
-    } else if (state.agent?.agentImage != null && state.agent!.agentImage!.isNotEmpty) {
+    } else if (state.agent?.agentImage != null &&
+        state.agent!.agentImage!.isNotEmpty) {
       image = NetworkImage(state.agent!.agentImage!);
     } else {
       image = const AssetImage('assets/images/agent-sarah.jpg');
@@ -522,7 +580,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
           Expanded(
             child: AppButton(
               text: 'Edit Agent',
-              onPressed: () => ref.read(agentConfigProvider.notifier).enableEditing(),
+              onPressed: () =>
+                  ref.read(agentConfigProvider.notifier).enableEditing(),
               style: AppButtonStyle.primary,
             ),
           )
@@ -558,7 +617,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
       final tenantIdStr = await store?.getTenantId();
       if (tenantIdStr == null) return;
 
-      final finalAccent = _selectedAccent == 'Other' ? _accentOtherCtrl.text : _selectedAccent;
+      final finalAccent =
+          _selectedAccent == 'Other' ? _accentOtherCtrl.text : _selectedAccent;
 
       final config = AgentConfiguration(
         id: ref.read(agentConfigProvider).agent?.id,
@@ -575,11 +635,13 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
       await ref.read(agentConfigProvider.notifier).saveAgent(config);
 
-      await ref.read(authNotifierProvider.notifier).maybeFetchOnboardingStatus();
-
+      await ref
+          .read(authNotifierProvider.notifier)
+          .maybeFetchOnboardingStatus();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     }
   }

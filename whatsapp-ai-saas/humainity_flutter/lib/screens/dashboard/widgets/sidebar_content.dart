@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
-import 'package:humainity_flutter/core/providers/chat_provider.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/providers/chat_provider.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 /// ---------------------------------------------------------------------------
 /// Onboarding status provider
 /// ---------------------------------------------------------------------------
 final onboardingStatusProvider =
-FutureProvider<Map<String, dynamic>>((ref) async {
+    FutureProvider<Map<String, dynamic>>((ref) async {
   // Recompute whenever onboardingRefreshProvider is bumped
   ref.watch(onboardingRefreshProvider);
 
@@ -176,7 +176,7 @@ class SidebarContent extends ConsumerWidget {
         Expanded(
           child: onboardingAsync.when(
             loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             error: (err, stack) => Center(
               child: Text(
                 'Failed to load menu',
@@ -203,9 +203,8 @@ class SidebarContent extends ConsumerWidget {
 
               final bool isCompleted = process == 'Completed';
 
-              final navItems = isCompleted
-                  ? completedNavigation
-                  : inProcessNavigation;
+              final navItems =
+                  isCompleted ? completedNavigation : inProcessNavigation;
 
               return ListView(
                 padding: const EdgeInsets.all(12),
@@ -217,7 +216,7 @@ class SidebarContent extends ConsumerWidget {
                   ],
                   ...navItems.map((item) {
                     final bool isActive =
-                    currentLocation.startsWith(item['href'] as String);
+                        currentLocation.startsWith(item['href'] as String);
 
                     bool completed = false;
                     bool clickable = false;
@@ -261,7 +260,7 @@ class SidebarContent extends ConsumerWidget {
                         completed: completed,
                         clickable: clickable,
                         showStepIndicator:
-                        item['showStepIndicator'] as bool? ?? true,
+                            item['showStepIndicator'] as bool? ?? true,
                       ),
                     );
                   }).toList(),
@@ -316,15 +315,15 @@ class SidebarContent extends ConsumerWidget {
 
   // ---------- NAV ITEM ----------
   static Widget _buildNavItem(
-      BuildContext context, {
-        required IconData icon,
-        required String text,
-        required String href,
-        required bool isActive,
-        required bool completed,
-        required bool clickable,
-        bool showStepIndicator = true,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required String href,
+    required bool isActive,
+    required bool completed,
+    required bool clickable,
+    bool showStepIndicator = true,
+  }) {
     final bool disabled = !clickable;
     final Color itemColor = disabled
         ? AppColors.mutedForeground.withOpacity(0.3)
@@ -336,11 +335,11 @@ class SidebarContent extends ConsumerWidget {
       child: InkWell(
         onTap: clickable
             ? () {
-          if (Responsive.isMobile(context)) {
-            Navigator.of(context).pop();
-          }
-          context.go(href);
-        }
+                if (Responsive.isMobile(context)) {
+                  Navigator.of(context).pop();
+                }
+                context.go(href);
+              }
             : null,
         borderRadius: BorderRadius.circular(8.0),
         hoverColor: clickable

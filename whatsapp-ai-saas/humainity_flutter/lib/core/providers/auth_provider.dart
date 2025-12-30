@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/repositories/auth_repository.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/repositories/auth_repository.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -66,7 +66,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     streamController.add(newState);
   }
 
-   Future<void> maybeFetchOnboardingStatus() async {
+  Future<void> maybeFetchOnboardingStatus() async {
     if (_storeUserData == null) return;
     final onboardingProcess = await _storeUserData!.getOnboardingProcess();
     if (onboardingProcess == 'Completed') return;

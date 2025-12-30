@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/models/customer.dart';
-import 'package:humainity_flutter/models/customer_campaign.dart';
-import 'package:humainity_flutter/models/engagement.dart';
-import 'package:humainity_flutter/models/payment.dart';
-import 'package:humainity_flutter/models/saved_filter_list.dart';
-import 'package:humainity_flutter/repositories/crm_repository.dart';
-import 'package:humainity_flutter/core/providers/supabase_provider.dart'; // We still need this to create the repo provider
+import 'package:humainise_ai/models/customer.dart';
+import 'package:humainise_ai/models/customer_campaign.dart';
+import 'package:humainise_ai/models/engagement.dart';
+import 'package:humainise_ai/models/payment.dart';
+import 'package:humainise_ai/models/saved_filter_list.dart';
+import 'package:humainise_ai/repositories/crm_repository.dart';
+import 'package:humainise_ai/core/providers/supabase_provider.dart'; // We still need this to create the repo provider
 
 // 1. State (Unchanged)
 class CrmState {
@@ -62,7 +62,8 @@ class CrmNotifier extends StateNotifier<CrmState> {
   final Ref _ref;
   final CrmRepository _repository; // *** REFACTOR ***
 
-  CrmNotifier(this._ref, this._repository) : super(CrmState()) { // *** REFACTOR ***
+  CrmNotifier(this._ref, this._repository) : super(CrmState()) {
+    // *** REFACTOR ***
     loadInitialData();
   }
 
@@ -121,7 +122,7 @@ class CrmNotifier extends StateNotifier<CrmState> {
     try {
       // *** REFACTOR ***
       final updatedCustomer =
-      await _repository.updateCustomerStatus(customerId, newStatus);
+          await _repository.updateCustomerStatus(customerId, newStatus);
       state = state.copyWith(
           customers: state.customers
               .map((c) => c.id == customerId ? updatedCustomer : c)
@@ -139,15 +140,18 @@ class CrmNotifier extends StateNotifier<CrmState> {
       final paymentsFuture = _repository.fetchPayments(customerId);
       final campaignsFuture = _repository.fetchCampaigns(customerId);
 
-      final results =
-      await Future.wait([engagementsFuture, paymentsFuture, campaignsFuture]);
+      final results = await Future.wait(
+          [engagementsFuture, paymentsFuture, campaignsFuture]);
 
       final engagements = results[0] as List<Engagement>;
       final payments = results[1] as List<Payment>;
       final campaigns = results[2] as List<CustomerCampaign>;
 
       state = state.copyWith(
-        previewEngagements: {...state.previewEngagements, customerId: engagements},
+        previewEngagements: {
+          ...state.previewEngagements,
+          customerId: engagements
+        },
         previewPayments: {...state.previewPayments, customerId: payments},
         previewCampaigns: {...state.previewCampaigns, customerId: campaigns},
       );
@@ -167,11 +171,10 @@ class CrmNotifier extends StateNotifier<CrmState> {
         ...state.previewEngagements[customerId] ?? []
       ];
 
-      state = state.copyWith(
-          previewEngagements: {
-            ...state.previewEngagements,
-            customerId: updatedEngagements
-          });
+      state = state.copyWith(previewEngagements: {
+        ...state.previewEngagements,
+        customerId: updatedEngagements
+      });
       // Also refetch customer list to update total_interactions
       await fetchCustomers();
     } catch (e) {

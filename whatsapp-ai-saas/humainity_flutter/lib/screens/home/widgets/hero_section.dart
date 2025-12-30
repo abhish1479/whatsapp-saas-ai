@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/screens/home/widgets/features_section.dart'; // This import seems unused but kept for completeness
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/screens/home/widgets/features_section.dart'; // This import seems unused but kept for completeness
+import 'package:humainise_ai/widgets/ui/app_button.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF009BFF);

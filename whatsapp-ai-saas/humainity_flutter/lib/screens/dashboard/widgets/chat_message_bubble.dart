@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart'; // ADDED for rich text
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/widgets/ui/app_avatar.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,14 +24,14 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final alignment =
-    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+        isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final color = isUser ? AppColors.primary : AppColors.card;
     final textColor =
-    isUser ? AppColors.primaryForeground : AppColors.cardForeground;
+        isUser ? AppColors.primaryForeground : AppColors.cardForeground;
 
     return Row(
       mainAxisAlignment:
-      isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!isUser) ...[
@@ -48,7 +48,7 @@ class ChatMessageBubble extends StatelessWidget {
             children: [
               Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.only(
@@ -68,7 +68,7 @@ class ChatMessageBubble extends StatelessWidget {
                   data: message,
                   selectable: true,
                   styleSheet:
-                  MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                      MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                     p: TextStyle(color: textColor, fontSize: 14),
                   ),
                   onTapLink: (text, href, title) {
@@ -105,9 +105,9 @@ class ChatMessageBubble extends StatelessWidget {
                                 padding: const EdgeInsets.all(8.0),
                                 child: CircularProgressIndicator(
                                   value: loadingProgress.expectedTotalBytes !=
-                                      null
+                                          null
                                       ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
+                                          loadingProgress.expectedTotalBytes!
                                       : null,
                                 ),
                               ),

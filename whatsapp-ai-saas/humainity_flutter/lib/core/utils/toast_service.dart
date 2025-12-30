@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/routing/app_router.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart'; // Ensure this import is correct
+import 'package:humainise_ai/core/routing/app_router.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart'; // Ensure this import is correct
 import 'package:toastification/toastification.dart';
 
 class ToastService {
-
   static void showError(String message) {
     _showToast(
       message: message,
@@ -37,9 +36,8 @@ class ToastService {
     // 2. Responsive Alignment Logic
     // Web/Desktop -> Top Right
     // Mobile -> Top Center
-    final alignment = Responsive.isMobile(context)
-        ? Alignment.topCenter
-        : Alignment.topRight;
+    final alignment =
+        Responsive.isMobile(context) ? Alignment.topCenter : Alignment.topRight;
 
     toastification.show(
       context: context,

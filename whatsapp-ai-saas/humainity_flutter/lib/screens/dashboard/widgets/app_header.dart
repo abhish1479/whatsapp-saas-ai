@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'go_live_dialog.dart'; // Import the new dialog
 import 'sidebar_content.dart';
@@ -28,7 +28,8 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
       }
 
       // Logic to enable button if steps are done but not yet 'Completed'
-      final stepsMap = Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
+      final stepsMap =
+          Map<String, dynamic>.from(status['onboarding_steps'] ?? {});
       final step1 = stepsMap['AI_Agent_Configuration'] == true;
       final step2 = stepsMap['Knowledge_Base_Ingestion'] == true;
       final step3 = stepsMap['template_Messages_Setup'] == true;
@@ -61,11 +62,11 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                 // Enable button only if steps are done
                 onPressed: goLiveEnabled
                     ? () => showDialog(
-                    context: context,
-                    builder: (_) => const GoLiveDialog()
-                )
+                        context: context, builder: (_) => const GoLiveDialog())
                     : null,
-                style: goLiveEnabled ? AppButtonStyle.primary : AppButtonStyle.secondary,
+                style: goLiveEnabled
+                    ? AppButtonStyle.primary
+                    : AppButtonStyle.secondary,
               ),
             )
           else

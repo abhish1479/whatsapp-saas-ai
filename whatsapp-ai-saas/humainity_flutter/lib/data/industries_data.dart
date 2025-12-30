@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/data/industry_model.dart';
+import 'package:humainise_ai/data/industry_model.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // Helper function needed for IndustryDetailScreen.fromRoute
@@ -33,7 +33,6 @@ const Color _telecomColor = Color(0xFF64748B);
 const Color _constructionColor = Color(0xFFA16207);
 const Color _professionalColor = Color(0xFF0D9488);
 
-
 // This is the complete conversion of your industries.ts file
 const List<Industry> industries = [
   // 1. Education & Coaching
@@ -42,7 +41,8 @@ const List<Industry> industries = [
     name: "Education & Coaching",
     icon: LucideIcons.graduationCap,
     tagline: "Transform Learning with AI-Powered Communication",
-    description: "Automate admissions, counselling, class reminders, and test prep follow-ups with intelligent conversational AI.",
+    description:
+        "Automate admissions, counselling, class reminders, and test prep follow-ups with intelligent conversational AI.",
     challenges: [
       "Manual follow-up with prospective students leads to missed enrollments",
       "Difficulty managing multiple batches and schedules",
@@ -66,10 +66,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hi! 👋 Interested in our coaching programs? Reply YES to explore courses."},
-      {"step": 2, "message": "Great! We offer: 1️⃣ JEE/NEET 2️⃣ UPSC 3️⃣ CA Foundation. Which interests you?", "response": "1"},
-      {"step": 3, "message": "Perfect! Our JEE batch starts next month. Would you like to: 📅 Book a demo class or 💬 Talk to a counselor?", "response": "Book demo"},
-      {"step": 4, "message": "Demo booked for Saturday 10 AM! Check your WhatsApp for the meeting link. See you there! 🎓"}
+      {
+        "step": 1,
+        "message":
+            "Hi! 👋 Interested in our coaching programs? Reply YES to explore courses."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! We offer: 1️⃣ JEE/NEET 2️⃣ UPSC 3️⃣ CA Foundation. Which interests you?",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Our JEE batch starts next month. Would you like to: 📅 Book a demo class or 💬 Talk to a counselor?",
+        "response": "Book demo"
+      },
+      {
+        "step": 4,
+        "message":
+            "Demo booked for Saturday 10 AM! Check your WhatsApp for the meeting link. See you there! 🎓"
+      }
     ],
     integrations: [
       "Learning Management Systems (LMS)",
@@ -86,14 +104,15 @@ const List<Industry> industries = [
     ],
     color: _educationColor,
   ),
-  
+
   // 2. Healthcare & Wellness
   Industry(
     id: "healthcare-wellness",
     name: "Healthcare & Wellness",
     icon: LucideIcons.heart,
     tagline: "Deliver Care with Empathy and Automation",
-    description: "Streamline appointments, teleconsultation, and patient reminders while maintaining the human touch.",
+    description:
+        "Streamline appointments, teleconsultation, and patient reminders while maintaining the human touch.",
     challenges: [
       "High no-show rates for appointments affecting revenue",
       "Manual appointment booking consuming staff time",
@@ -117,10 +136,27 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! 🏥 Need to book an appointment with Dr. Sharma? Reply YES."},
-      {"step": 2, "message": "Available slots: 1️⃣ Today 5 PM 2️⃣ Tomorrow 11 AM 3️⃣ Friday 3 PM. Choose one:", "response": "2"},
-      {"step": 3, "message": "Confirmed! Tomorrow at 11 AM with Dr. Sharma. You'll receive a reminder 2 hours before. 📅"},
-      {"step": 4, "message": "Quick reminder: Your appointment is in 2 hours. Clinic address: XYZ Medical Center. See you soon! 👨‍⚕️"}
+      {
+        "step": 1,
+        "message":
+            "Hello! 🏥 Need to book an appointment with Dr. Sharma? Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Available slots: 1️⃣ Today 5 PM 2️⃣ Tomorrow 11 AM 3️⃣ Friday 3 PM. Choose one:",
+        "response": "2"
+      },
+      {
+        "step": 3,
+        "message":
+            "Confirmed! Tomorrow at 11 AM with Dr. Sharma. You'll receive a reminder 2 hours before. 📅"
+      },
+      {
+        "step": 4,
+        "message":
+            "Quick reminder: Your appointment is in 2 hours. Clinic address: XYZ Medical Center. See you soon! 👨‍⚕️"
+      }
     ],
     integrations: [
       "Hospital Management Systems",
@@ -137,14 +173,15 @@ const List<Industry> industries = [
     ],
     color: _healthcareColor,
   ),
-  
+
   // 3. Real Estate & Property
   Industry(
     id: "real-estate",
     name: "Real Estate & Property",
     icon: LucideIcons.home,
     tagline: "Convert Leads Faster with Intelligent Automation",
-    description: "Manage property inquiries, schedule site visits, and nurture leads with AI-powered conversations.",
+    description:
+        "Manage property inquiries, schedule site visits, and nurture leads with AI-powered conversations.",
     challenges: [
       "High lead volume but low conversion rates",
       "Manual follow-ups causing delayed responses",
@@ -168,10 +205,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hi! 🏡 Interested in our new residential project? Reply YES for details."},
-      {"step": 2, "message": "Great! We have 2BHK & 3BHK apartments starting at ₹45L. Would you like to: 📸 See photos or 📅 Schedule a site visit?", "response": "Site visit"},
-      {"step": 3, "message": "Perfect! Available slots: 1️⃣ Saturday 11 AM 2️⃣ Sunday 4 PM. Choose one:", "response": "1"},
-      {"step": 4, "message": "Site visit confirmed for Saturday 11 AM! Our agent will meet you at the project location. Looking forward to seeing you! 🏗️"}
+      {
+        "step": 1,
+        "message":
+            "Hi! 🏡 Interested in our new residential project? Reply YES for details."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! We have 2BHK & 3BHK apartments starting at ₹45L. Would you like to: 📸 See photos or 📅 Schedule a site visit?",
+        "response": "Site visit"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Available slots: 1️⃣ Saturday 11 AM 2️⃣ Sunday 4 PM. Choose one:",
+        "response": "1"
+      },
+      {
+        "step": 4,
+        "message":
+            "Site visit confirmed for Saturday 11 AM! Our agent will meet you at the project location. Looking forward to seeing you! 🏗️"
+      }
     ],
     integrations: [
       "CRM Systems",
@@ -188,14 +243,15 @@ const List<Industry> industries = [
     ],
     color: _realEstateColor,
   ),
-  
+
   // 4. Retail & Ecommerce
   Industry(
     id: "retail-ecommerce",
     name: "Retail & Ecommerce",
     icon: LucideIcons.shoppingCart,
     tagline: "Deliver Exceptional Shopping Experiences at Scale",
-    description: "Automate order tracking, promotions, and feedback collection while personalizing customer interactions.",
+    description:
+        "Automate order tracking, promotions, and feedback collection while personalizing customer interactions.",
     challenges: [
       "High cart abandonment rates affecting revenue",
       "Manual order status queries overwhelming support teams",
@@ -219,10 +275,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hi! 🛍️ You left items in your cart. Complete your order now and get 10% OFF! Interested?", "response": "Yes"},
-      {"step": 2, "message": "Awesome! Here's your cart: 1x Blue Denim Jacket (₹1,999). Total: ₹1,799 after discount. Proceed to payment?", "response": "Yes"},
-      {"step": 3, "message": "Payment options: 1️⃣ UPI 2️⃣ Card 3️⃣ COD. Choose one:", "response": "1"},
-      {"step": 4, "message": "Order confirmed! 🎉 Your jacket will arrive by Thursday. Track here: [link]. Thank you for shopping with us!"}
+      {
+        "step": 1,
+        "message":
+            "Hi! 🛍️ You left items in your cart. Complete your order now and get 10% OFF! Interested?",
+        "response": "Yes"
+      },
+      {
+        "step": 2,
+        "message":
+            "Awesome! Here's your cart: 1x Blue Denim Jacket (₹1,999). Total: ₹1,799 after discount. Proceed to payment?",
+        "response": "Yes"
+      },
+      {
+        "step": 3,
+        "message": "Payment options: 1️⃣ UPI 2️⃣ Card 3️⃣ COD. Choose one:",
+        "response": "1"
+      },
+      {
+        "step": 4,
+        "message":
+            "Order confirmed! 🎉 Your jacket will arrive by Thursday. Track here: [link]. Thank you for shopping with us!"
+      }
     ],
     integrations: [
       "Ecommerce Platforms (Shopify, WooCommerce)",
@@ -239,14 +313,15 @@ const List<Industry> industries = [
     ],
     color: _retailColor,
   ),
-  
+
   // 5. Finance & Insurance
   Industry(
     id: "finance-insurance",
     name: "Finance & Insurance",
     icon: LucideIcons.dollarSign,
     tagline: "Build Trust Through Timely, Transparent Communication",
-    description: "Automate loan applications, claims processing, and payment reminders with compliant AI communication.",
+    description:
+        "Automate loan applications, claims processing, and payment reminders with compliant AI communication.",
     challenges: [
       "High dropout rates during loan application process",
       "Manual follow-ups for EMI payments causing delays",
@@ -270,10 +345,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! 💰 Need a personal loan? Check your pre-approved offer instantly. Reply YES."},
-      {"step": 2, "message": "Great news! You're pre-approved for up to ₹5 lakhs at 10.5% p.a. Loan amount needed?", "response": "3 lakhs"},
-      {"step": 3, "message": "Perfect! EMI: ₹9,950/month for 36 months. Upload documents: 1️⃣ PAN 2️⃣ Aadhaar 3️⃣ Salary slips. Start?", "response": "Yes"},
-      {"step": 4, "message": "Documents received! ✅ Your application is under review. You'll get approval within 24 hours. We'll keep you updated! 🏦"}
+      {
+        "step": 1,
+        "message":
+            "Hello! 💰 Need a personal loan? Check your pre-approved offer instantly. Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great news! You're pre-approved for up to ₹5 lakhs at 10.5% p.a. Loan amount needed?",
+        "response": "3 lakhs"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! EMI: ₹9,950/month for 36 months. Upload documents: 1️⃣ PAN 2️⃣ Aadhaar 3️⃣ Salary slips. Start?",
+        "response": "Yes"
+      },
+      {
+        "step": 4,
+        "message":
+            "Documents received! ✅ Your application is under review. You'll get approval within 24 hours. We'll keep you updated! 🏦"
+      }
     ],
     integrations: [
       "Core Banking Systems",
@@ -290,14 +383,15 @@ const List<Industry> industries = [
     ],
     color: _financeColor,
   ),
-  
+
   // 6. Travel & Hospitality
   Industry(
     id: "travel-hospitality",
     name: "Travel & Hospitality",
     icon: LucideIcons.plane,
     tagline: "Create Memorable Journeys from Booking to Feedback",
-    description: "Automate bookings, cancellations, check-in reminders, and feedback with personalized guest communication.",
+    description:
+        "Automate bookings, cancellations, check-in reminders, and feedback with personalized guest communication.",
     challenges: [
       "High booking cancellation rates without proper reminders",
       "Manual check-in processes causing guest wait times",
@@ -321,10 +415,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Welcome! ✈️ Your booking at Ocean View Resort is confirmed! Check-in: June 15. Excited?", "response": "Yes!"},
-      {"step": 2, "message": "Fantastic! 🌴 Pre-check-in questions: 1️⃣ Room preference? 2️⃣ Special occasions? 3️⃣ Dietary requirements?", "response": "Sea view, Anniversary"},
-      {"step": 3, "message": "Perfect! We'll arrange a sea-view room with anniversary décor. 🎉 Any other special requests?"},
-      {"step": 4, "message": "24 hours to your stay! Check-in after 2 PM. Resort address: [link]. Have a wonderful journey! 🏖️"}
+      {
+        "step": 1,
+        "message":
+            "Welcome! ✈️ Your booking at Ocean View Resort is confirmed! Check-in: June 15. Excited?",
+        "response": "Yes!"
+      },
+      {
+        "step": 2,
+        "message":
+            "Fantastic! 🌴 Pre-check-in questions: 1️⃣ Room preference? 2️⃣ Special occasions? 3️⃣ Dietary requirements?",
+        "response": "Sea view, Anniversary"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! We'll arrange a sea-view room with anniversary décor. 🎉 Any other special requests?"
+      },
+      {
+        "step": 4,
+        "message":
+            "24 hours to your stay! Check-in after 2 PM. Resort address: [link]. Have a wonderful journey! 🏖️"
+      }
     ],
     integrations: [
       "Property Management Systems",
@@ -341,14 +453,15 @@ const List<Industry> industries = [
     ],
     color: _travelColor,
   ),
-  
+
   // 7. NGO & Community Services
   Industry(
     id: "ngo-community",
     name: "NGO & Community Services",
     icon: LucideIcons.users,
     tagline: "Amplify Your Impact with Automated Outreach",
-    description: "Manage donors, coordinate volunteers, and organize events with efficient, heartfelt communication.",
+    description:
+        "Manage donors, coordinate volunteers, and organize events with efficient, heartfelt communication.",
     challenges: [
       "Low donor retention and repeat contributions",
       "Difficulty coordinating volunteer schedules and events",
@@ -372,10 +485,29 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! 🤝 Thank you for your interest in our education program. Would you like to: 💰 Donate or 👋 Volunteer?", "response": "Donate"},
-      {"step": 2, "message": "Wonderful! Your donation helps educate underprivileged children. Amount: 1️⃣ ₹500 2️⃣ ₹1000 3️⃣ Custom", "response": "2"},
-      {"step": 3, "message": "Thank you! ₹1,000 can provide books for 5 children. 💳 Payment link: [link]. Complete donation?", "response": "Done"},
-      {"step": 4, "message": "🙏 Thank you for your generosity! Your contribution will change lives. Tax receipt sent via email. Stay connected for updates! ❤️"}
+      {
+        "step": 1,
+        "message":
+            "Hello! 🤝 Thank you for your interest in our education program. Would you like to: 💰 Donate or 👋 Volunteer?",
+        "response": "Donate"
+      },
+      {
+        "step": 2,
+        "message":
+            "Wonderful! Your donation helps educate underprivileged children. Amount: 1️⃣ ₹500 2️⃣ ₹1000 3️⃣ Custom",
+        "response": "2"
+      },
+      {
+        "step": 3,
+        "message":
+            "Thank you! ₹1,000 can provide books for 5 children. 💳 Payment link: [link]. Complete donation?",
+        "response": "Done"
+      },
+      {
+        "step": 4,
+        "message":
+            "🙏 Thank you for your generosity! Your contribution will change lives. Tax receipt sent via email. Stay connected for updates! ❤️"
+      }
     ],
     integrations: [
       "Donation Platforms",
@@ -392,14 +524,15 @@ const List<Industry> industries = [
     ],
     color: _ngoColor,
   ),
-  
+
   // 8. Automobile & Service Centers
   Industry(
     id: "automobile",
     name: "Automobile & Service Centers",
     icon: LucideIcons.car,
     tagline: "Drive Customer Loyalty with Proactive Service",
-    description: "Automate test drives, service reminders, and feedback collection for enhanced customer relationships.",
+    description:
+        "Automate test drives, service reminders, and feedback collection for enhanced customer relationships.",
     challenges: [
       "Low test drive conversion rates due to poor follow-up",
       "Missed service appointments affecting revenue",
@@ -423,10 +556,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hi! 🚗 Interested in test driving the new XUV700? Book your slot now! Reply YES."},
-      {"step": 2, "message": "Great! Available slots: 1️⃣ Today 4 PM 2️⃣ Tomorrow 11 AM 3️⃣ Saturday 10 AM. Choose:", "response": "3"},
-      {"step": 3, "message": "Booked! Saturday 10 AM at our showroom. Please bring your driving license. Excited to see you! 🏎️"},
-      {"step": 4, "message": "Thanks for the test drive! 🌟 How was your experience? Would you like to: 📋 Check financing options or 💬 Speak to sales advisor?", "response": "Financing"}
+      {
+        "step": 1,
+        "message":
+            "Hi! 🚗 Interested in test driving the new XUV700? Book your slot now! Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! Available slots: 1️⃣ Today 4 PM 2️⃣ Tomorrow 11 AM 3️⃣ Saturday 10 AM. Choose:",
+        "response": "3"
+      },
+      {
+        "step": 3,
+        "message":
+            "Booked! Saturday 10 AM at our showroom. Please bring your driving license. Excited to see you! 🏎️"
+      },
+      {
+        "step": 4,
+        "message":
+            "Thanks for the test drive! 🌟 How was your experience? Would you like to: 📋 Check financing options or 💬 Speak to sales advisor?",
+        "response": "Financing"
+      }
     ],
     integrations: [
       "Dealership Management Systems",
@@ -443,14 +594,15 @@ const List<Industry> industries = [
     ],
     color: _automobileColor,
   ),
-  
+
   // 9. Manufacturing & Distribution
   Industry(
     id: "manufacturing",
     name: "Manufacturing & Distribution",
     icon: LucideIcons.factory,
     tagline: "Streamline B2B Communication and Order Processing",
-    description: "Automate order forms, dealer communication, and inventory updates for efficient supply chain management.",
+    description:
+        "Automate order forms, dealer communication, and inventory updates for efficient supply chain management.",
     challenges: [
       "Manual order processing causing delays and errors",
       "Poor communication with dealers and distributors",
@@ -474,10 +626,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! 📦 Welcome to our dealer portal. Need to place an order? Reply with product code."},
-      {"step": 2, "message": "Product: Steel Rods - Grade A. Available: 500 units @ ₹450/unit. Quantity needed?", "response": "200"},
-      {"step": 3, "message": "Order summary: 200 units = ₹90,000. Dispatch: 3-5 days. Confirm order?", "response": "Yes"},
-      {"step": 4, "message": "Order confirmed! 🎉 Order ID: #MFG12345. You'll receive dispatch details soon. Invoice sent via email. Thank you!"}
+      {
+        "step": 1,
+        "message":
+            "Hello! 📦 Welcome to our dealer portal. Need to place an order? Reply with product code."
+      },
+      {
+        "step": 2,
+        "message":
+            "Product: Steel Rods - Grade A. Available: 500 units @ ₹450/unit. Quantity needed?",
+        "response": "200"
+      },
+      {
+        "step": 3,
+        "message":
+            "Order summary: 200 units = ₹90,000. Dispatch: 3-5 days. Confirm order?",
+        "response": "Yes"
+      },
+      {
+        "step": 4,
+        "message":
+            "Order confirmed! 🎉 Order ID: #MFG12345. You'll receive dispatch details soon. Invoice sent via email. Thank you!"
+      }
     ],
     integrations: [
       "ERP Systems",
@@ -494,14 +664,15 @@ const List<Industry> industries = [
     ],
     color: _manufacturingColor,
   ),
-  
+
   // 10. IT & SaaS Companies
   Industry(
     id: "it-saas",
     name: "IT & SaaS Companies",
     icon: LucideIcons.code,
     tagline: "Nurture Leads and Onboard Users with Intelligence",
-    description: "Automate lead nurturing, support ticketing, and user onboarding for scalable customer success.",
+    description:
+        "Automate lead nurturing, support ticketing, and user onboarding for scalable customer success.",
     challenges: [
       "High lead volume but low trial-to-paid conversion",
       "Manual onboarding causing poor activation rates",
@@ -525,10 +696,29 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Welcome to CloudFlow! 🚀 Your free trial is active. Need help getting started?", "response": "Yes"},
-      {"step": 2, "message": "Great! Quick start: 1️⃣ Connect your data 2️⃣ Create workflow 3️⃣ Deploy automation. Which first?", "response": "1"},
-      {"step": 3, "message": "Perfect! Click here to connect: [link]. Video tutorial: [link]. Need a demo call?", "response": "No, thanks"},
-      {"step": 4, "message": "Awesome progress! 🎉 You've created 3 workflows. Your trial ends in 5 days. Ready to upgrade? Special offer inside! 💎"}
+      {
+        "step": 1,
+        "message":
+            "Welcome to CloudFlow! 🚀 Your free trial is active. Need help getting started?",
+        "response": "Yes"
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! Quick start: 1️⃣ Connect your data 2️⃣ Create workflow 3️⃣ Deploy automation. Which first?",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Click here to connect: [link]. Video tutorial: [link]. Need a demo call?",
+        "response": "No, thanks"
+      },
+      {
+        "step": 4,
+        "message":
+            "Awesome progress! 🎉 You've created 3 workflows. Your trial ends in 5 days. Ready to upgrade? Special offer inside! 💎"
+      }
     ],
     integrations: [
       "CRM Systems",
@@ -545,14 +735,15 @@ const List<Industry> industries = [
     ],
     color: _itSaasColor,
   ),
-  
+
   // 11. Events & Entertainment
   Industry(
     id: "events-entertainment",
     name: "Events & Entertainment",
     icon: LucideIcons.calendar,
     tagline: "Create Unforgettable Experiences with Seamless Communication",
-    description: "Automate ticketing, RSVPs, campaign outreach, and feedback for successful event management.",
+    description:
+        "Automate ticketing, RSVPs, campaign outreach, and feedback for successful event management.",
     challenges: [
       "Low RSVP and attendance rates for events",
       "Manual ticketing and registration processes",
@@ -576,11 +767,33 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "🎭 Comedy Night with Kumar! 🎤 April 20, 7 PM. Tickets selling fast! Interested?", "response": "Yes!"},
-      {"step": 2, "message": "Awesome! Tickets: 1️⃣ Silver ₹499 2️⃣ Gold ₹799 3️⃣ Platinum ₹1,299. Choose:", "response": "2"},
-      {"step": 3, "message": "Gold ticket selected! Quantity?", "response": "2"},
-      {"step": 4, "message": "Total: ₹1,598 for 2 Gold tickets. Payment link: [link]. Complete booking now! ⚡"},
-      {"step": 5, "message": "🎉 Booking confirmed! E-tickets sent. Event: April 20, 7 PM. Show this at entry. See you there! 🎊"}
+      {
+        "step": 1,
+        "message":
+            "🎭 Comedy Night with Kumar! 🎤 April 20, 7 PM. Tickets selling fast! Interested?",
+        "response": "Yes!"
+      },
+      {
+        "step": 2,
+        "message":
+            "Awesome! Tickets: 1️⃣ Silver ₹499 2️⃣ Gold ₹799 3️⃣ Platinum ₹1,299. Choose:",
+        "response": "2"
+      },
+      {
+        "step": 3,
+        "message": "Gold ticket selected! Quantity?",
+        "response": "2"
+      },
+      {
+        "step": 4,
+        "message":
+            "Total: ₹1,598 for 2 Gold tickets. Payment link: [link]. Complete booking now! ⚡"
+      },
+      {
+        "step": 5,
+        "message":
+            "🎉 Booking confirmed! E-tickets sent. Event: April 20, 7 PM. Show this at entry. See you there! 🎊"
+      }
     ],
     integrations: [
       "Ticketing Platforms",
@@ -597,14 +810,15 @@ const List<Industry> industries = [
     ],
     color: _eventsColor,
   ),
-  
+
   // 12. Government & Public Services
   Industry(
     id: "government-public",
     name: "Government & Public Services",
     icon: LucideIcons.building,
     tagline: "Empower Citizens with Transparent, Accessible Services",
-    description: "Automate citizen queries, grievance handling, and service notifications for responsive governance.",
+    description:
+        "Automate citizen queries, grievance handling, and service notifications for responsive governance.",
     challenges: [
       "High volume of citizen queries overwhelming helplines",
       "Delayed grievance resolution affecting public trust",
@@ -628,10 +842,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Welcome to Citizen Services! 🏛️ How can we help? 1️⃣ Birth Certificate 2️⃣ Property Tax 3️⃣ File Complaint", "response": "1"},
-      {"step": 2, "message": "Birth Certificate application: Required docs: 1️⃣ Hospital certificate 2️⃣ Parents' ID. Ready to apply?", "response": "Yes"},
-      {"step": 3, "message": "Upload documents here: [link]. Application fee: ₹50. You'll receive certificate in 7 days. 📄"},
-      {"step": 4, "message": "Application received! ✅ Application ID: BC12345. Track status: [link]. Thank you for using our service! 🙏"}
+      {
+        "step": 1,
+        "message":
+            "Welcome to Citizen Services! 🏛️ How can we help? 1️⃣ Birth Certificate 2️⃣ Property Tax 3️⃣ File Complaint",
+        "response": "1"
+      },
+      {
+        "step": 2,
+        "message":
+            "Birth Certificate application: Required docs: 1️⃣ Hospital certificate 2️⃣ Parents' ID. Ready to apply?",
+        "response": "Yes"
+      },
+      {
+        "step": 3,
+        "message":
+            "Upload documents here: [link]. Application fee: ₹50. You'll receive certificate in 7 days. 📄"
+      },
+      {
+        "step": 4,
+        "message":
+            "Application received! ✅ Application ID: BC12345. Track status: [link]. Thank you for using our service! 🙏"
+      }
     ],
     integrations: [
       "Citizen Portal Systems",
@@ -648,14 +880,15 @@ const List<Industry> industries = [
     ],
     color: _governmentColor,
   ),
-  
+
   // 13. Logistics & Supply Chain
   Industry(
     id: "logistics-supply",
     name: "Logistics & Supply Chain",
     icon: LucideIcons.truck,
     tagline: "Deliver Transparency from Pickup to Doorstep",
-    description: "Automate pickup scheduling, tracking updates, and delivery alerts for seamless logistics operations.",
+    description:
+        "Automate pickup scheduling, tracking updates, and delivery alerts for seamless logistics operations.",
     challenges: [
       "Poor shipment visibility causing customer anxiety",
       "Failed deliveries due to unavailability",
@@ -679,10 +912,27 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Your shipment #LOG56789 is out for delivery! 📦 Expected by 5 PM today. Track: [link]"},
-      {"step": 2, "message": "Delivery partner is 3 stops away! 🚚 Will you be available to receive?", "response": "Yes"},
-      {"step": 3, "message": "Perfect! Your package will arrive in 15-20 minutes. Please keep your phone handy. 📱"},
-      {"step": 4, "message": "Package delivered successfully! ✅ Please rate your experience: ⭐⭐⭐⭐⭐. Thank you for choosing us! 🙏"}
+      {
+        "step": 1,
+        "message":
+            "Your shipment #LOG56789 is out for delivery! 📦 Expected by 5 PM today. Track: [link]"
+      },
+      {
+        "step": 2,
+        "message":
+            "Delivery partner is 3 stops away! 🚚 Will you be available to receive?",
+        "response": "Yes"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Your package will arrive in 15-20 minutes. Please keep your phone handy. 📱"
+      },
+      {
+        "step": 4,
+        "message":
+            "Package delivered successfully! ✅ Please rate your experience: ⭐⭐⭐⭐⭐. Thank you for choosing us! 🙏"
+      }
     ],
     integrations: [
       "Shipping Management Systems",
@@ -699,14 +949,15 @@ const List<Industry> industries = [
     ],
     color: _logisticsColor,
   ),
-  
+
   // 14. Beauty, Fitness & Lifestyle
   Industry(
     id: "beauty-fitness",
     name: "Beauty, Fitness & Lifestyle",
     icon: LucideIcons.dumbbell,
     tagline: "Build Lasting Relationships Through Personalized Engagement",
-    description: "Automate appointments, membership renewals, and feedback collection for wellness businesses.",
+    description:
+        "Automate appointments, membership renewals, and feedback collection for wellness businesses.",
     challenges: [
       "High no-show rates for appointments impacting revenue",
       "Manual membership renewal follow-ups causing lapses",
@@ -730,10 +981,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hi! 💆‍♀️ Ready to book your next spa session? Reply YES for available slots."},
-      {"step": 2, "message": "Available services: 1️⃣ Swedish Massage 2️⃣ Aromatherapy 3️⃣ Deep Tissue. Choose:", "response": "1"},
-      {"step": 3, "message": "Swedish Massage - 60 mins ₹1,500. Available: 1️⃣ Today 3 PM 2️⃣ Tomorrow 11 AM. Pick slot:", "response": "2"},
-      {"step": 4, "message": "Booked! 🎉 Tomorrow 11 AM. Therapist: Sarah. We'll send reminder. Looking forward to pampering you! ✨"}
+      {
+        "step": 1,
+        "message":
+            "Hi! 💆‍♀️ Ready to book your next spa session? Reply YES for available slots."
+      },
+      {
+        "step": 2,
+        "message":
+            "Available services: 1️⃣ Swedish Massage 2️⃣ Aromatherapy 3️⃣ Deep Tissue. Choose:",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message":
+            "Swedish Massage - 60 mins ₹1,500. Available: 1️⃣ Today 3 PM 2️⃣ Tomorrow 11 AM. Pick slot:",
+        "response": "2"
+      },
+      {
+        "step": 4,
+        "message":
+            "Booked! 🎉 Tomorrow 11 AM. Therapist: Sarah. We'll send reminder. Looking forward to pampering you! ✨"
+      }
     ],
     integrations: [
       "Salon/Spa Management Software",
@@ -750,14 +1019,15 @@ const List<Industry> industries = [
     ],
     color: _fitnessColor,
   ),
-  
+
   // 15. Education Institutions (Schools)
   Industry(
     id: "education-institutions",
     name: "Education Institutions",
     icon: LucideIcons.school,
     tagline: "Strengthen School-Parent Communication at Scale",
-    description: "Automate enquiry handling, parent communication, and administrative notifications for schools and universities.",
+    description:
+        "Automate enquiry handling, parent communication, and administrative notifications for schools and universities.",
     challenges: [
       "Overwhelming admission inquiries during peak season",
       "Poor parent engagement in student activities",
@@ -781,10 +1051,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Welcome to Greenwood School! 🎓 Interested in admission for 2025-26? Reply YES."},
-      {"step": 2, "message": "Great! We offer: 1️⃣ Primary (1-5) 2️⃣ Middle (6-8) 3️⃣ High School (9-12). Which grade?", "response": "1"},
-      {"step": 3, "message": "Perfect! Primary admission open. Schedule campus tour? 1️⃣ This Saturday 2️⃣ Next Sunday", "response": "1"},
-      {"step": 4, "message": "Campus tour booked for Saturday 10 AM! 🏫 Bring your child along. Address: [link]. See you soon! 📚"}
+      {
+        "step": 1,
+        "message":
+            "Welcome to Greenwood School! 🎓 Interested in admission for 2025-26? Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! We offer: 1️⃣ Primary (1-5) 2️⃣ Middle (6-8) 3️⃣ High School (9-12). Which grade?",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Primary admission open. Schedule campus tour? 1️⃣ This Saturday 2️⃣ Next Sunday",
+        "response": "1"
+      },
+      {
+        "step": 4,
+        "message":
+            "Campus tour booked for Saturday 10 AM! 🏫 Bring your child along. Address: [link]. See you soon! 📚"
+      }
     ],
     integrations: [
       "Student Information Systems",
@@ -801,14 +1089,15 @@ const List<Industry> industries = [
     ],
     color: _schoolColor,
   ),
-  
+
   // 16. Legal & Consulting Firms
   Industry(
     id: "legal-consulting",
     name: "Legal & Consulting Firms",
     icon: LucideIcons.scale,
     tagline: "Professionalize Client Communication and Document Management",
-    description: "Automate appointment scheduling, document sharing, and client updates for professional services.",
+    description:
+        "Automate appointment scheduling, document sharing, and client updates for professional services.",
     challenges: [
       "Manual appointment scheduling consuming billable hours",
       "Delayed client updates affecting satisfaction",
@@ -832,10 +1121,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! ⚖️ Need legal consultation? Book appointment with our specialists. Reply YES."},
-      {"step": 2, "message": "Practice areas: 1️⃣ Corporate Law 2️⃣ Family Law 3️⃣ Property Law 4️⃣ Tax. Choose:", "response": "1"},
-      {"step": 3, "message": "Corporate Law - Senior Partner available. 1️⃣ Thu 2 PM 2️⃣ Fri 4 PM. Select slot:", "response": "1"},
-      {"step": 4, "message": "Confirmed! 📅 Thursday 2 PM. Office address: [link]. Please bring relevant documents. See you! 💼"}
+      {
+        "step": 1,
+        "message":
+            "Hello! ⚖️ Need legal consultation? Book appointment with our specialists. Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Practice areas: 1️⃣ Corporate Law 2️⃣ Family Law 3️⃣ Property Law 4️⃣ Tax. Choose:",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message":
+            "Corporate Law - Senior Partner available. 1️⃣ Thu 2 PM 2️⃣ Fri 4 PM. Select slot:",
+        "response": "1"
+      },
+      {
+        "step": 4,
+        "message":
+            "Confirmed! 📅 Thursday 2 PM. Office address: [link]. Please bring relevant documents. See you! 💼"
+      }
     ],
     integrations: [
       "Case Management Software",
@@ -852,14 +1159,15 @@ const List<Industry> industries = [
     ],
     color: _legalColor,
   ),
-  
+
   // 17. Hospitality & Restaurants
   Industry(
     id: "hospitality-restaurants",
     name: "Hospitality & Restaurants",
     icon: LucideIcons.utensilsCrossed,
     tagline: "Serve Excellence from Reservation to Review",
-    description: "Automate table bookings, menu requests, and feedback collection for exceptional dining experiences.",
+    description:
+        "Automate table bookings, menu requests, and feedback collection for exceptional dining experiences.",
     challenges: [
       "High no-show rates for table reservations",
       "Manual order taking during peak hours causing delays",
@@ -883,10 +1191,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Welcome to Spice Garden! 🍽️ Book a table for today? Reply YES."},
-      {"step": 2, "message": "Great! Party size and preferred time? (e.g., 4 people, 8 PM)", "response": "4 people, 8 PM"},
-      {"step": 3, "message": "Perfect! Table for 4 at 8 PM. 1️⃣ Indoor AC 2️⃣ Rooftop. Preference?", "response": "2"},
-      {"step": 4, "message": "Rooftop table confirmed! ✨ Reservation ID: RES789. Address: [link]. See you at 8 PM! 🌟"}
+      {
+        "step": 1,
+        "message":
+            "Welcome to Spice Garden! 🍽️ Book a table for today? Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! Party size and preferred time? (e.g., 4 people, 8 PM)",
+        "response": "4 people, 8 PM"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Table for 4 at 8 PM. 1️⃣ Indoor AC 2️⃣ Rooftop. Preference?",
+        "response": "2"
+      },
+      {
+        "step": 4,
+        "message":
+            "Rooftop table confirmed! ✨ Reservation ID: RES789. Address: [link]. See you at 8 PM! 🌟"
+      }
     ],
     integrations: [
       "Restaurant Management Systems",
@@ -903,14 +1229,15 @@ const List<Industry> industries = [
     ],
     color: _restaurantColor,
   ),
-  
+
   // 18. Telecom & Utilities
   Industry(
     id: "telecom-utilities",
     name: "Telecom & Utilities",
     icon: LucideIcons.phone,
     tagline: "Resolve Issues Faster with Proactive Communication",
-    description: "Automate complaint handling, bill payments, and service alerts for utility providers.",
+    description:
+        "Automate complaint handling, bill payments, and service alerts for utility providers.",
     challenges: [
       "High call volumes overwhelming customer service centers",
       "Delayed bill payment reminders causing revenue loss",
@@ -934,10 +1261,26 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! 📱 Your bill of ₹699 is due on June 30. Pay now to avoid disconnection. Reply PAY."},
-      {"step": 2, "message": "Payment options: 1️⃣ UPI 2️⃣ Card 3️⃣ Net Banking. Choose:", "response": "1"},
-      {"step": 3, "message": "UPI payment link: [link]. Amount: ₹699. Complete payment now. ⚡"},
-      {"step": 4, "message": "Payment received! ✅ Thank you! New recharge valid till July 30. Need help? Reply HELP anytime. 🙏"}
+      {
+        "step": 1,
+        "message":
+            "Hello! 📱 Your bill of ₹699 is due on June 30. Pay now to avoid disconnection. Reply PAY."
+      },
+      {
+        "step": 2,
+        "message": "Payment options: 1️⃣ UPI 2️⃣ Card 3️⃣ Net Banking. Choose:",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message":
+            "UPI payment link: [link]. Amount: ₹699. Complete payment now. ⚡"
+      },
+      {
+        "step": 4,
+        "message":
+            "Payment received! ✅ Thank you! New recharge valid till July 30. Need help? Reply HELP anytime. 🙏"
+      }
     ],
     integrations: [
       "Billing Systems",
@@ -954,14 +1297,15 @@ const List<Industry> industries = [
     ],
     color: _telecomColor,
   ),
-  
+
   // 19. Construction & Interior Design
   Industry(
     id: "construction-interior",
     name: "Construction & Interior Design",
     icon: LucideIcons.hardHat,
     tagline: "Build Trust Through Transparent Project Communication",
-    description: "Automate site visit scheduling, quotation sharing, and project updates for construction businesses.",
+    description:
+        "Automate site visit scheduling, quotation sharing, and project updates for construction businesses.",
     challenges: [
       "Poor client communication during project execution",
       "Manual quotation processes causing delays",
@@ -985,10 +1329,27 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hi! 🏗️ Interested in interior design for your 3BHK? Get free consultation! Reply YES."},
-      {"step": 2, "message": "Awesome! When would you like our designer to visit? 1️⃣ This weekend 2️⃣ Next week", "response": "1"},
-      {"step": 3, "message": "Perfect! Saturday or Sunday? Morning or evening?", "response": "Saturday morning"},
-      {"step": 4, "message": "Site visit scheduled! 📅 Saturday 10 AM. Our designer will bring portfolio and samples. Address please?"}
+      {
+        "step": 1,
+        "message":
+            "Hi! 🏗️ Interested in interior design for your 3BHK? Get free consultation! Reply YES."
+      },
+      {
+        "step": 2,
+        "message":
+            "Awesome! When would you like our designer to visit? 1️⃣ This weekend 2️⃣ Next week",
+        "response": "1"
+      },
+      {
+        "step": 3,
+        "message": "Perfect! Saturday or Sunday? Morning or evening?",
+        "response": "Saturday morning"
+      },
+      {
+        "step": 4,
+        "message":
+            "Site visit scheduled! 📅 Saturday 10 AM. Our designer will bring portfolio and samples. Address please?"
+      }
     ],
     integrations: [
       "Project Management Software",
@@ -1005,14 +1366,15 @@ const List<Industry> industries = [
     ],
     color: _constructionColor,
   ),
-  
+
   // 20. Professional Services (CA/HR/Training)
   Industry(
     id: "professional-services",
     name: "Professional Services (CA/HR/Training)",
     icon: LucideIcons.briefcase,
     tagline: "Scale Your Practice with Automated Client Management",
-    description: "Automate onboarding, consultation scheduling, and form collection for CAs, HR firms, and training providers.",
+    description:
+        "Automate onboarding, consultation scheduling, and form collection for CAs, HR firms, and training providers.",
     challenges: [
       "High volume of client inquiries during compliance seasons",
       "Manual document collection causing processing delays",
@@ -1036,10 +1398,28 @@ const List<Industry> industries = [
       ]
     },
     conversationFlow: [
-      {"step": 1, "message": "Hello! 💼 Need help with ITR filing? Our CA can assist. Reply YES for details."},
-      {"step": 2, "message": "Great! ITR filing package: ₹999 (Salary) | ₹2,499 (Business). Which applies to you?", "response": "Salary"},
-      {"step": 3, "message": "Perfect! Documents needed: 1️⃣ Form 16 2️⃣ Bank statements 3️⃣ Investment proofs. Ready to share?", "response": "Yes"},
-      {"step": 4, "message": "Upload here: [secure link]. Processing time: 2-3 days. You'll receive filed ITR acknowledgment. Let's get started! 📊"}
+      {
+        "step": 1,
+        "message":
+            "Hello! 💼 Need help with ITR filing? Our CA can assist. Reply YES for details."
+      },
+      {
+        "step": 2,
+        "message":
+            "Great! ITR filing package: ₹999 (Salary) | ₹2,499 (Business). Which applies to you?",
+        "response": "Salary"
+      },
+      {
+        "step": 3,
+        "message":
+            "Perfect! Documents needed: 1️⃣ Form 16 2️⃣ Bank statements 3️⃣ Investment proofs. Ready to share?",
+        "response": "Yes"
+      },
+      {
+        "step": 4,
+        "message":
+            "Upload here: [secure link]. Processing time: 2-3 days. You'll receive filed ITR acknowledgment. Let's get started! 📊"
+      }
     ],
     integrations: [
       "Practice Management Software",

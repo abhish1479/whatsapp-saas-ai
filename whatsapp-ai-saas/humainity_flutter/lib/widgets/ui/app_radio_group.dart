@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 
 // *** ADD THIS CLASS ***
 // This class holds the data for each radio button
@@ -39,7 +39,9 @@ class AppRadioGroup<T> extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8.0),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.input,
+                color: isSelected
+                    ? AppColors.primary.withOpacity(0.1)
+                    : AppColors.input,
                 border: Border.all(
                   color: isSelected ? AppColors.primary : AppColors.border,
                 ),

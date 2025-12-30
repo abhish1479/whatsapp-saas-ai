@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 Color getStatusColor(String? status) {

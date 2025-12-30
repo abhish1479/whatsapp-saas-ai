@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
-import 'package:humainity_flutter/core/providers/business_profile_provider.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/models/business_profile.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/providers/business_profile_provider.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/models/business_profile.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_dropdown.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 const List<String> _kIndustryList = [
-  'Technology', 'Retail & E-commerce', 'Healthcare', 'Real Estate',
-  'Education', 'Financial Services', 'Hospitality', 'Automotive', 'Other'
+  'Technology',
+  'Retail & E-commerce',
+  'Healthcare',
+  'Real Estate',
+  'Education',
+  'Financial Services',
+  'Hospitality',
+  'Automotive',
+  'Other'
 ];
 
 class GoLiveDialog extends ConsumerStatefulWidget {
@@ -62,17 +69,24 @@ class _GoLiveDialogState extends ConsumerState<GoLiveDialog> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: const BoxDecoration(
                 color: AppColors.secondary,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16)),
               ),
               child: Column(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.rocket, size: 32, color: AppColors.primary),
+                    decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.rocket,
+                        size: 32, color: AppColors.primary),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Activate Your Agent', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text('Activate Your Agent',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -93,15 +107,24 @@ class _GoLiveDialogState extends ConsumerState<GoLiveDialog> {
                       AppDropdown<String>(
                         labelText: 'Industry',
                         value: _selectedIndustry,
-                        items: _kIndustryList.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                        onChanged: (val) { if (val != null) setState(() => _selectedIndustry = val); },
+                        items: _kIndustryList
+                            .map((e) =>
+                                DropdownMenuItem(value: e, child: Text(e)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null)
+                            setState(() => _selectedIndustry = val);
+                        },
                       ),
                       if (_selectedIndustry == 'Other') ...[
                         const SizedBox(height: 12),
                         AppTextField(
                           controller: _otherIndustryCtrl,
                           labelText: 'Specify Industry',
-                          validator: (v) => _selectedIndustry == 'Other' && (v == null || v.isEmpty) ? 'Required' : null,
+                          validator: (v) => _selectedIndustry == 'Other' &&
+                                  (v == null || v.isEmpty)
+                              ? 'Required'
+                              : null,
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -109,8 +132,11 @@ class _GoLiveDialogState extends ConsumerState<GoLiveDialog> {
                         controller: _whatsappCtrl,
                         labelText: 'Business WhatsApp Number',
                         keyboardType: TextInputType.phone,
-                        prefixIcon: const Icon(LucideIcons.messageCircle, size: 16),
-                        validator: (v) => (v == null || v.length < 10) ? 'Invalid number' : null,
+                        prefixIcon:
+                            const Icon(LucideIcons.messageCircle, size: 16),
+                        validator: (v) => (v == null || v.length < 10)
+                            ? 'Invalid number'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
@@ -118,7 +144,9 @@ class _GoLiveDialogState extends ConsumerState<GoLiveDialog> {
                         labelText: 'Personal WhatsApp Number',
                         keyboardType: TextInputType.phone,
                         prefixIcon: const Icon(LucideIcons.phone, size: 16),
-                        validator: (v) => (v == null || v.length < 10) ? 'Invalid number' : null,
+                        validator: (v) => (v == null || v.length < 10)
+                            ? 'Invalid number'
+                            : null,
                       ),
                     ],
                   ),
@@ -164,7 +192,9 @@ class _GoLiveDialogState extends ConsumerState<GoLiveDialog> {
       final tenantIdStr = await store?.getTenantId();
       if (tenantIdStr == null) throw Exception("Tenant ID not found.");
 
-      final finalIndustry = _selectedIndustry == 'Other' ? _otherIndustryCtrl.text.trim() : _selectedIndustry;
+      final finalIndustry = _selectedIndustry == 'Other'
+          ? _otherIndustryCtrl.text.trim()
+          : _selectedIndustry;
 
       final payload = BusinessProfileCreate(
         tenantId: int.parse(tenantIdStr),
@@ -186,17 +216,22 @@ class _GoLiveDialogState extends ConsumerState<GoLiveDialog> {
       }
 
       // 4. ✅ Refresh Auth State (Optional, double check)
-      await ref.read(authNotifierProvider.notifier).maybeFetchOnboardingStatus();
+      await ref
+          .read(authNotifierProvider.notifier)
+          .maybeFetchOnboardingStatus();
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Agent Activated! Dashboard updated.'), backgroundColor: Colors.green),
+          const SnackBar(
+              content: Text('✅ Agent Activated! Dashboard updated.'),
+              backgroundColor: Colors.green),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

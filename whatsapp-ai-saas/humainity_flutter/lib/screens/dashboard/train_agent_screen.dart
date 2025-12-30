@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/chat_provider.dart';
-import 'package:humainity_flutter/core/providers/supabase_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart'; // FIX: Added import
-import 'package:humainity_flutter/models/guardrail.dart';
+import 'package:humainise_ai/core/providers/chat_provider.dart';
+import 'package:humainise_ai/core/providers/supabase_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart'; // FIX: Added import
+import 'package:humainise_ai/models/guardrail.dart';
 // FIX: Removed conflicting import
-// import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
-import 'package:humainity_flutter/widgets/ui/app_badge.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
-import 'package:humainity_flutter/widgets/ui/app_dialog.dart';
-import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
+// import 'package:humainise_ai/screens/dashboard/widgets/chat_message_bubble.dart';
+import 'package:humainise_ai/widgets/ui/app_badge.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
+import 'package:humainise_ai/widgets/ui/app_dialog.dart';
+import 'package:humainise_ai/widgets/ui/app_dropdown.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:humainity_flutter/widgets/ui/app_avatar.dart';
+import 'package:humainise_ai/widgets/ui/app_avatar.dart';
 
 // FIX: Added missing GuardrailsNotifier class
 class GuardrailsNotifier extends StateNotifier<List<Guardrail>> {
@@ -262,7 +262,8 @@ class _TrainAgentScreenState extends ConsumerState<TrainAgentScreen> {
               // FIX: Replaced variant: AppButtonVariant.destructive with setting the destructive color
               color: AppColors.destructive,
               icon: const Icon(LucideIcons.trash2), // FIX: Wrapped in Icon()
-              onPressed: () => ref.read(agentPreviewChatProvider.notifier).clearChat(),
+              onPressed: () =>
+                  ref.read(agentPreviewChatProvider.notifier).clearChat(),
             ),
           ),
         ],

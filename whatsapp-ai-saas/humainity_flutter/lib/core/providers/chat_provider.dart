@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/repositories/chat_repository.dart';
+import 'package:humainise_ai/repositories/chat_repository.dart';
 
 import '../storage/store_user_data.dart';
 
@@ -99,7 +99,7 @@ class AgentPreviewChatNotifier extends StateNotifier<ChatState> {
 // 4. Provider
 // RENAMED provider for clarity
 final agentPreviewChatProvider =
-StateNotifierProvider<AgentPreviewChatNotifier, ChatState>((ref) {
+    StateNotifierProvider<AgentPreviewChatNotifier, ChatState>((ref) {
   final chatRepository = ref.watch(chatRepositoryProvider);
   final storeUserData = ref.watch(storeUserDataProvider);
   return AgentPreviewChatNotifier(chatRepository, storeUserData!);

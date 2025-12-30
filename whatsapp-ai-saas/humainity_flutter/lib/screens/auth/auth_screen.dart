@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 
 // Google / Firebase
 import 'package:firebase_auth/firebase_auth.dart';
@@ -294,8 +294,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       label: 'Password',
                       icon: Icons.lock_outline_rounded,
                       obscureText: _obscurePassword,
-                      onToggleVisibility: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
+                      onToggleVisibility: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Enter password';
                         if (v.length < 6) return 'At least 6 characters';
@@ -432,7 +432,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         Icon(
           icon,
           size: 24,
-          color: const Color(0xFFE0F2FE), // Light blue/white icon on dark background
+          color: const Color(
+              0xFFE0F2FE), // Light blue/white icon on dark background
         ),
         const SizedBox(width: 12),
         Flexible(
@@ -537,13 +538,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   _buildFeatureItem(
                     icon: Icons.auto_awesome_outlined,
                     title: 'Hyper-Personalization',
-                    subtitle: 'Tailor every customer interaction with deep learning models.',
+                    subtitle:
+                        'Tailor every customer interaction with deep learning models.',
                   ),
                   const Divider(color: Color(0xFF475569), height: 30),
                   _buildFeatureItem(
                     icon: Icons.flash_on_outlined,
                     title: 'Instant Deployment',
-                    subtitle: 'Integrate agents into your workflow in minutes, not weeks.',
+                    subtitle:
+                        'Integrate agents into your workflow in minutes, not weeks.',
                   ),
                 ],
               ),
@@ -599,7 +602,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         // --- Login Form Panel (Light background for contrast) ---
                         Expanded(
                           child: Container(
-                            color: const Color(0xFFF8FAFC), // Nearly white background
+                            color: const Color(
+                                0xFFF8FAFC), // Nearly white background
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.all(40),
                               child: _buildFormCard(context, authState),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 Future<T?> showAppDialog<T>({
@@ -23,11 +23,14 @@ Future<T?> showAppDialog<T>({
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             if (description != null) ...[
               const SizedBox(height: 4),
               DefaultTextStyle(
-                style: const TextStyle(fontSize: 14, color: AppColors.mutedForeground),
+                style: const TextStyle(
+                    fontSize: 14, color: AppColors.mutedForeground),
                 child: description,
               ),
             ],

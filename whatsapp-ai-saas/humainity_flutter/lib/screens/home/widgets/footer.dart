@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
 
 class FooterSection extends StatelessWidget {
   final VoidCallback? onFeaturesTap;
@@ -36,11 +36,9 @@ class FooterSection extends StatelessWidget {
                 isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
             children: [
               isMobile ? _mobileLayout() : _desktopLayout(),
-
               const SizedBox(height: 50),
               Container(height: 1, color: const Color(0xFFE6EAF1)),
               const SizedBox(height: 24),
-
               _bottomBar(),
             ],
           ),
@@ -54,9 +52,7 @@ class FooterSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Expanded(flex: 4, child: _LogoColumn()),
-
         const SizedBox(width: 90),
-
         Expanded(
           flex: 2,
           child: _FooterColumn(
@@ -67,12 +63,11 @@ class FooterSection extends StatelessWidget {
               "Solutions": onSolutionsTap,
               "How It Works": onHowItWorksTap,
               // "Pricing": onPricingTap,
-              "Testimonials" : onTestimonialsTap,
+              "Testimonials": onTestimonialsTap,
               "Experience Demo": onExperienceTap,
             },
           ),
         ),
-
         const Expanded(flex: 3, child: _GetInTouchColumn()),
       ],
     );
@@ -84,7 +79,6 @@ class FooterSection extends StatelessWidget {
       children: [
         const _GetInTouchColumn(center: true),
         const SizedBox(height: 40),
-
         _FooterColumn(
           title: "Product",
           center: true,
@@ -167,9 +161,7 @@ class _LogoColumn extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 18),
-
         const Text(
           "Where Human Care Meets AI Efficiency. Automate customer support and sales outreach with AI that talks, sells & supports — 24×7.",
           style: TextStyle(
@@ -178,9 +170,7 @@ class _LogoColumn extends StatelessWidget {
             color: Color(0xFF5F6C7A),
           ),
         ),
-
         const SizedBox(height: 26),
-
         const Row(
           children: [
             _HoverIconButton(
@@ -200,6 +190,7 @@ class _LogoColumn extends StatelessWidget {
     );
   }
 }
+
 class _HoverIconButton extends StatefulWidget {
   final IconData icon;
   final String url;
@@ -220,8 +211,8 @@ class _HoverIconButtonState extends State<_HoverIconButton> {
       onEnter: (_) => setState(() => hover = true),
       onExit: (_) => setState(() => hover = false),
       child: GestureDetector(
-        onTap: () =>
-            launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication),
+        onTap: () => launchUrl(Uri.parse(widget.url),
+            mode: LaunchMode.externalApplication),
         child: AnimatedScale(
           scale: hover ? 1.12 : 1.0,
           duration: const Duration(milliseconds: 150),
@@ -239,6 +230,7 @@ class _HoverIconButtonState extends State<_HoverIconButton> {
     );
   }
 }
+
 class _FooterColumn extends StatelessWidget {
   final String title;
   final bool center;
@@ -265,7 +257,6 @@ class _FooterColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-
         for (final entry in items.entries)
           _HoverTextLink(
             label: entry.key,
@@ -276,6 +267,7 @@ class _FooterColumn extends StatelessWidget {
     );
   }
 }
+
 class _HoverTextLink extends StatefulWidget {
   final String label;
   final VoidCallback? onTap;
@@ -347,28 +339,24 @@ class _GetInTouchColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-
         const _HoverLinkRow(
           icon: LucideIcons.mail,
           label: "Dheeraj.khatter@mymobiforce.com",
           url: "mailto:Dheeraj.khatter@mymobiforce.com",
         ),
         const SizedBox(height: 12),
-
         const _HoverLinkRow(
           icon: LucideIcons.phone,
           label: "+91-9871777715",
           url: "tel:+919871777715",
         ),
         const SizedBox(height: 12),
-
         const _HoverLinkRow(
           icon: LucideIcons.messageCircle,
           label: "WhatsApp Support",
           url: "https://wa.me/919871777715",
         ),
         const SizedBox(height: 12),
-
         Row(
           mainAxisAlignment: rowAlign,
           children: const [
@@ -414,8 +402,8 @@ class _HoverLinkRowState extends State<_HoverLinkRow> {
       onEnter: (_) => setState(() => hover = true),
       onExit: (_) => setState(() => hover = false),
       child: GestureDetector(
-        onTap: () =>
-            launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication),
+        onTap: () => launchUrl(Uri.parse(widget.url),
+            mode: LaunchMode.externalApplication),
         child: Row(
           children: [
             Icon(
@@ -428,7 +416,8 @@ class _HoverLinkRowState extends State<_HoverLinkRow> {
               widget.label,
               style: TextStyle(
                 fontSize: 16,
-                color: hover ? const Color(0xFF0BA5EC) : const Color(0xFF0F172A),
+                color:
+                    hover ? const Color(0xFF0BA5EC) : const Color(0xFF0F172A),
                 fontWeight: hover ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

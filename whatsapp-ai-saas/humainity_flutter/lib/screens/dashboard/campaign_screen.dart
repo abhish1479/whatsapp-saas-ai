@@ -3,18 +3,18 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/campaigns_provider.dart';
-import 'package:humainity_flutter/core/providers/templates_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/status_helpers.dart';
-import 'package:humainity_flutter/models/campaign.dart';
-import 'package:humainity_flutter/widgets/ui/app_badge.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
-import 'package:humainity_flutter/widgets/ui/app_dialog.dart';
-import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
-import 'package:humainity_flutter/widgets/ui/app_radio_group.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
+import 'package:humainise_ai/core/providers/campaigns_provider.dart';
+import 'package:humainise_ai/core/providers/templates_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/status_helpers.dart';
+import 'package:humainise_ai/models/campaign.dart';
+import 'package:humainise_ai/widgets/ui/app_badge.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
+import 'package:humainise_ai/widgets/ui/app_dialog.dart';
+import 'package:humainise_ai/widgets/ui/app_dropdown.dart';
+import 'package:humainise_ai/widgets/ui/app_radio_group.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class CampaignScreen extends ConsumerStatefulWidget {
@@ -206,7 +206,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
         Text(
           '$label: $value',
           style:
-          const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+              const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
       ],
     );
@@ -269,13 +269,13 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
 
     try {
       await ref.read(campaignsProvider.notifier).createCampaign(
-        name: _name,
-        description: _description,
-        channel: _channel,
-        templateId: _templateId != null ? int.parse(_templateId!) : null,
-        runImmediate: _runImmediate,
-        file: _selectedFile!,
-      );
+            name: _name,
+            description: _description,
+            channel: _channel,
+            templateId: _templateId != null ? int.parse(_templateId!) : null,
+            runImmediate: _runImmediate,
+            file: _selectedFile!,
+          );
       widget.onSubmit();
       if (!mounted) return;
 
@@ -285,7 +285,6 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Campaign created successfully')),
       );
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -302,8 +301,8 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
     final templates = templatesState.outboundTemplates;
 
     final templateItems = templates
-        .map((t) => DropdownMenuItem(
-        value: t.id.toString(), child: Text(t.name)))
+        .map((t) =>
+            DropdownMenuItem(value: t.id.toString(), child: Text(t.name)))
         .toList();
 
     return Form(

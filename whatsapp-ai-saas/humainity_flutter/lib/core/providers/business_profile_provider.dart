@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/models/business_profile.dart';
-import 'package:humainity_flutter/repositories/business_profile_repository.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/models/business_profile.dart';
+import 'package:humainise_ai/repositories/business_profile_repository.dart';
 
 // --- State Class ---
 class BusinessProfileState {
@@ -84,7 +84,7 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
 
 // --- Provider Definition ---
 final businessProfileProvider =
-StateNotifierProvider<BusinessProfileNotifier, BusinessProfileState>((ref) {
+    StateNotifierProvider<BusinessProfileNotifier, BusinessProfileState>((ref) {
   final repo = ref.watch(businessProfileRepositoryProvider);
   final store = ref.watch(storeUserDataProvider);
   return BusinessProfileNotifier(repo, store);

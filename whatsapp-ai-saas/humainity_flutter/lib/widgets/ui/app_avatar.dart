@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 
 class AppAvatar extends StatelessWidget {
   final String? imageUrl;
@@ -21,13 +21,13 @@ class AppAvatar extends StatelessWidget {
       backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
       child: imageUrl == null
           ? Text(
-        fallbackText?.substring(0, 1).toUpperCase() ?? '?',
-        style: TextStyle(
-          color: AppColors.primary,
-          fontWeight: FontWeight.bold,
-          fontSize: radius * 0.8,
-        ),
-      )
+              fallbackText?.substring(0, 1).toUpperCase() ?? '?',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: radius * 0.8,
+              ),
+            )
           : null,
     );
   }

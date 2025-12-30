@@ -2,33 +2,34 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
-import 'package:humainity_flutter/screens/auth/auth_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/actions_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/agent_preview_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/ai_agent_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/campaign_detail_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/campaign_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/crm_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/customer_detail_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/dashboard_home_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/dashboard_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/forms_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/integrations_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/knowledge_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/settings_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/templates_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/train_agent_screen.dart';
-import 'package:humainity_flutter/screens/home/home_screen.dart';
-import 'package:humainity_flutter/screens/home/widgets/experience_demo_screen.dart';
-import 'package:humainity_flutter/screens/industries/industries_screen.dart';
-import 'package:humainity_flutter/screens/industries/industry_detail_screen.dart';
-import 'package:humainity_flutter/screens/not_found_screen.dart';
-import 'package:humainity_flutter/screens/dashboard/mini_crm_screen.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/screens/auth/auth_screen.dart';
+import 'package:humainise_ai/screens/dashboard/actions_screen.dart';
+import 'package:humainise_ai/screens/dashboard/agent_preview_screen.dart';
+import 'package:humainise_ai/screens/dashboard/ai_agent_screen.dart';
+import 'package:humainise_ai/screens/dashboard/campaign_detail_screen.dart';
+import 'package:humainise_ai/screens/dashboard/campaign_screen.dart';
+import 'package:humainise_ai/screens/dashboard/crm_screen.dart';
+import 'package:humainise_ai/screens/dashboard/customer_detail_screen.dart';
+import 'package:humainise_ai/screens/dashboard/dashboard_home_screen.dart';
+import 'package:humainise_ai/screens/dashboard/dashboard_screen.dart';
+import 'package:humainise_ai/screens/dashboard/forms_screen.dart';
+import 'package:humainise_ai/screens/dashboard/integrations_screen.dart';
+import 'package:humainise_ai/screens/dashboard/knowledge_screen.dart';
+import 'package:humainise_ai/screens/dashboard/settings_screen.dart';
+import 'package:humainise_ai/screens/dashboard/templates_screen.dart';
+import 'package:humainise_ai/screens/dashboard/train_agent_screen.dart';
+import 'package:humainise_ai/screens/home/home_screen.dart';
+import 'package:humainise_ai/screens/home/widgets/experience_demo_screen.dart';
+import 'package:humainise_ai/screens/industries/industries_screen.dart';
+import 'package:humainise_ai/screens/industries/industry_detail_screen.dart';
+import 'package:humainise_ai/screens/not_found_screen.dart';
+import 'package:humainise_ai/screens/dashboard/mini_crm_screen.dart';
 
 import '../../screens/dashboard/widgets/iframe_view.dart.dart'; // NEW Import
 
-final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'root');
 
 final _shellNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'DashboardShell');
@@ -51,18 +52,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       final bool isLoggedIn = authState.isAuthenticated;
       final String location = state.matchedLocation;
       // Define public routes that should be inaccessible when logged in
-      final bool isPublicRoute = location == '/' || location == '/auth' || location == '/industries';
+      final bool isPublicRoute =
+          location == '/' || location == '/auth' || location == '/industries';
       final bool isDashboardRoute = location.startsWith('/dashboard');
       // 2. If NOT logged in, redirect dashboard routes to auth.
       if (!isLoggedIn && isDashboardRoute) {
         return '/auth';
       }
-     // 3. If IS logged in, redirect public routes ('/' and '/auth') to dashboard.
+      // 3. If IS logged in, redirect public routes ('/' and '/auth') to dashboard.
       if (isLoggedIn && isPublicRoute) {
         return '/dashboard/ai-agent';
       }
 
-      return null; 
+      return null;
     },
 
     routes: [
@@ -79,8 +81,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const IndustriesScreen(),
       ),
       GoRoute(
-        path: '/industries/:id', 
-        builder: (context, state) => IndustryDetailScreen.fromRoute(context, state),
+        path: '/industries/:id',
+        builder: (context, state) =>
+            IndustryDetailScreen.fromRoute(context, state),
       ),
       GoRoute(
         path: '/experience-demo',

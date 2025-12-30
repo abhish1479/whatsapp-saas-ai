@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:humainity_flutter/repositories/mini_crm_repository.dart';
+import 'package:humainise_ai/repositories/mini_crm_repository.dart';
 
 // General provider for handling session-based iframe links
-final sessionLinkProvider = AsyncNotifierProvider.autoDispose<SessionLinkNotifier, void>(() {
+final sessionLinkProvider =
+    AsyncNotifierProvider.autoDispose<SessionLinkNotifier, void>(() {
   return SessionLinkNotifier();
 });
 

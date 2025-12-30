@@ -1,8 +1,8 @@
-import 'package:humainity_flutter/models/customer.dart';
-import 'package:humainity_flutter/models/customer_campaign.dart';
-import 'package:humainity_flutter/models/engagement.dart';
-import 'package:humainity_flutter/models/payment.dart';
-import 'package:humainity_flutter/models/saved_filter_list.dart';
+import 'package:humainise_ai/models/customer.dart';
+import 'package:humainise_ai/models/customer_campaign.dart';
+import 'package:humainise_ai/models/engagement.dart';
+import 'package:humainise_ai/models/payment.dart';
+import 'package:humainise_ai/models/saved_filter_list.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // This class handles all direct Supabase data operations for the CRM feature.
@@ -38,11 +38,12 @@ class CrmRepository {
 
   Future<Customer> addCustomer(Map<String, dynamic> formData) async {
     final data =
-    await _supabase.from('customers').insert(formData).select().single();
+        await _supabase.from('customers').insert(formData).select().single();
     return Customer.fromJson(data);
   }
 
-  Future<Customer> updateCustomerStatus(String customerId, String newStatus) async {
+  Future<Customer> updateCustomerStatus(
+      String customerId, String newStatus) async {
     final data = await _supabase
         .from('customers')
         .update({'status': newStatus})

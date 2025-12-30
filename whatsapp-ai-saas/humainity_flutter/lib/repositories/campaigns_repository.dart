@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
-import 'package:humainity_flutter/models/campaign.dart';
+import 'package:humainise_ai/models/campaign.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CampaignsRepository {
@@ -11,7 +11,8 @@ class CampaignsRepository {
   final int _tenantId;
 
   CampaignsRepository({required String token, required int tenantId})
-      : _authToken = token, _tenantId = tenantId;
+      : _authToken = token,
+        _tenantId = tenantId;
 
   Future<List<Campaign>> fetchCampaigns() async {
     final response = await http.get(
@@ -68,7 +69,8 @@ class CampaignsRepository {
     // Add Form Fields
     if (description != null) request.fields['description'] = description;
     request.fields['channel'] = channel;
-    if (templateId != null) request.fields['template_id'] = templateId.toString();
+    if (templateId != null)
+      request.fields['template_id'] = templateId.toString();
     request.fields['run_immediate'] = runImmediate.toString();
     request.fields['tenant_id'] = _tenantId.toString();
 

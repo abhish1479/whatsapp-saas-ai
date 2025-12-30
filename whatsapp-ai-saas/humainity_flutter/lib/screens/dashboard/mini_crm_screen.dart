@@ -1,8 +1,8 @@
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/mini_crm_provider.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
+import 'package:humainise_ai/core/providers/mini_crm_provider.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:universal_html/html.dart' as html;
 
@@ -71,7 +71,8 @@ class _MiniCrmScreenState extends ConsumerState<MiniCrmScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 48),
+                          const Icon(LucideIcons.alertTriangle,
+                              color: Colors.red, size: 48),
                           const SizedBox(height: 16),
                           Text(
                             'Connection failed: $err',
@@ -92,7 +93,7 @@ class _MiniCrmScreenState extends ConsumerState<MiniCrmScreen> {
                       // ignore: undefined_prefixed_name
                       ui_web.platformViewRegistry.registerViewFactory(
                         _viewType,
-                            (int viewId) => html.IFrameElement()
+                        (int viewId) => html.IFrameElement()
                           ..src = url
                           ..style.border = 'none'
                           ..style.width = '100%'

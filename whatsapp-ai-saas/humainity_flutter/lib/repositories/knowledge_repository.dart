@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'package:http_parser/http_parser.dart'; // Import for MediaType
-import 'package:humainity_flutter/models/knowledge_source.dart';
+import 'package:humainise_ai/models/knowledge_source.dart';
 
 class KnowledgeRepository {
   final http.Client _client;
@@ -14,9 +14,11 @@ class KnowledgeRepository {
   KnowledgeRepository(this._client);
 
   Future<List<KnowledgeSource>> getKnowledgeSources(String tenantId) async {
-    final uri = Uri.parse('$_baseUrl/knowledge/get_knowledge_sources?tenant_id=$tenantId');
+    final uri = Uri.parse(
+        '$_baseUrl/knowledge/get_knowledge_sources?tenant_id=$tenantId');
     try {
-      final response = await _client.get(uri, headers: {'accept': 'application/json'});
+      final response =
+          await _client.get(uri, headers: {'accept': 'application/json'});
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
@@ -27,7 +29,8 @@ class KnowledgeRepository {
           throw Exception(body['error'] ?? 'Failed to parse knowledge sources');
         }
       } else {
-        throw Exception('Failed to fetch knowledge sources: ${response.statusCode}');
+        throw Exception(
+            'Failed to fetch knowledge sources: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error in getKnowledgeSources: $e');
@@ -45,7 +48,8 @@ class KnowledgeRepository {
             'file',
             file.bytes!,
             filename: file.name,
-            contentType: MediaType('application', 'octet-stream'), // Use generic type or detect
+            contentType: MediaType(
+                'application', 'octet-stream'), // Use generic type or detect
           ),
         );
 
@@ -59,7 +63,8 @@ class KnowledgeRepository {
         if (body['success'] == true && body['data'] != null) {
           return KnowledgeSource.fromJson(body['data']);
         } else {
-          throw Exception(body['error'] ?? 'Failed to parse file upload response');
+          throw Exception(
+              body['error'] ?? 'Failed to parse file upload response');
         }
       } else {
         throw Exception('Failed to upload file: ${response.body}');
@@ -100,8 +105,7 @@ class KnowledgeRepository {
           // If it doesn't return the object, we'll have to manually create a temporary one
           // or just trigger a refresh. Let's assume it returns the object for now.
           throw Exception('Web crawl API did not return expected data.');
-        }
-        else {
+        } else {
           throw Exception(body['error'] ?? 'Failed to add URL');
         }
       } else {
@@ -117,7 +121,8 @@ class KnowledgeRepository {
     final uri = Uri.parse(
         '$_baseUrl/rag/rag_test_query?tenant_id=$tenantId&q=${Uri.encodeComponent(query)}&n=3');
     try {
-      final response = await _client.post(uri, headers: {'accept': 'application/json'});
+      final response =
+          await _client.post(uri, headers: {'accept': 'application/json'});
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
@@ -125,20 +130,18 @@ class KnowledgeRepository {
         // it's a simple text response or a JSON object.
         // Let's check for a 'data' field, otherwise return the whole body.
         if (body['success'] == true && body['data'] != null) {
-           return body['data'].toString();
+          return body['data'].toString();
         } else if (body['success'] == true) {
           // If it doesn't return the object, we'll have to manually create a temporary one
           // or just trigger a refresh. Let's assume it returns the object for now.
           throw Exception('NO Data Found in Knowledge Base.');
-        }
-        else {
+        } else {
           throw Exception(body['error'] ?? 'Failed to fetch data');
         }
+      } else {
+        throw Exception('Failed to fetch data: ${response.body}');
       }
-      else {
-         throw Exception('Failed to fetch data: ${response.body}');
-      }
-    }catch (e) {
+    } catch (e) {
       debugPrint('Error in queryRAG: $e');
       rethrow;
     }
