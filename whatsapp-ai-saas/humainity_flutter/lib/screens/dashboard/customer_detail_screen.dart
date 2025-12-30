@@ -1,12 +1,12 @@
 // lib/screens/dashboard/customer_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/customer_detail_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/models/customer.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
+import 'package:humainise_ai/core/providers/customer_detail_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/models/customer.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/screens/home/widgets/interactive/hover_card.dart';
-import 'package:humainity_flutter/screens/home/widgets/interactive/reveal_on_scroll.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/screens/home/widgets/interactive/hover_card.dart';
+import 'package:humainise_ai/screens/home/widgets/interactive/reveal_on_scroll.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class SolutionsSection extends StatelessWidget {
@@ -135,7 +135,7 @@ class _SolutionCard extends StatelessWidget {
   });
 
   /// Left card: Customer Support Automation
-   _SolutionCard.support({Key? key})
+  _SolutionCard.support({Key? key})
       : this._(
           key: key,
           accentColor: const Color(0xFF009BFF),
@@ -184,7 +184,7 @@ class _SolutionCard extends StatelessWidget {
           ctaColor: const Color(0xFF009BFF),
         );
 
-   _SolutionCard.sales({Key? key})
+  _SolutionCard.sales({Key? key})
       : this._(
           key: key,
           accentColor: const Color(0xFF16A34A),
@@ -195,8 +195,7 @@ class _SolutionCard extends StatelessWidget {
               "Accelerate revenue with intelligent, personalized outreach at scale — powered by AI WhatsApp and Voice Agents for both Inbound and Outbound channels, like Alex",
           bullets: [
             const _BulletItem(
-              text:
-                  "WhatsApp and Voice campaigns with retry & personalization",
+              text: "WhatsApp and Voice campaigns with retry & personalization",
               icon: LucideIcons.messageCircle,
               bgColor: Color(0xFFE8FDF1),
               iconColor: Color(0xFF16A34A),
@@ -413,7 +412,6 @@ class _SolutionCard extends StatelessWidget {
     );
   }
 }
-
 
 class _BulletItem {
   final String text;

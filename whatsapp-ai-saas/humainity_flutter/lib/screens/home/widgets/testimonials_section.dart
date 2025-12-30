@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/screens/home/widgets/interactive/hover_card.dart';
-import 'package:humainity_flutter/screens/home/widgets/interactive/reveal_on_scroll.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/screens/home/widgets/interactive/hover_card.dart';
+import 'package:humainise_ai/screens/home/widgets/interactive/reveal_on_scroll.dart';
 
 class TestimonialsSection extends StatelessWidget {
   const TestimonialsSection({super.key});
@@ -171,7 +171,6 @@ class _TestimonialCardState extends State<_TestimonialCard> {
                     ]
                   : [],
             ),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

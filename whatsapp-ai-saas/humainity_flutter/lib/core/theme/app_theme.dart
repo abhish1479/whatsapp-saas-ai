@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 
 class AppTheme {
   static final _baseTheme = ThemeData.light(useMaterial3: true);
@@ -36,7 +36,8 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-      cardTheme: CardThemeData( // FIX: Use CardThemeData
+      cardTheme: CardThemeData(
+        // FIX: Use CardThemeData
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.0),
@@ -49,9 +50,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.background,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-        labelStyle: const TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle:
+            const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+        labelStyle: const TextStyle(
+            color: AppColors.foreground,
+            fontSize: 14,
+            fontWeight: FontWeight.w500),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: const BorderSide(color: AppColors.input, width: 1.0),
@@ -66,11 +72,13 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: const BorderSide(color: AppColors.destructive, width: 1.0),
+          borderSide:
+              const BorderSide(color: AppColors.destructive, width: 1.0),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: const BorderSide(color: AppColors.destructive, width: 2.0),
+          borderSide:
+              const BorderSide(color: AppColors.destructive, width: 2.0),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -133,7 +141,8 @@ class AppTheme {
         labelColor: AppColors.foreground,
         unselectedLabelColor: AppColors.mutedForeground,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        unselectedLabelStyle:
+            const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         overlayColor: MaterialStateProperty.all(Colors.transparent),
         dividerColor: Colors.transparent,
         tabAlignment: TabAlignment.fill,

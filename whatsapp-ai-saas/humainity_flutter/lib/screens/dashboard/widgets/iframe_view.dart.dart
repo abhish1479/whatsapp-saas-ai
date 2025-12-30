@@ -2,8 +2,8 @@ import 'dart:ui_web' as ui_web; // Web-specific
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/session_link_provider.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
+import 'package:humainise_ai/core/providers/session_link_provider.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:universal_html/html.dart' as html;
 
@@ -35,10 +35,12 @@ class _CommonIframeViewState extends ConsumerState<CommonIframeView> {
   void _loadUrl() {
     setState(() {
       // Create a unique ID for the platform view registry
-      _viewId = 'iframe-${widget.targetUrl}-${DateTime.now().millisecondsSinceEpoch}';
+      _viewId =
+          'iframe-${widget.targetUrl}-${DateTime.now().millisecondsSinceEpoch}';
 
       // Use the provider to resolve the link (handle session/magic link)
-      _urlFuture = ref.read(sessionLinkProvider.notifier).getUrlToLoad(widget.targetUrl);
+      _urlFuture =
+          ref.read(sessionLinkProvider.notifier).getUrlToLoad(widget.targetUrl);
     });
   }
 
@@ -54,7 +56,8 @@ class _CommonIframeViewState extends ConsumerState<CommonIframeView> {
             children: [
               Text(
                 widget.title,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(LucideIcons.refreshCw),
@@ -92,7 +95,8 @@ class _CommonIframeViewState extends ConsumerState<CommonIframeView> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 48),
+                            const Icon(LucideIcons.alertTriangle,
+                                color: Colors.red, size: 48),
                             const SizedBox(height: 16),
                             Text(
                               'Connection Error: ${snapshot.error}',
@@ -118,7 +122,7 @@ class _CommonIframeViewState extends ConsumerState<CommonIframeView> {
                         // ignore: undefined_prefixed_name
                         ui_web.platformViewRegistry.registerViewFactory(
                           _viewId,
-                              (int viewId) => html.IFrameElement()
+                          (int viewId) => html.IFrameElement()
                             ..src = url
                             ..style.border = 'none'
                             ..style.width = '100%'

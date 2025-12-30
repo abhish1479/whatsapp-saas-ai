@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/models/campaign.dart';
-import 'package:humainity_flutter/repositories/campaigns_repository.dart';
+import 'package:humainise_ai/models/campaign.dart';
+import 'package:humainise_ai/repositories/campaigns_repository.dart';
 // Import your auth/profile providers to get the token/tenant_id
-// import 'package:humainity_flutter/core/providers/auth_provider.dart';
-// import 'package:humainity_flutter/core/providers/business_profile_provider.dart';
+// import 'package:humainise_ai/core/providers/auth_provider.dart';
+// import 'package:humainise_ai/core/providers/business_profile_provider.dart';
 
 // 1. Create the Repository Provider
 final campaignsRepositoryProvider = Provider<CampaignsRepository>((ref) {
@@ -21,7 +21,8 @@ final campaignsRepositoryProvider = Provider<CampaignsRepository>((ref) {
 });
 
 // 2. Define the AsyncNotifier Provider
-final campaignsProvider = AsyncNotifierProvider<CampaignsNotifier, List<Campaign>>(() {
+final campaignsProvider =
+    AsyncNotifierProvider<CampaignsNotifier, List<Campaign>>(() {
   return CampaignsNotifier();
 });
 

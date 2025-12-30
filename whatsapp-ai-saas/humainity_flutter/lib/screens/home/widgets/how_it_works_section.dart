@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
 
 class HowItWorksSection extends StatelessWidget {
   const HowItWorksSection({super.key});
@@ -34,7 +34,7 @@ class HowItWorksSection extends StatelessWidget {
       "subtitle": "Configure automated responses & safety boundaries",
       "detail":
           "Define triggers, responses, escalation paths, and guardrails to ensure your AI agents stay on-brand, complaint, and within defined boundaries.",
-      "color":Color(0xFFFFB800),
+      "color": Color(0xFFFFB800),
       "step": "03",
       "bg": Color(0xFFFFF4E6),
     },
@@ -73,7 +73,6 @@ class HowItWorksSection extends StatelessWidget {
                 ),
               ),
             ),
-
           Column(
             children: [
               RichText(
@@ -144,6 +143,7 @@ class HowItWorksSection extends StatelessWidget {
     );
   }
 }
+
 class _HoverCard extends StatefulWidget {
   final Map<String, dynamic> step;
 
@@ -167,7 +167,7 @@ class _HoverCardState extends State<_HoverCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         width: 280,
-        height: 380, 
+        height: 380,
         transform: hovering
             ? (Matrix4.identity()..translate(0.0, -5.0))
             : Matrix4.identity(),
@@ -187,7 +187,6 @@ class _HoverCardState extends State<_HoverCard> {
                 ]
               : [],
         ),
-
         child: AppCard(
           borderRadius: 15,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
@@ -204,7 +203,6 @@ class _HoverCardState extends State<_HoverCard> {
                   ),
                 ),
               ),
-
               Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [

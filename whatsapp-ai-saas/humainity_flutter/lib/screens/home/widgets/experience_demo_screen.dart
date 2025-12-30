@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
 
 class ExperienceDemoScreen extends StatefulWidget {
   const ExperienceDemoScreen({super.key});
@@ -56,9 +56,10 @@ class _ExperienceDemoScreenState extends State<ExperienceDemoScreen> {
   // SUCCESS SNACKBAR
   // ---------------------------------------------------------------------------
 
-void showSuccessSnackBar(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).clearSnackBars();
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void showSuccessSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ---------------------------------------------------------------------------
@@ -236,90 +237,90 @@ void showSuccessSnackBar(BuildContext context, String message) {
   }
 
   // MOBILE = STACKED VERSION
-Widget _buildMobileLayout(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // -------- TITLE --------
-      const SizedBox(height: 20),
-      const Text(
-        "Choose Any Demo",
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF6B7280),
-        ),
-      ),
-      const SizedBox(height: 14),
-
-      // -------- DEMO CARDS (HORIZONTAL SCROLL) --------
-      SizedBox(
-        height: 250,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          separatorBuilder: (_, __) => const SizedBox(width: 14),
-          itemCount: _demos.length,
-          itemBuilder: (context, index) => SizedBox(
-            width: 260,
-            child: _demoCard(index),
+  Widget _buildMobileLayout(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // -------- TITLE --------
+        const SizedBox(height: 20),
+        const Text(
+          "Choose Any Demo",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF6B7280),
           ),
         ),
-      ),
+        const SizedBox(height: 14),
 
-      const SizedBox(height: 32),
-
-      // -------- QUESTIONS LIST --------
-      const Text(
-        "Click Any Question",
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF6B7280),
-        ),
-      ),
-      const SizedBox(height: 12),
-
-      Column(
-        children: List.generate(
-          _currentDemo.questions.length,
-          (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _questionTile(i),
+        // -------- DEMO CARDS (HORIZONTAL SCROLL) --------
+        SizedBox(
+          height: 250,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemCount: _demos.length,
+            itemBuilder: (context, index) => SizedBox(
+              width: 260,
+              child: _demoCard(index),
+            ),
           ),
         ),
-      ),
 
-      const SizedBox(height: 28),
+        const SizedBox(height: 32),
 
-      // -------- LAUNCH BUTTONS --------
-      _launchCard(
-        onTap: () => _openDemoModal(context, _DemoType.voice),
-        icon: Icons.call,
-        title: "Launch Voice",
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF3E8FF), Color(0xFFE9D5FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        // -------- QUESTIONS LIST --------
+        const Text(
+          "Click Any Question",
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF6B7280),
+          ),
         ),
-        iconBgColor: const Color(0xFF8B5CF6),
-      ),
-      const SizedBox(height: 16),
-      _launchCard(
-        onTap: () => _openDemoModal(context, _DemoType.chat),
-        icon: Icons.chat_bubble_outline_rounded,
-        title: "Launch Chat",
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE0F2FE), Color(0xFFDBEAFE)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        iconBgColor: const Color(0xFF3B82F6),
-      ),
+        const SizedBox(height: 12),
 
-      const SizedBox(height: 30),
-    ],
-  );
-}
+        Column(
+          children: List.generate(
+            _currentDemo.questions.length,
+            (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _questionTile(i),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 28),
+
+        // -------- LAUNCH BUTTONS --------
+        _launchCard(
+          onTap: () => _openDemoModal(context, _DemoType.voice),
+          icon: Icons.call,
+          title: "Launch Voice",
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF3E8FF), Color(0xFFE9D5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          iconBgColor: const Color(0xFF8B5CF6),
+        ),
+        const SizedBox(height: 16),
+        _launchCard(
+          onTap: () => _openDemoModal(context, _DemoType.chat),
+          icon: Icons.chat_bubble_outline_rounded,
+          title: "Launch Chat",
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE0F2FE), Color(0xFFDBEAFE)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          iconBgColor: const Color(0xFF3B82F6),
+        ),
+
+        const SizedBox(height: 30),
+      ],
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // DEMO CARD

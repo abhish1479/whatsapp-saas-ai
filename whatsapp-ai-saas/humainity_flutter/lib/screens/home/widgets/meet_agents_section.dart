@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 // Assuming these are custom widgets you still need
-import 'package:humainity_flutter/screens/home/widgets/interactive/hover_card.dart';
-import 'package:humainity_flutter/screens/home/widgets/interactive/reveal_on_scroll.dart';
+import 'package:humainise_ai/screens/home/widgets/interactive/hover_card.dart';
+import 'package:humainise_ai/screens/home/widgets/interactive/reveal_on_scroll.dart';
 
 class MeetAgentsSection extends StatelessWidget {
   const MeetAgentsSection({super.key});

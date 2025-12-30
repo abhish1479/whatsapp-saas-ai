@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/models/template.dart';
-import 'package:humainity_flutter/repositories/templates_repository.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart'; // Import storage service
+import 'package:humainise_ai/models/template.dart';
+import 'package:humainise_ai/repositories/templates_repository.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart'; // Import storage service
 
 // 1. Define the State
 class TemplatesState {

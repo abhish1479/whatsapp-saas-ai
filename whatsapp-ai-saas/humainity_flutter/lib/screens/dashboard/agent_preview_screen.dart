@@ -3,14 +3,14 @@ import 'dart:math'; // ADDED: For random animation values
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
-import 'package:humainity_flutter/core/providers/chat_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/chat_message_bubble.dart';
-import 'package:humainity_flutter/widgets/ui/app_badge.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/providers/chat_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/screens/dashboard/widgets/chat_message_bubble.dart';
+import 'package:humainise_ai/widgets/ui/app_badge.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 // ADDED: Import for real speech to text (You must add this package)
@@ -445,9 +445,9 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
             text: 'Send',
             icon: const Icon(LucideIcons.send),
             onPressed:
-            _messageController.text.trim().isEmpty || chatState.isLoading
-                ? null
-                : _sendMessage,
+                _messageController.text.trim().isEmpty || chatState.isLoading
+                    ? null
+                    : _sendMessage,
           ),
         ],
       ),
@@ -481,7 +481,8 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
               child: Icon(
                 _isPaused ? LucideIcons.pause : LucideIcons.mic,
                 size: 32,
-                color: _isPaused ? AppColors.mutedForeground : AppColors.primary,
+                color:
+                    _isPaused ? AppColors.mutedForeground : AppColors.primary,
               ),
             ),
           ),
@@ -503,7 +504,7 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
 
         if (constraints.maxHeight < 700 && constraints.maxHeight > 100) {
           double availableForImage = constraints.maxHeight * 0.5;
-          if(imageHeight > availableForImage) {
+          if (imageHeight > availableForImage) {
             imageHeight = availableForImage;
             imageWidth = imageHeight * 0.75;
           }
@@ -537,7 +538,6 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
               const Text('Customer Support Agent',
                   style: TextStyle(color: AppColors.mutedForeground)),
               const SizedBox(height: 24),
-
               if (!_isListening)
                 GestureDetector(
                   onTap: _startListening,
@@ -555,7 +555,8 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
                         ),
                       ],
                     ),
-                    child: const Icon(LucideIcons.mic, color: Colors.white, size: 32),
+                    child: const Icon(LucideIcons.mic,
+                        color: Colors.white, size: 32),
                   ),
                 )
               else
@@ -577,14 +578,18 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
                     if (_lastWords.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Text(_lastWords, style: const TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+                        child: Text(_lastWords,
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                            textAlign: TextAlign.center),
                       ),
                     const SizedBox(height: 24),
 
                     // 3. Row with End Button and Mic Button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center, // Align vertically center
+                      crossAxisAlignment:
+                          CrossAxisAlignment.center, // Align vertically center
                       children: [
                         // End Call Button
                         GestureDetector(
@@ -603,7 +608,8 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
                                 ),
                               ],
                             ),
-                            child: const Icon(LucideIcons.phoneOff, color: Colors.white, size: 24),
+                            child: const Icon(LucideIcons.phoneOff,
+                                color: Colors.white, size: 24),
                           ),
                         ),
 
@@ -638,7 +644,8 @@ class RipplePainter extends CustomPainter {
     final maxRadius = size.width * 0.8;
 
     for (int i = 0; i < 3; i++) {
-      final double opacity = (1.0 - (animationValue + i * 0.33) % 1.0).clamp(0.0, 1.0);
+      final double opacity =
+          (1.0 - (animationValue + i * 0.33) % 1.0).clamp(0.0, 1.0);
       final double radius = ((animationValue + i * 0.33) % 1.0) * maxRadius;
 
       final paint = Paint()

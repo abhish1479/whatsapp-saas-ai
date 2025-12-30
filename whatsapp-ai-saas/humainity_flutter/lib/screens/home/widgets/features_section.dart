@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // Placeholder utility class and color definition for standalone compilation
@@ -85,7 +85,8 @@ class FeaturesSection extends StatelessWidget {
                 textAlign: TextAlign.center,
                 text: const TextSpan(
                   children: [
-                    TextSpan(text: "Everything You Need to ", style: titleBlack),
+                    TextSpan(
+                        text: "Everything You Need to ", style: titleBlack),
                     TextSpan(text: "Scale Communication", style: titleBlue),
                   ],
                 ),
@@ -94,7 +95,8 @@ class FeaturesSection extends StatelessWidget {
 
               const Text(
                 'Powerful features designed for SMBs who want to automate and grow',
-                style: TextStyle(fontSize: 18, color: AppColors.mutedForeground),
+                style:
+                    TextStyle(fontSize: 18, color: AppColors.mutedForeground),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 64),
@@ -108,7 +110,7 @@ class FeaturesSection extends StatelessWidget {
                   crossAxisSpacing: 24,
                   mainAxisSpacing: 24,
                   // Removed childAspectRatio and used mainAxisExtent for fixed, unclipped height
-                  mainAxisExtent: 320, 
+                  mainAxisExtent: 320,
                 ),
                 itemCount: features.length,
                 itemBuilder: (context, index) {
@@ -144,7 +146,9 @@ class _HoverFeatureCardState extends State<_HoverFeatureCard> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         transform: hovering
-            ? (Matrix4.identity()..translate(0, -4)..scale(1.02))
+            ? (Matrix4.identity()
+              ..translate(0, -4)
+              ..scale(1.02))
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -192,7 +196,7 @@ class _HoverFeatureCardState extends State<_HoverFeatureCard> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
+
             const SizedBox(height: 14),
             Text(
               widget.feature["description"] as String,

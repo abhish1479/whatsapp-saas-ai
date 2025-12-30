@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/models/campaign.dart';
-import 'package:humainity_flutter/core/providers/campaigns_provider.dart';
+import 'package:humainise_ai/models/campaign.dart';
+import 'package:humainise_ai/core/providers/campaigns_provider.dart';
 
 // State class to hold the detail view data
 class CampaignDetailState {
@@ -29,9 +29,9 @@ class CampaignDetailState {
 }
 
 // Family provider to fetch details by ID (int)
-final campaignDetailProvider =
-StateNotifierProvider.autoDispose.family<CampaignDetailNotifier, CampaignDetailState, int>(
-      (ref, campaignId) {
+final campaignDetailProvider = StateNotifierProvider.autoDispose
+    .family<CampaignDetailNotifier, CampaignDetailState, int>(
+  (ref, campaignId) {
     return CampaignDetailNotifier(ref, campaignId);
   },
 );

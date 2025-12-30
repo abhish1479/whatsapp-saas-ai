@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/app_header.dart';
-import 'package:humainity_flutter/screens/dashboard/widgets/sidebar_content.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/screens/dashboard/widgets/app_header.dart';
+import 'package:humainise_ai/screens/dashboard/widgets/sidebar_content.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Widget child;

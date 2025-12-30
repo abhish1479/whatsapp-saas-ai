@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:humainity_flutter/core/utils/toast_service.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/core/utils/api_exception.dart';
+import 'package:humainise_ai/core/utils/toast_service.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/utils/api_exception.dart';
 
 class ApiClient {
   final StoreUserData? _store;
@@ -37,30 +37,26 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> post(String endpoint, {dynamic body, bool silent = false}) async {
+  Future<dynamic> post(String endpoint,
+      {dynamic body, bool silent = false}) async {
     final uri = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
     try {
-      final response = await http.post(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null
-      );
+      final response = await http.post(uri,
+          headers: headers, body: body != null ? jsonEncode(body) : null);
       return _handleResponse(response, silent: silent);
     } catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<dynamic> put(String endpoint, {dynamic body, bool silent = false}) async {
+  Future<dynamic> put(String endpoint,
+      {dynamic body, bool silent = false}) async {
     final uri = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
     try {
-      final response = await http.put(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null
-      );
+      final response = await http.put(uri,
+          headers: headers, body: body != null ? jsonEncode(body) : null);
       return _handleResponse(response, silent: silent);
     } catch (e) {
       throw _handleError(e);
@@ -70,15 +66,13 @@ class ApiClient {
   // ✅ ADDED: Delete Method
   // 'silent' defaults to false, so it WILL show a success message by default.
   // To hide the message, call it like: _api.delete('/items/1', silent: true);
-  Future<dynamic> delete(String endpoint, {dynamic body, bool silent = false}) async {
+  Future<dynamic> delete(String endpoint,
+      {dynamic body, bool silent = false}) async {
     final uri = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
     try {
-      final response = await http.delete(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null
-      );
+      final response = await http.delete(uri,
+          headers: headers, body: body != null ? jsonEncode(body) : null);
       return _handleResponse(response, silent: silent);
     } catch (e) {
       throw _handleError(e);

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 
 // Use this enum for standard button variants.
 enum AppButtonVariant { primary, outline, ghost, secondary, destructive, link }
 
 // Use this enum for simplified styling requested by the user, mapping to standard variants.
-enum AppButtonStyle { primary, secondary, tertiary ,destructive}
+enum AppButtonStyle { primary, secondary, tertiary, destructive }
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -50,7 +50,6 @@ class AppButton extends StatelessWidget {
         return AppButtonVariant.outline;
       case AppButtonStyle.destructive:
         return AppButtonVariant.destructive;
-
     }
   }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/routing/app_router.dart';
-import 'package:humainity_flutter/core/theme/app_theme.dart';
+import 'package:humainise_ai/core/routing/app_router.dart';
+import 'package:humainise_ai/core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,7 +15,7 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   // Initialize Supabase first (so any provider that calls Supabase.instance works)
-   try {
+  try {
     await Supabase.initialize(
       url: dotenv.env['VITE_SUPABASE_URL']!,
       anonKey: dotenv.env['VITE_SUPABASE_PUBLISHABLE_KEY']!,
@@ -60,15 +60,16 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
-    return ToastificationWrapper( // ✅ Wrap MaterialApp with this
-        child: MaterialApp.router(
-      title: 'HumAInise.ai',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light, // Set to light as per index.css
-      debugShowCheckedModeBanner: false,
-      routerConfig: router,
-        ),
+    return ToastificationWrapper(
+      // ✅ Wrap MaterialApp with this
+      child: MaterialApp.router(
+        title: 'HumAInise.ai',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.light, // Set to light as per index.css
+        debugShowCheckedModeBanner: false,
+        routerConfig: router,
+      ),
     );
   }
 }

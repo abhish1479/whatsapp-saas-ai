@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/providers/campaign_detail_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/core/utils/status_helpers.dart';
-import 'package:humainity_flutter/models/campaign.dart';
-import 'package:humainity_flutter/widgets/ui/app_badge.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
+import 'package:humainise_ai/core/providers/campaign_detail_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/core/utils/status_helpers.dart';
+import 'package:humainise_ai/models/campaign.dart';
+import 'package:humainise_ai/widgets/ui/app_badge.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class CampaignDetailScreen extends ConsumerWidget {
@@ -23,9 +23,11 @@ class CampaignDetailScreen extends ConsumerWidget {
 
     final state = ref.watch(campaignDetailProvider(id));
 
-    if (state.isLoading) return const Center(child: CircularProgressIndicator());
+    if (state.isLoading)
+      return const Center(child: CircularProgressIndicator());
     if (state.error != null || state.campaign == null) {
-      return Center(child: Text('Error: ${state.error ?? "Campaign not found"}'));
+      return Center(
+          child: Text('Error: ${state.error ?? "Campaign not found"}'));
     }
 
     final campaign = state.campaign!;
@@ -142,18 +144,23 @@ class CampaignDetailScreen extends ConsumerWidget {
       spacing: 16,
       runSpacing: 16,
       children: [
-        _buildStatCard('Total Leads', campaign.totalLeads.toString(), width: cardWidth),
-        _buildStatCard('New / Pending', campaign.newLeads.toString(), width: cardWidth),
+        _buildStatCard('Total Leads', campaign.totalLeads.toString(),
+            width: cardWidth),
+        _buildStatCard('New / Pending', campaign.newLeads.toString(),
+            width: cardWidth),
         _buildStatCard('Sent', campaign.sent.toString(), width: cardWidth),
         // FIX: Added parameter name 'valueColor:'
-        _buildStatCard('Success', campaign.success.toString(), valueColor: Colors.green, width: cardWidth),
-        _buildStatCard('Failed', campaign.failed.toString(), valueColor: Colors.red, width: cardWidth),
+        _buildStatCard('Success', campaign.success.toString(),
+            valueColor: Colors.green, width: cardWidth),
+        _buildStatCard('Failed', campaign.failed.toString(),
+            valueColor: Colors.red, width: cardWidth),
       ],
     );
   }
 
   // FIX: Changed [] to {} for named parameters
-  Widget _buildStatCard(String title, String value, {Color? valueColor, double? width}) {
+  Widget _buildStatCard(String title, String value,
+      {Color? valueColor, double? width}) {
     return SizedBox(
       width: width,
       child: AppCard(

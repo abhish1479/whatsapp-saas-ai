@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class ToolCard extends StatelessWidget {
@@ -28,7 +28,9 @@ class ToolCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: isEnabled ? AppColors.primary.withOpacity(0.05) : AppColors.background,
+          color: isEnabled
+              ? AppColors.primary.withOpacity(0.05)
+              : AppColors.background,
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
             color: isEnabled ? AppColors.primary : AppColors.border,
@@ -47,14 +49,16 @@ class ToolCard extends StatelessWidget {
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                  child: Center(child: Text(icon, style: const TextStyle(fontSize: 20))),
+                  child: Center(
+                      child: Text(icon, style: const TextStyle(fontSize: 20))),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(name,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       Text(description,
                           style: const TextStyle(
@@ -67,7 +71,8 @@ class ToolCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text('$runs runs',
                               style: const TextStyle(
-                                  color: AppColors.mutedForeground, fontSize: 12)),
+                                  color: AppColors.mutedForeground,
+                                  fontSize: 12)),
                         ],
                       ),
                     ],

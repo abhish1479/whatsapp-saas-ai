@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/utils/api_client.dart';
-import 'package:humainity_flutter/core/providers/api_provider.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/models/agent_config_model.dart';
+import 'package:humainise_ai/core/utils/api_client.dart';
+import 'package:humainise_ai/core/providers/api_provider.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/models/agent_config_model.dart';
 
 final agentConfigRepositoryProvider = Provider<AgentConfigRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -69,7 +69,8 @@ class AgentConfigRepository {
 
     // Add File
     // Note: API expects field name 'payload'
-    final multipartFile = await http.MultipartFile.fromPath('payload', file.path);
+    final multipartFile =
+        await http.MultipartFile.fromPath('payload', file.path);
     request.files.add(multipartFile);
 
     // Send
@@ -77,7 +78,7 @@ class AgentConfigRepository {
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-        final String imageUrl = jsonDecode(response.body)['image_url'];
+      final String imageUrl = jsonDecode(response.body)['image_url'];
       return imageUrl; // Simple cleanup if it's a raw string
     } else {
       throw Exception('Image upload failed: ${response.statusCode}');

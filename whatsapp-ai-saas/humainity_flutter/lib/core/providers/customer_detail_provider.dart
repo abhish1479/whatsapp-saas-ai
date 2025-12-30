@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/crm_provider.dart'; // Import for repo provider
-import 'package:humainity_flutter/models/customer.dart';
-import 'package:humainity_flutter/models/customer_campaign.dart';
-import 'package:humainity_flutter/models/engagement.dart';
-import 'package:humainity_flutter/models/payment.dart';
+import 'package:humainise_ai/core/providers/crm_provider.dart'; // Import for repo provider
+import 'package:humainise_ai/models/customer.dart';
+import 'package:humainise_ai/models/customer_campaign.dart';
+import 'package:humainise_ai/models/engagement.dart';
+import 'package:humainise_ai/models/payment.dart';
 
 // 1. State (Unchanged)
 class CustomerDetailState {
@@ -90,7 +90,7 @@ class CustomerDetailNotifier extends StateNotifier<CustomerDetailState> {
   Future<void> refreshEngagements() async {
     try {
       final engagements =
-      await _ref.read(crmRepositoryProvider).fetchEngagements(_customerId);
+          await _ref.read(crmRepositoryProvider).fetchEngagements(_customerId);
       state = state.copyWith(engagements: engagements);
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -100,7 +100,7 @@ class CustomerDetailNotifier extends StateNotifier<CustomerDetailState> {
   Future<void> refreshCustomer() async {
     try {
       final customer =
-      await _ref.read(crmRepositoryProvider).fetchCustomerById(_customerId);
+          await _ref.read(crmRepositoryProvider).fetchCustomerById(_customerId);
       state = state.copyWith(customer: customer);
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -111,7 +111,7 @@ class CustomerDetailNotifier extends StateNotifier<CustomerDetailState> {
 // 3. Provider (Unchanged structure, logic moved to Notifier)
 final customerDetailProvider = StateNotifierProvider.autoDispose
     .family<CustomerDetailNotifier, CustomerDetailState, String>(
-      (ref, customerId) {
+  (ref, customerId) {
     return CustomerDetailNotifier(ref, customerId);
   },
 );

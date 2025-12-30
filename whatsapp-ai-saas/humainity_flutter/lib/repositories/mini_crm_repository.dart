@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
 
 final miniCrmRepositoryProvider = Provider<MiniCrmRepository>((ref) {
   final store = ref.watch(storeUserDataProvider);
@@ -23,7 +23,8 @@ class MiniCrmRepository {
     final email = await _store!.getEmail();
 
     if (apiKey == null || apiSecret == null) {
-      throw Exception("ERP API Keys not found. Please log out and log in again.");
+      throw Exception(
+          "ERP API Keys not found. Please log out and log in again.");
     }
     if (email == null) {
       throw Exception("User email not found.");

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/models/agent_config_model.dart';
-import 'package:humainity_flutter/repositories/agent_config_repository.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/models/agent_config_model.dart';
+import 'package:humainise_ai/repositories/agent_config_repository.dart';
 
 // --- State ---
 class AgentState {
@@ -58,7 +58,8 @@ class AgentConfigNotifier extends StateNotifier<AgentState> {
 
       if (agent != null) {
         // Agent exists -> Show details, disable editing
-        state = state.copyWith(isLoading: false, agent: agent, isEditing: false);
+        state =
+            state.copyWith(isLoading: false, agent: agent, isEditing: false);
       } else {
         // No agent -> Create mode
         state = state.copyWith(isLoading: false, agent: null, isEditing: true);
@@ -103,11 +104,19 @@ class AgentConfigNotifier extends StateNotifier<AgentState> {
       if (finalConfig.id != null) {
         // Update
         final updated = await _repo.updateAgent(finalConfig);
-        state = state.copyWith(isSaving: false, agent: updated, isEditing: false, localImageFile: null);
+        state = state.copyWith(
+            isSaving: false,
+            agent: updated,
+            isEditing: false,
+            localImageFile: null);
       } else {
         // Create
         final created = await _repo.createAgent(finalConfig);
-        state = state.copyWith(isSaving: false, agent: created, isEditing: false, localImageFile: null);
+        state = state.copyWith(
+            isSaving: false,
+            agent: created,
+            isEditing: false,
+            localImageFile: null);
       }
     } catch (e) {
       state = state.copyWith(isSaving: false);
@@ -116,7 +125,8 @@ class AgentConfigNotifier extends StateNotifier<AgentState> {
   }
 }
 
-final agentConfigProvider = StateNotifierProvider<AgentConfigNotifier, AgentState>((ref) {
+final agentConfigProvider =
+    StateNotifierProvider<AgentConfigNotifier, AgentState>((ref) {
   final repo = ref.watch(agentConfigRepositoryProvider);
   final store = ref.watch(storeUserDataProvider);
   return AgentConfigNotifier(repo, store);

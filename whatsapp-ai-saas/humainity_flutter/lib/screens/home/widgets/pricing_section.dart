@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
-import 'package:humainity_flutter/widgets/ui/app_radio_group.dart';
-import 'package:humainity_flutter/widgets/ui/app_tabs.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
+import 'package:humainise_ai/widgets/ui/app_radio_group.dart';
+import 'package:humainise_ai/widgets/ui/app_tabs.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class PricingSection extends StatefulWidget {
@@ -15,7 +15,8 @@ class PricingSection extends StatefulWidget {
   State<PricingSection> createState() => _PricingSectionState();
 }
 
-class _PricingSectionState extends State<PricingSection> with SingleTickerProviderStateMixin {
+class _PricingSectionState extends State<PricingSection>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _currency = 'INR';
   double _tabViewHeight = 600;
@@ -62,19 +63,15 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
 
     return Container(
       color: AppColors.muted.withOpacity(0.3),
-      padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 48 : 96, 
-        horizontal: 16
-      ),
+      padding:
+          EdgeInsets.symmetric(vertical: isMobile ? 48 : 96, horizontal: 16),
       child: WebContainer(
         child: Column(
           children: [
             Text(
               'Simple, Transparent Pricing',
               style: TextStyle(
-                fontSize: isMobile ? 32 : 40, 
-                fontWeight: FontWeight.bold
-              ),
+                  fontSize: isMobile ? 32 : 40, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -176,20 +173,35 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
   Widget _buildHardcodedWhatsAppINR({required bool isDesktop}) {
     final plans = [
       _WhatsAppPlan(
-        title: 'Starter', price: '₹999',
+        title: 'Starter',
+        price: '₹999',
         description: 'Perfect for small businesses getting started',
-        features: ['1,000 WhatsApp conversations', '1 WhatsApp Channel', 'Basic AI training'],
+        features: [
+          '1,000 WhatsApp conversations',
+          '1 WhatsApp Channel',
+          'Basic AI training'
+        ],
       ),
       _WhatsAppPlan(
-        title: 'Growth', price: '₹1,499',
+        title: 'Growth',
+        price: '₹1,499',
         description: 'For growing businesses with higher volume',
-        features: ['3,000 WhatsApp conversations', '2 WhatsApp Channels', 'Advanced AI training'],
+        features: [
+          '3,000 WhatsApp conversations',
+          '2 WhatsApp Channels',
+          'Advanced AI training'
+        ],
         isPopular: true,
       ),
       _WhatsAppPlan(
-        title: 'Professional', price: '₹2,499',
+        title: 'Professional',
+        price: '₹2,499',
         description: 'For established businesses scaling up',
-        features: ['5,000 WhatsApp conversations', '3 WhatsApp Channels', 'Custom integrations'],
+        features: [
+          '5,000 WhatsApp conversations',
+          '3 WhatsApp Channels',
+          'Custom integrations'
+        ],
       ),
     ];
 
@@ -199,20 +211,35 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
   Widget _buildHardcodedWhatsAppUSD({required bool isDesktop}) {
     final plans = [
       _WhatsAppPlan(
-        title: 'Starter', price: '\$12',
+        title: 'Starter',
+        price: '\$12',
         description: 'Perfect for small businesses getting started',
-        features: ['1,000 WhatsApp conversations', '1 WhatsApp Channel', 'Basic AI training'],
+        features: [
+          '1,000 WhatsApp conversations',
+          '1 WhatsApp Channel',
+          'Basic AI training'
+        ],
       ),
       _WhatsAppPlan(
-        title: 'Growth', price: '\$18',
+        title: 'Growth',
+        price: '\$18',
         description: 'For growing businesses with higher volume',
-        features: ['3,000 WhatsApp conversations', '2 WhatsApp Channels', 'Advanced AI training'],
+        features: [
+          '3,000 WhatsApp conversations',
+          '2 WhatsApp Channels',
+          'Advanced AI training'
+        ],
         isPopular: true,
       ),
       _WhatsAppPlan(
-        title: 'Professional', price: '\$30',
+        title: 'Professional',
+        price: '\$30',
         description: 'For established businesses scaling up',
-        features: ['5,000 WhatsApp conversations', '3 WhatsApp Channels', 'Custom integrations'],
+        features: [
+          '5,000 WhatsApp conversations',
+          '3 WhatsApp Channels',
+          'Custom integrations'
+        ],
       ),
     ];
 
@@ -225,17 +252,19 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
         spacing: 20,
         runSpacing: 20,
         alignment: WrapAlignment.center,
-        children: plans.map((plan) => SizedBox(
-          width: isDesktop ? 340 : double.infinity,
-          height: 520,
-          child: _buildPriceCard(
-            title: plan.title,
-            price: plan.price,
-            description: plan.description,
-            features: plan.features,
-            isPopular: plan.isPopular,
-          ),
-        )).toList(),
+        children: plans
+            .map((plan) => SizedBox(
+                  width: isDesktop ? 340 : double.infinity,
+                  height: 520,
+                  child: _buildPriceCard(
+                    title: plan.title,
+                    price: plan.price,
+                    description: plan.description,
+                    features: plan.features,
+                    isPopular: plan.isPopular,
+                  ),
+                ))
+            .toList(),
       ),
     );
   }
@@ -268,11 +297,13 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
           spacing: 20,
           runSpacing: 20,
           alignment: WrapAlignment.center,
-          children: tiers.map((tier) => SizedBox(
-            width: isMobile ? double.infinity : 340,
-            height: 520,
-            child: _buildVoiceTierCard(tier),
-          )).toList(),
+          children: tiers
+              .map((tier) => SizedBox(
+                    width: isMobile ? double.infinity : 340,
+                    height: 520,
+                    child: _buildVoiceTierCard(tier),
+                  ))
+              .toList(),
         ),
       ],
     );
@@ -288,27 +319,36 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
       padding: const EdgeInsets.all(24),
       child: Flex(
         direction: isMobile ? Axis.vertical : Axis.horizontal,
-        crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: [
           Container(
-            width: 64, height: 64,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.phone, color: AppColors.primary, size: 32),
+            child: const Icon(LucideIcons.phone,
+                color: AppColors.primary, size: 32),
           ),
           SizedBox(width: isMobile ? 0 : 24, height: isMobile ? 16 : 0),
           Expanded(
             flex: isMobile ? 0 : 1,
             child: Column(
-              crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+              crossAxisAlignment: isMobile
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
               children: [
-                const Text('One-Time Setup & Integration', 
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const Text('One-Time Setup & Integration',
+                    style:
+                        TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text(setupPrice, 
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                Text(setupPrice,
+                    style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary)),
                 const SizedBox(height: 8),
                 Text(
                   'Complete voice automation setup including integration and AI training',
@@ -317,8 +357,10 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
                 ),
                 const SizedBox(height: 16),
                 Wrap(
-                  spacing: 12, runSpacing: 8,
-                  alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
+                  spacing: 12,
+                  runSpacing: 8,
+                  alignment:
+                      isMobile ? WrapAlignment.center : WrapAlignment.start,
                   children: const [
                     _VoiceSetupPoint('Integration'),
                     _VoiceSetupPoint('Workflow Setup'),
@@ -343,44 +385,58 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
     bool isPopular = false,
   }) {
     return AppCard(
-      border: isPopular ? Border.all(color: AppColors.primary, width: 2) : Border.all(color: AppColors.border),
+      border: isPopular
+          ? Border.all(color: AppColors.primary, width: 2)
+          : Border.all(color: AppColors.border),
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(price, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
-              Text(period, style: const TextStyle(fontSize: 16, color: AppColors.mutedForeground)),
+              Text(price,
+                  style: const TextStyle(
+                      fontSize: 40, fontWeight: FontWeight.bold)),
+              Text(period,
+                  style: const TextStyle(
+                      fontSize: 16, color: AppColors.mutedForeground)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(description, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+          Text(description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: AppColors.mutedForeground, fontSize: 14)),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
           ...features.map((f) => Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(LucideIcons.check, color: AppColors.success, size: 16),
-                const SizedBox(width: 8),
-                Expanded(child: Text(f, style: const TextStyle(fontSize: 14))),
-              ],
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(LucideIcons.check,
+                        color: AppColors.success, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text(f, style: const TextStyle(fontSize: 14))),
+                  ],
+                ),
+              )),
           const Spacer(),
           SizedBox(
             width: double.infinity,
             child: AppButton(
               text: 'Get Started',
               onPressed: () {},
-              style: isPopular ? AppButtonStyle.primary : AppButtonStyle.tertiary,
+              style:
+                  isPopular ? AppButtonStyle.primary : AppButtonStyle.tertiary,
             ),
           ),
         ],
@@ -390,52 +446,72 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
 
   Widget _buildVoiceTierCard(_VoiceTier tier) {
     return AppCard(
-      border: tier.isPopular ? Border.all(color: AppColors.primary, width: 2) : Border.all(color: AppColors.border),
+      border: tier.isPopular
+          ? Border.all(color: AppColors.primary, width: 2)
+          : Border.all(color: AppColors.border),
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           if (tier.isPopular) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(999)),
-              child: const Text('Most Popular', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(999)),
+              child: const Text('Most Popular',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 12),
           ],
-          Text(tier.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(tier.title,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(tier.price, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
-              const Text('/minute', style: TextStyle(fontSize: 14, color: AppColors.mutedForeground)),
+              Text(tier.price,
+                  style: const TextStyle(
+                      fontSize: 36, fontWeight: FontWeight.bold)),
+              const Text('/minute',
+                  style: TextStyle(
+                      fontSize: 14, color: AppColors.mutedForeground)),
             ],
           ),
           const SizedBox(height: 4),
-          Text(tier.limit, style: const TextStyle(fontSize: 13, color: AppColors.mutedForeground)),
+          Text(tier.limit,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.mutedForeground)),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
           ...tier.features.map((f) => Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(LucideIcons.check, size: 16, color: AppColors.success),
-                const SizedBox(width: 8),
-                Expanded(child: Text(f, style: const TextStyle(fontSize: 13))),
-              ],
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(LucideIcons.check,
+                        size: 16, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text(f, style: const TextStyle(fontSize: 13))),
+                  ],
+                ),
+              )),
           const Spacer(),
           SizedBox(
             width: double.infinity,
             child: AppButton(
               text: 'Get Started',
               onPressed: () {},
-              style: tier.isPopular ? AppButtonStyle.primary : AppButtonStyle.tertiary,
+              style: tier.isPopular
+                  ? AppButtonStyle.primary
+                  : AppButtonStyle.tertiary,
             ),
           ),
         ],
@@ -446,14 +522,56 @@ class _PricingSectionState extends State<PricingSection> with SingleTickerProvid
   List<_VoiceTier> _getVoiceTiers(bool isINR) {
     return isINR
         ? [
-            _VoiceTier(title: 'Up to 2L Minutes', price: '₹7', limit: '200,000 minutes', features: ['HD voice quality', 'Call recording', 'Basic analytics']),
-            _VoiceTier(title: '2L - 5L Minutes', price: '₹6', limit: '200-500k minutes', features: ['Advanced analytics', 'Priority routing'], isPopular: true),
-            _VoiceTier(title: '5L+ Minutes', price: '₹5', limit: '500,000+ minutes', features: ['Premium quality', 'Dedicated support', 'Custom integrations']),
+            _VoiceTier(
+                title: 'Up to 2L Minutes',
+                price: '₹7',
+                limit: '200,000 minutes',
+                features: [
+                  'HD voice quality',
+                  'Call recording',
+                  'Basic analytics'
+                ]),
+            _VoiceTier(
+                title: '2L - 5L Minutes',
+                price: '₹6',
+                limit: '200-500k minutes',
+                features: ['Advanced analytics', 'Priority routing'],
+                isPopular: true),
+            _VoiceTier(
+                title: '5L+ Minutes',
+                price: '₹5',
+                limit: '500,000+ minutes',
+                features: [
+                  'Premium quality',
+                  'Dedicated support',
+                  'Custom integrations'
+                ]),
           ]
         : [
-            _VoiceTier(title: 'Up to 2L Minutes', price: '\$0.08', limit: '200,000 minutes', features: ['HD voice quality', 'Call recording', 'Basic analytics']),
-            _VoiceTier(title: '2L - 5L Minutes', price: '\$0.07', limit: '200-500k minutes', features: ['Advanced analytics', 'Priority routing'], isPopular: true),
-            _VoiceTier(title: '5L+ Minutes', price: '\$0.06', limit: '500,000+ minutes', features: ['Premium quality', 'Dedicated support', 'Custom integrations']),
+            _VoiceTier(
+                title: 'Up to 2L Minutes',
+                price: '\$0.08',
+                limit: '200,000 minutes',
+                features: [
+                  'HD voice quality',
+                  'Call recording',
+                  'Basic analytics'
+                ]),
+            _VoiceTier(
+                title: '2L - 5L Minutes',
+                price: '\$0.07',
+                limit: '200-500k minutes',
+                features: ['Advanced analytics', 'Priority routing'],
+                isPopular: true),
+            _VoiceTier(
+                title: '5L+ Minutes',
+                price: '\$0.06',
+                limit: '500,000+ minutes',
+                features: [
+                  'Premium quality',
+                  'Dedicated support',
+                  'Custom integrations'
+                ]),
           ];
   }
 }
@@ -466,14 +584,24 @@ class _WhatsAppPlan {
   final String title, price, description;
   final List<String> features;
   final bool isPopular;
-  _WhatsAppPlan({required this.title, required this.price, required this.description, required this.features, this.isPopular = false});
+  _WhatsAppPlan(
+      {required this.title,
+      required this.price,
+      required this.description,
+      required this.features,
+      this.isPopular = false});
 }
 
 class _VoiceTier {
   final String title, price, limit;
   final List<String> features;
   final bool isPopular;
-  _VoiceTier({required this.title, required this.price, required this.limit, required this.features, this.isPopular = false});
+  _VoiceTier(
+      {required this.title,
+      required this.price,
+      required this.limit,
+      required this.features,
+      this.isPopular = false});
 }
 
 class _VoiceSetupPoint extends StatelessWidget {

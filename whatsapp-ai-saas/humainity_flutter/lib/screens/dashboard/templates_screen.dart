@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:humainity_flutter/core/providers/templates_provider.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/models/template.dart';
-import 'package:humainity_flutter/widgets/ui/app_badge.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
-import 'package:humainity_flutter/widgets/ui/app_card.dart';
-import 'package:humainity_flutter/widgets/ui/app_dialog.dart';
-import 'package:humainity_flutter/widgets/ui/app_dropdown.dart';
-import 'package:humainity_flutter/widgets/ui/app_text_field.dart';
+import 'package:humainise_ai/core/providers/templates_provider.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/models/template.dart';
+import 'package:humainise_ai/widgets/ui/app_badge.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
+import 'package:humainise_ai/widgets/ui/app_card.dart';
+import 'package:humainise_ai/widgets/ui/app_dialog.dart';
+import 'package:humainise_ai/widgets/ui/app_dropdown.dart';
+import 'package:humainise_ai/widgets/ui/app_text_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
 
 class TemplatesScreen extends ConsumerStatefulWidget {
   const TemplatesScreen({super.key});
@@ -27,7 +27,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(templatesProvider);
     final templates =
-    _showOutbound ? state.outboundTemplates : state.inboundTemplates;
+        _showOutbound ? state.outboundTemplates : state.inboundTemplates;
     final bool isMobileScreen = isMobile(context);
 
     return Column(
@@ -50,7 +50,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                     Text(
                       'Templates',
                       style:
-                      TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -250,7 +250,6 @@ class _TemplateCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-
           Text(
             template.name,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -258,7 +257,6 @@ class _TemplateCard extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +270,6 @@ class _TemplateCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 12),
-
                 if (hasMedia)
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -280,8 +277,8 @@ class _TemplateCard extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: AppColors.muted.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                          color: AppColors.border.withOpacity(0.5)),
+                      border:
+                          Border.all(color: AppColors.border.withOpacity(0.5)),
                     ),
                     child: Row(
                       children: [
@@ -332,7 +329,6 @@ class _TemplateCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-
                 Row(
                   children: [
                     const Icon(LucideIcons.globe2,
@@ -357,7 +353,6 @@ class _TemplateCard extends ConsumerWidget {
               ],
             ),
           ),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -369,7 +364,7 @@ class _TemplateCard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.primary)),
                 style: TextButton.styleFrom(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -384,7 +379,7 @@ class _TemplateCard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.destructive)),
                 style: TextButton.styleFrom(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -525,7 +520,7 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
 
     if (widget.template == null) {
       success =
-      await widget.ref.read(templatesProvider.notifier).addTemplate(data);
+          await widget.ref.read(templatesProvider.notifier).addTemplate(data);
     } else {
       success = await widget.ref
           .read(templatesProvider.notifier)
@@ -601,7 +596,7 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
                     ? 'Create new template'
                     : 'Edit Template',
                 style:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
               ),
               IconButton(
                 icon: const Icon(LucideIcons.x),
@@ -629,204 +624,203 @@ class _TemplateFormDialogState extends State<_TemplateFormDialog> {
           child: _isSaving
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    controller: _nameController,
-                    labelText: 'Template Name',
-                    hintText: 'e.g., "Welcome Message"',
-                    validator: (val) => val == null || val.isEmpty
-                        ? 'Name is required'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Flex(
-                    direction:
-                    isMobileScreen ? Axis.vertical : Axis.horizontal,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: AppDropdown<TemplateType>(
-                          labelText: 'Type',
-                          value: _selectedType,
-                          items: TemplateType.values
-                              .where((t) => t != TemplateType.UNKNOWN)
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppTextField(
+                          controller: _nameController,
+                          labelText: 'Template Name',
+                          hintText: 'e.g., "Welcome Message"',
+                          validator: (val) => val == null || val.isEmpty
+                              ? 'Name is required'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Flex(
+                          direction:
+                              isMobileScreen ? Axis.vertical : Axis.horizontal,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: AppDropdown<TemplateType>(
+                                labelText: 'Type',
+                                value: _selectedType,
+                                items: TemplateType.values
+                                    .where((t) => t != TemplateType.UNKNOWN)
+                                    .map((t) => DropdownMenuItem(
+                                        value: t, child: Text(t.displayName)))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedType = val);
+                                  }
+                                },
+                              ),
+                            ),
+                            SizedBox(
+                                width: isMobileScreen ? 0 : 16,
+                                height: isMobileScreen ? 16 : 0),
+                            Expanded(
+                              child: AppDropdown<String>(
+                                labelText: 'Language',
+                                value: _selectedLanguage,
+                                items: _languages
+                                    .map((l) => DropdownMenuItem(
+                                        value: l, child: Text(l.toUpperCase())))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedLanguage = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        AppDropdown<MediaType>(
+                          labelText: 'Media Type',
+                          value: _selectedMediaType,
+                          items: [
+                            MediaType.TEXT,
+                            MediaType.VIDEO,
+                            MediaType.DOCUMENT,
+                            MediaType.IMAGE
+                          ]
                               .map((t) => DropdownMenuItem(
-                              value: t, child: Text(t.displayName)))
+                                  value: t, child: Text(t.displayName)))
                               .toList(),
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() => _selectedType = val);
+                              setState(() {
+                                _selectedMediaType = val;
+                                if (val == MediaType.TEXT) {
+                                  _mediaLinkController.clear();
+                                  _previewImageUrl = null;
+                                } else if (val == MediaType.IMAGE &&
+                                    _mediaLinkController.text.isNotEmpty) {
+                                  _previewImageUrl = _mediaLinkController.text;
+                                } else {
+                                  _previewImageUrl = null;
+                                }
+                              });
                             }
                           },
                         ),
-                      ),
-                      SizedBox(
-                          width: isMobileScreen ? 0 : 16,
-                          height: isMobileScreen ? 16 : 0),
-                      Expanded(
-                        child: AppDropdown<String>(
-                          labelText: 'Language',
-                          value: _selectedLanguage,
-                          items: _languages
-                              .map((l) => DropdownMenuItem(
-                              value: l, child: Text(l.toUpperCase())))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedLanguage = val);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  AppDropdown<MediaType>(
-                    labelText: 'Media Type',
-                    value: _selectedMediaType,
-                    items: [
-                      MediaType.TEXT,
-                      MediaType.VIDEO,
-                      MediaType.DOCUMENT,
-                      MediaType.IMAGE
-                    ]
-                        .map((t) => DropdownMenuItem(
-                        value: t, child: Text(t.displayName)))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedMediaType = val;
-                          if (val == MediaType.TEXT) {
-                            _mediaLinkController.clear();
-                            _previewImageUrl = null;
-                          } else if (val == MediaType.IMAGE &&
-                              _mediaLinkController.text.isNotEmpty) {
-                            _previewImageUrl = _mediaLinkController.text;
-                          } else {
-                            _previewImageUrl = null;
-                          }
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  if (_selectedMediaType != MediaType.TEXT) ...[
-                    AppTextField(
-                      controller: _mediaLinkController,
-                      labelText: 'Media Link',
-                      hintText: 'e.g., https://example.com/image.png',
-                      prefixIcon: const Icon(LucideIcons.link, size: 16),
-                      validator: (val) {
-                        if (_selectedMediaType != MediaType.TEXT &&
-                            (val == null || val.isEmpty)) {
-                          return 'Media Link is required for ${_selectedMediaType.displayName}';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Image Preview Section
-                    if (_selectedMediaType == MediaType.IMAGE &&
-                        _previewImageUrl != null)
-                      Container(
-                        height: 150,
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            _previewImageUrl!,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (BuildContext context,
-                                Widget child,
-                                ImageChunkEvent? loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress
-                                      .expectedTotalBytes !=
-                                      null
-                                      ? loadingProgress
-                                      .cumulativeBytesLoaded /
-                                      loadingProgress
-                                          .expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(
-                                child: Column(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  children: [
-                                    Icon(LucideIcons.imageOff,
-                                        size: 32,
-                                        color: AppColors.destructive),
-                                    SizedBox(height: 8),
-                                    Text(
-                                        'Failed to load image preview.',
-                                        style: TextStyle(
-                                            color: AppColors
-                                                .mutedForeground)),
-                                  ],
-                                ),
-                              );
+                        const SizedBox(height: 16),
+                        if (_selectedMediaType != MediaType.TEXT) ...[
+                          AppTextField(
+                            controller: _mediaLinkController,
+                            labelText: 'Media Link',
+                            hintText: 'e.g., https://example.com/image.png',
+                            prefixIcon: const Icon(LucideIcons.link, size: 16),
+                            validator: (val) {
+                              if (_selectedMediaType != MediaType.TEXT &&
+                                  (val == null || val.isEmpty)) {
+                                return 'Media Link is required for ${_selectedMediaType.displayName}';
+                              }
+                              return null;
                             },
                           ),
+                          const SizedBox(height: 16),
+                          // Image Preview Section
+                          if (_selectedMediaType == MediaType.IMAGE &&
+                              _previewImageUrl != null)
+                            Container(
+                              height: 150,
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.border),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _previewImageUrl!,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (BuildContext context,
+                                      Widget child,
+                                      ImageChunkEvent? loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress
+                                                    .expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                    .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(LucideIcons.imageOff,
+                                              size: 32,
+                                              color: AppColors.destructive),
+                                          SizedBox(height: 8),
+                                          Text('Failed to load image preview.',
+                                              style: TextStyle(
+                                                  color: AppColors
+                                                      .mutedForeground)),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                        ],
+                        AppDropdown<String>(
+                          labelText: 'Category',
+                          value: _selectedCategory,
+                          items: _categories
+                              .map((c) =>
+                                  DropdownMenuItem(value: c, child: Text(c)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedCategory = val);
+                            }
+                          },
                         ),
-                      ),
-                  ],
-                  AppDropdown<String>(
-                    labelText: 'Category',
-                    value: _selectedCategory,
-                    items: _categories
-                        .map((c) =>
-                        DropdownMenuItem(value: c, child: Text(c)))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _selectedCategory = val);
-                      }
-                    },
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _bodyController,
+                          labelText: 'Template Body',
+                          hintText:
+                              'Enter your message body here... Use {{variable}} for placeholders.',
+                          maxLines: 6,
+                          validator: (val) => val == null || val.isEmpty
+                              ? 'Body is required'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: _bodyController,
-                    labelText: 'Template Body',
-                    hintText:
-                    'Enter your message body here... Use {{variable}} for placeholders.',
-                    maxLines: 6,
-                    validator: (val) => val == null || val.isEmpty
-                        ? 'Body is required'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
+                ),
         ),
       ),
       actionsPadding: const EdgeInsets.all(16.0),
       actions: _isSaving
           ? []
           : [
-        AppButton(
-          text: 'Submit',
-          onPressed: () => _onSave(TemplateStatus.SUBMITTED),
-          width: isMobileScreen ? double.infinity : null,
-        ),
-      ],
+              AppButton(
+                text: 'Submit',
+                onPressed: () => _onSave(TemplateStatus.SUBMITTED),
+                width: isMobileScreen ? double.infinity : null,
+              ),
+            ],
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/models/knowledge_source.dart';
-import 'package:humainity_flutter/repositories/knowledge_repository.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/models/knowledge_source.dart';
+import 'package:humainise_ai/repositories/knowledge_repository.dart';
 
 // 1. State Class
 class KnowledgeState {
@@ -42,7 +42,8 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   final KnowledgeRepository _repository;
   final StoreUserData storeUserData;
 
-  KnowledgeNotifier(this._repository, this.storeUserData) : super(KnowledgeState()) {
+  KnowledgeNotifier(this._repository, this.storeUserData)
+      : super(KnowledgeState()) {
     loadKnowledge(); // Load initial data
   }
 
@@ -115,7 +116,8 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
 }
 
 // 3. Provider Definition
-final knowledgeProvider = StateNotifierProvider<KnowledgeNotifier, KnowledgeState>((ref) {
+final knowledgeProvider =
+    StateNotifierProvider<KnowledgeNotifier, KnowledgeState>((ref) {
   final repository = ref.watch(knowledgeRepositoryProvider);
   final storeUserData = ref.watch(storeUserDataProvider);
   return KnowledgeNotifier(repository, storeUserData!);

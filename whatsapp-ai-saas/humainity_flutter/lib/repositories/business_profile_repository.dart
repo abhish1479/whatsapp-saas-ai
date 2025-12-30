@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
-import 'package:humainity_flutter/models/business_profile.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
+import 'package:humainise_ai/models/business_profile.dart';
 
-final businessProfileRepositoryProvider = Provider<BusinessProfileRepository>((ref) {
+final businessProfileRepositoryProvider =
+    Provider<BusinessProfileRepository>((ref) {
   final storeUserData = ref.watch(storeUserDataProvider);
   return BusinessProfileRepository(storeUserData);
 });
@@ -29,7 +30,8 @@ class BusinessProfileRepository {
     };
   }
 
-  Future<BusinessProfile> createBusinessProfile(BusinessProfileCreate payload) async {
+  Future<BusinessProfile> createBusinessProfile(
+      BusinessProfileCreate payload) async {
     final url = Uri.parse('$_baseUrl/business_profile/create');
     final headers = await _getHeaders();
 
@@ -61,7 +63,8 @@ class BusinessProfileRepository {
     }
   }
 
-  Future<BusinessProfile> updateBusinessProfile(BusinessProfileUpdate payload) async {
+  Future<BusinessProfile> updateBusinessProfile(
+      BusinessProfileUpdate payload) async {
     final url = Uri.parse('$_baseUrl/business_profile/update');
     final headers = await _getHeaders();
 

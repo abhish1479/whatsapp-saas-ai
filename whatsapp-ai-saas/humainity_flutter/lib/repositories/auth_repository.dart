@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:humainity_flutter/core/storage/store_user_data.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
 
 import 'mini_crm_repository.dart';
 
@@ -182,8 +182,7 @@ class AuthRepository {
     }
 
     if (data['onboarding_process'] != null) {
-      await _store!
-          .setOnboardingProcess(data['onboarding_process'].toString());
+      await _store!.setOnboardingProcess(data['onboarding_process'].toString());
     }
 
     if (data['onboarding_steps'] is Map) {

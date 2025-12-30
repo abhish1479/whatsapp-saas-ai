@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
 
 class AppTabs extends StatelessWidget {
   final TabController controller;
@@ -39,7 +39,8 @@ class AppTabs extends StatelessWidget {
         unselectedLabelColor: AppColors.mutedForeground,
         overlayColor: MaterialStateProperty.all(Colors.transparent),
         labelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        unselectedLabelStyle:
+            const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         dividerColor: Colors.transparent,
       ),
     );

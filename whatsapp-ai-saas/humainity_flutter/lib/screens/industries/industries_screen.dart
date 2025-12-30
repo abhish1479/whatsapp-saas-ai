@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:humainity_flutter/core/theme/app_colors.dart';
-import 'package:humainity_flutter/core/utils/responsive.dart';
-import 'package:humainity_flutter/data/industries_data.dart';
-import 'package:humainity_flutter/screens/home/widgets/footer.dart';
-import 'package:humainity_flutter/screens/home/widgets/navigation.dart';
-import 'package:humainity_flutter/widgets/ui/app_button.dart';
+import 'package:humainise_ai/core/theme/app_colors.dart';
+import 'package:humainise_ai/core/utils/responsive.dart';
+import 'package:humainise_ai/data/industries_data.dart';
+import 'package:humainise_ai/screens/home/widgets/footer.dart';
+import 'package:humainise_ai/screens/home/widgets/navigation.dart';
+import 'package:humainise_ai/widgets/ui/app_button.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:humainity_flutter/data/industry_model.dart';
+import 'package:humainise_ai/data/industry_model.dart';
+
 class IndustriesScreen extends StatelessWidget {
   const IndustriesScreen({super.key});
 
@@ -109,11 +110,11 @@ class IndustriesScreen extends StatelessWidget {
                   child: Wrap(
                     spacing: 24,
                     runSpacing: 24,
-                    alignment: isMobile
-                        ? WrapAlignment.center
-                        : WrapAlignment.start,
+                    alignment:
+                        isMobile ? WrapAlignment.center : WrapAlignment.start,
                     children: industries.map((industry) {
-                      return _IndustryCard(industry: industry, isMobile: isMobile);
+                      return _IndustryCard(
+                          industry: industry, isMobile: isMobile);
                     }).toList(),
                   ),
                 ),
@@ -174,7 +175,7 @@ class IndustriesScreen extends StatelessWidget {
                               onPressed: () => context.go('/'),
                               isLg: true,
                               // Ghost button styling on primary background
-                              backgroundColor: Colors.transparent, 
+                              backgroundColor: Colors.transparent,
                               textColor: Colors.white,
                               // Note: Assuming AppButton handles an outlined appearance
                               // when background is transparent and text is colored.
@@ -233,7 +234,7 @@ class _IndustryCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1), 
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(industry.icon, color: AppColors.primary, size: 24),

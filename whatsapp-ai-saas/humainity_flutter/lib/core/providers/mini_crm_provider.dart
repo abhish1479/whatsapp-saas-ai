@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:humainity_flutter/repositories/mini_crm_repository.dart';
+import 'package:humainise_ai/repositories/mini_crm_repository.dart';
 
 // Use AutoDispose to ensure we reset logic when leaving the screen
-final miniCrmLinkProvider = AsyncNotifierProvider.autoDispose<MiniCrmLinkNotifier, String>(() {
+final miniCrmLinkProvider =
+    AsyncNotifierProvider.autoDispose<MiniCrmLinkNotifier, String>(() {
   return MiniCrmLinkNotifier();
 });
 
