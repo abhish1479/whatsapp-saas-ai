@@ -1,6 +1,6 @@
 # leadbot_client
 
-A new Flutter project.
+Automate your customer support and sales outreach with AI agents that understand your business,learn from your data, and engage across WhatsApp and Voice..
 
 ## Getting Started
 

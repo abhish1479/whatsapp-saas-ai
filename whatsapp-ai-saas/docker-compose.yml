@@ -72,7 +72,7 @@ services:
   
   flutter_web:
     build:
-      context: ./humainity_flutter
+      context: ./humainise_ai
       dockerfile: Dockerfile
       args:
         API_HOST: localhost

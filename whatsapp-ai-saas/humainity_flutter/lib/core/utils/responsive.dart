@@ -1,5 +1,3 @@
-// humainity_saas/lib/core/utils/responsive.dart
-
 import 'package:flutter/material.dart';
 
 class Responsive extends StatelessWidget {
@@ -19,7 +17,7 @@ class Responsive extends StatelessWidget {
 
   static bool isTablet(BuildContext context) =>
       MediaQuery.of(context).size.width < 1100 &&
-          MediaQuery.of(context).size.width >= 850;
+      MediaQuery.of(context).size.width >= 850;
 
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width >= 1100;

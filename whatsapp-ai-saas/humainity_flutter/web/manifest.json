@@ -1,11 +1,11 @@
 {
-    "name": "humainise_ai",
-    "short_name": "humainise_ai",
+    "name": "humAInise.ai",
+    "short_name": "humAInise.ai",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Automate your customer support and sales outreach with AI agents that understand your business,learn from your data, and engage across WhatsApp and Voice..",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
