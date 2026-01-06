@@ -17,7 +17,6 @@ class Settings:
     DB_USER=os.getenv("DB_USER","wa_user")
     DB_PASS=os.getenv("DB_PASS","wa_pass")
     REDIS_URL=os.getenv("REDIS_URL","redis://redis:6379/0")
-
     WA_PROVIDER=os.getenv("WA_PROVIDER","dialog360")
     DIALOG360_BASE_URL=os.getenv("DIALOG360_BASE_URL","https://waba.360dialog.io")
     DIALOG360_API_KEY=os.getenv("DIALOG360_API_KEY","")
