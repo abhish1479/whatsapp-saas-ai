@@ -3,7 +3,8 @@ import random
 from fastapi import APIRouter, BackgroundTasks, UploadFile, File, Form, HTTPException, Depends ,status
 from fastapi.responses import JSONResponse
 from typing import Optional, List, Literal
-from requests import Session
+# from requests import Session
+from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv, io, json
@@ -587,37 +588,47 @@ def get_tanant_id_from_receiver(receiver: str) -> int:
 
 @router.get("/get_workflows_by_email")
 def get_workflows_by_email(
-        email: str,
-        db: Session = Depends(get_db),
-    ):
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-    
-        workflows = db.query(Workflow).filter(Workflow.tenant_id == user.tenant_id).all()
-        return {"workflows": workflows}
+    email: str,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    workflows = (
+        db.query(Workflow)
+        .filter(Workflow.tenant_id == user.tenant_id)
+        .all()
+    )
+    return {"workflows": workflows}
     
 @router.get("/get_templates_by_email")
 def get_templates_by_email(
-        email: str,
-        db: Session = Depends(get_db),
-    ):
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-    
-        templates = db.query(Template).filter(Template.tenant_id == user.tenant_id).all()
-        return {"templates": templates}
-    
+    email: str,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    templates = (
+        db.query(Template)
+        .filter(Template.tenant_id == user.tenant_id)
+        .all()
+    )
+    return {"templates": templates}
 @router.get("/get_agents_by_email")
 def get_agents_by_email(
-        email: str,
-            db: Session = Depends(get_db),
-        ):
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-    
-        agents = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == user.tenant_id).all()
-        return {"agents": agents}
-	
+    email: str,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    agents = (
+        db.query(AgentConfiguration)
+        .filter(AgentConfiguration.tenant_id == user.tenant_id)
+        .all()
+    )
+    return {"agents": agents}

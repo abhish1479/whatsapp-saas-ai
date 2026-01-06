@@ -1,7 +1,9 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:humainise_ai/config.dart';
 import 'package:humainise_ai/core/utils/responsive.dart';
 import 'package:humainise_ai/widgets/ui/app_button.dart';
-
 class ExperienceDemoScreen extends StatefulWidget {
   const ExperienceDemoScreen({super.key});
 
@@ -497,15 +499,46 @@ class _ExperienceDemoScreenState extends State<ExperienceDemoScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _openDemoModal(BuildContext context, _DemoType type) async {
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (_) => _DemoFormDialog(
-        demo: _currentDemo,
-        type: type,
-        onSuccess: (msg) => showSuccessSnackBar(context, msg),
-      ),
+   final result = await showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (_) => _DemoFormDialog(
+      demo: _currentDemo,
+      type: type,
+    ),
+  );
+
+    if (result == null) return;
+
+  final name = result['name'] as String? ?? '';
+  final phone = result['phone'] as String;
+
+  const scriptUrl = AppConfig.googleFormWebAppUrl;
+
+  try {
+    final response = await http.post(
+      Uri.parse(scriptUrl.trim()),
+      body: {
+        'name': name,
+        'phone': phone,
+        'demoType': type == _DemoType.voice ? 'Voice Call' : 'WhatsApp Chat',
+      },
     );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'success') {
+        final message = "Success! You'll receive a ${type == _DemoType.voice ? 'call' : 'WhatsApp message'} shortly to experience ${_currentDemo.title}.";
+        showSuccessSnackBar(context, message);
+      } else {
+        showSuccessSnackBar(context, "Submission error: ${data['message']}");
+      }
+    } else {
+      showSuccessSnackBar(context, "Failed to connect to server.");
+    }
+  } catch (e) {
+    showSuccessSnackBar(context, "Network error: ${e.toString()}");
+  }
   }
 }
 
@@ -516,12 +549,12 @@ class _ExperienceDemoScreenState extends State<ExperienceDemoScreen> {
 class _DemoFormDialog extends StatefulWidget {
   final _DemoScenario demo;
   final _DemoType type;
-  final void Function(String) onSuccess;
+  // final void Function(String) onSuccess;
 
   const _DemoFormDialog({
     required this.demo,
     required this.type,
-    required this.onSuccess,
+    // required this.onSuccess,
   });
 
   @override
@@ -690,11 +723,14 @@ class _DemoFormDialogState extends State<_DemoFormDialog> {
                       return;
                     }
 
-                    Navigator.pop(context);
+                    Navigator.pop(context, {
+                        'name': _name.text.trim(),
+                        'phone': _phone.text.trim(),
+                      });
 
-                    widget.onSuccess(
-                      "Success! You'll receive a WhatsApp message shortly to experience ${widget.demo.title}.",
-                    );
+                    // widget.onSuccess(
+                    //   "Success! You'll receive a WhatsApp message shortly to experience ${widget.demo.title}.",
+                    // );
                   },
                   child: Text(
                     btnLabel,
