@@ -11,7 +11,7 @@ final miniCrmLinkProvider =
 
 class MiniCrmLinkNotifier extends AutoDisposeAsyncNotifier<String> {
   // The target URL we ultimately want the user to see
-  final String _targetUrl = 'http://localhost:8090/app/crm?embed=1';
+  final String _targetUrl = 'http://localhost:8788/app/crm?embed=1';
 
   @override
   FutureOr<String> build() async {

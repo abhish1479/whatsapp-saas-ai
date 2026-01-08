@@ -27,7 +27,7 @@ class AuthRepository {
 
   bool _isFetchingOnboarding = false;
   bool _onboardingCompleted = false;
-  String get _erpBaseUrl => 'http://localhost:8090';
+  String get _erpBaseUrl => 'http://localhost:8788';
   String get _baseUrl {
     final url = dotenv.env['API_BASE_URL'];
     if (url == null || url.isEmpty) {

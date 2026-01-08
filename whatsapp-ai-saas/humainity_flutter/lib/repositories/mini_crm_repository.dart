@@ -10,7 +10,7 @@ final miniCrmRepositoryProvider = Provider<MiniCrmRepository>((ref) {
 
 class MiniCrmRepository {
   final StoreUserData? _store;
-  final String _erpBaseUrl = 'http://localhost:8090';
+  final String _erpBaseUrl = 'http://localhost:8788';
 
   MiniCrmRepository(this._store);
 
