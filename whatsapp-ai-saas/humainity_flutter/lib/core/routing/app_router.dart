@@ -153,21 +153,21 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'mini-crm',
                 builder: (context, state) => const CommonIframeView(
                   title: 'Mini CRM',
-                  targetUrl: 'http://localhost:8090/app/customer',
+                  targetUrl: 'http://localhost:8788/app/customer',
                 ),
               ),
               GoRoute(
                 path: 'leads',
                 builder: (context, state) => const CommonIframeView(
                   title: 'Leads',
-                  targetUrl: 'http://localhost:8090/app/lead',
+                  targetUrl: 'http://localhost:8788/app/lead',
                 ),
               ),
               GoRoute(
                 path: 'ext-campaigns',
                 builder: (context, state) => const CommonIframeView(
                   title: 'External Campaigns',
-                  targetUrl: 'http://localhost:8090/app/campaign',
+                  targetUrl: 'http://localhost:8788/app/campaign',
                 ),
               ),
               GoRoute(

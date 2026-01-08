@@ -1,111 +1,318 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta name="keywords" content="Humainise, Humainise AI, Humanise, Humanize, WhatsApp Automation, AI Agents, Sales Outreach, Customer Support AI, Voice AI, CRM Integration, Salesforce Automation, Business Chatbot, 24/7 Support">
-  
-  <meta name="description" content="Humainise AI: The AI workforce that Talks, Sells & Supports. Automate WhatsApp & Voice with intelligent agents for 24/7 Customer Service & Sales Outreach.">
-  
-  <meta name="author" content="Humainise AI">
-
-  <meta property="og:title" content="Humainise AI - AI Agents for WhatsApp & Sales">
-  <meta property="og:description" content="Meet your new AI workforce. Automate Support & Sales on WhatsApp & Voice instantly.">
-  <meta property="og:image" content="https://www.humainise.ai/icons/Icon-192.png">
-  <meta property="og:url" content="https://www.humainise.ai/">
-  <meta property="og:type" content="website">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Humainise AI",
-    "url": "https://www.humainise.ai",
-    "logo": "https://www.humainise.ai/icons/Icon-192.png",
-    "description": "AI agents that Talk, Sell, and Support on WhatsApp and Voice.",
-    "alternateName": ["Humanise", "Humanize AI", "HumAInise"],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "telephone": "+91-9871777715",
-      "contactType": "customer service",
-      "areaServed": "IN",
-      "availableLanguage": ["en", "hi"]
-    },
-    "sameAs": [
-      "https://www.linkedin.com/company/mymobiforce", 
-      "https://twitter.com/mymobiforce",
-      "https://www.youtube.com/@mymobiforce"
-    ]
-  }
-  </script>
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Humainise AI">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-
+  <link rel="canonical" href="https://www.humainise.ai/" />
+  <meta name="description" content="Humainise AI: The AI workforce that Talks, Sells & Supports.">
   <title>Humainise AI - WhatsApp, Voice & Sales Automation</title>
-  <link rel="manifest" href="manifest.json">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --ai-blue: #00A3FF;
+      --deep-blue: #001AFF;
+      --wa-green: #25d366;
+      --dark-text: #0f172a;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      font-family: 'Inter', -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    /* --- ANIMATED MESH BACKGROUND --- */
+    .bg-mesh {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background-color: #ffffff;
+      background-image:
+        radial-gradient(at 0% 0%, rgba(0, 163, 255, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(0, 26, 255, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(37, 211, 102, 0.05) 0px, transparent 50%);
+      filter: blur(80px);
+      animation: meshMove 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes meshMove {
+      0% {
+        transform: scale(1);
+      }
+
+      100% {
+        transform: scale(1.1) rotate(3deg);
+      }
+    }
+
+    /* --- LOADING CONTAINER --- */
     .loading-container {
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: #ffffff;
+      inset: 0;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 9999;
-      transition: opacity 0.5s ease-out;
+      backdrop-filter: blur(10px);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #00A3FF; /* Humainise Blue Color */
+
+    .neural-mesh {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* THE GLOWING CORE */
+    .core-blob {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--ai-blue), var(--deep-blue));
+      border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%;
+      box-shadow: 0 0 50px rgba(0, 163, 255, 0.6);
+      animation: morph 6s ease-in-out infinite alternate, rotate-slow 10s linear infinite;
+      z-index: 2;
+      filter: contrast(1.2);
+
+      /* --- NEW PROPERTIES TO CENTER THE H --- */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 42px;
+      /* Adjusted for the 80px blob */
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      /* Prevents text selection highlighting */
+    }
+
+    /* GLASS RINGS */
+    .glass-ring {
+      position: absolute;
+      border: 1.5px solid rgba(0, 163, 255, 0.2);
       border-radius: 50%;
-      animation: spin 1s linear infinite;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+
+    .ring-1 {
+      width: 140px;
+      height: 140px;
+      animation: orbit 5s linear infinite;
+    }
+
+    .ring-1::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: -5px;
+      width: 10px;
+      height: 10px;
+      background: var(--ai-blue);
+      border-radius: 50%;
+      box-shadow: 0 0 15px var(--ai-blue);
+    }
+
+    .ring-2 {
+      width: 180px;
+      height: 180px;
+      border-style: dashed;
+      opacity: 0.3;
+      animation: orbit 12s linear infinite reverse;
+    }
+
+    /* TEXT STYLING */
+    .loading-info {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .brand-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--dark-text);
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #0f172a, #00A3FF, #0f172a);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textShimmer 3s linear infinite;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      font-weight: 400;
+      color: #64748b;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* PROGRESS LINE */
+    .progress-bar {
+      width: 160px;
+      height: 3px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+      margin: 20px auto;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      position: absolute;
+      height: 100%;
+      width: 40%;
+      background: var(--ai-blue);
+      border-radius: 10px;
+      animation: progressMove 2s ease-in-out infinite;
+    }
+
+    /* --- WHATSAPP FLOATING BUTTON --- */
+    .wa-float {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      z-index: 100;
+      text-decoration: none;
+    }
+
+    .wa-btn {
+      width: 64px;
+      height: 64px;
+      background-color: var(--wa-green);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+
+    .wa-btn:hover {
+      transform: scale(1.1) translateY(-5px);
+    }
+
+    .wa-pulse {
+      position: absolute;
+      inset: 0;
+      background: var(--wa-green);
+      border-radius: 50%;
+      z-index: -1;
+      animation: pulse-out 2s infinite;
+    }
+
+    /* --- ANIMATIONS --- */
+    @keyframes morph {
+      0% {
+        border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%;
+      }
+
+      100% {
+        border-radius: 60% 40% 40% 60% / 60% 60% 40% 40%;
+      }
+    }
+
+    @keyframes orbit {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes progressMove {
+      0% {
+        left: -40%;
+      }
+
+      100% {
+        left: 100%;
+      }
+    }
+
+    @keyframes textShimmer {
+      to {
+        background-position: 200% center;
+      }
+    }
+
+    @keyframes pulse-out {
+      0% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
     }
   </style>
 </head>
 
 <body>
+  <div class="bg-mesh"></div>
 
   <div id="loading_indicator" class="loading-container">
-    <div class="spinner"></div>
+    <div class="neural-mesh">
+      <div class="glass-ring ring-1"></div>
+      <div class="glass-ring ring-2"></div>
+      <div class="core-blob">H</div>
+    </div>
+
+    <div class="loading-info">
+      <div class="brand-title">HumAInise AI</div>
+      <div class="brand-subtitle">WhatsApp, Voice & Sales Automation</div>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
   </div>
 
-  <a href="https://wa.me/919871777715?text=Hi,%20I%20am%20interested%20in%20HumAInise%20AI%20solutions." 
-     target="_blank" 
-     style="position:fixed; bottom:30px; right:30px; z-index:9998; text-decoration:none;">
-    <div style="background-color:#25d366; width:60px; height:60px; border-radius:50%; box-shadow: 2px 2px 10px rgba(0,0,0,0.2); display:flex; justify-content:center; align-items:center;">
-       <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 24 24" fill="#ffffff">
-         <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.463 1.065 2.876 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-       </svg>
+  <a href="https://wa.me/919871777715?text=Hi, I am interested in HumAInise AI solutions." target="_blank"
+    class="wa-float">
+    <div class="wa-btn">
+      <div class="wa-pulse"></div>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+        <path
+          d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.463 1.065 2.876 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+      </svg>
     </div>
   </a>
 
   <script>
-    window.addEventListener('load', function() {
-      // Loader will be removed by Flutter's bootstrap automatically mostly, 
-      // but this acts as a failsafe if needed later.
+    window.addEventListener('load', function () {
       var loader = document.querySelector('#loading_indicator');
-      // Agar 5 seconds tak flutter load na ho, tab bhi loader hata dein (backup)
-      setTimeout(function(){
-         if(loader) loader.style.display = 'none';
-      }, 8000);
+      if (loader) {
+        setTimeout(() => {
+          loader.style.opacity = '0';
+          setTimeout(() => {
+            if (loader.parentNode) loader.remove();
+          }, 800);
+        }, 2000);
+      }
     });
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
+
 </html>
