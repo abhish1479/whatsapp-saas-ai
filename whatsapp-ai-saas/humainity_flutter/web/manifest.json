@@ -1,12 +1,13 @@
 {
-    "name": "humAInise.ai",
-    "short_name": "humAInise.ai",
+    "name": "Humainise AI",
+    "short_name": "Humainise",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Automate your customer support and sales outreach with AI agents that understand your business,learn from your data, and engage across WhatsApp and Voice..",
-    "orientation": "portrait-primary",
+    "background_color": "#FFFFFF",
+    "theme_color": "#00A3FF",
+    "description": "Automate your customer support and sales outreach with AI agents regarding WhatsApp and Voice.",
+    "orientation": "portrait",
+    "categories": ["business", "productivity", "utilities"],
     "prefer_related_applications": false,
     "icons": [
         {
