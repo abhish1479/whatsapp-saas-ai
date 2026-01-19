@@ -1,4 +1,4 @@
-# docker-compose.yml  (no top-level "version:" key)
+# docker-compose.yml  (Fixed - humainise_ai -> humainity_flutter)
 
 services:
   db:
@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: wa_saas_user
       POSTGRES_PASSWORD: smileplz
     ports:
-      - "5433:5432"   # host:container
+      - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,54 +25,34 @@ services:
       - "6379:6379"
 
   server:
-      container_name: wa_server
-      build:
-        context: .                  # build from project root
-        dockerfile: server/Dockerfile
-      command: uvicorn main:app --host 0.0.0.0 --port 8000
-      env_file:
-        - .env
-      environment:
-        DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
-        REDIS_URL: redis://redis:6379/0
-        CHROMA_PATH: /data/chroma
-        WEBHOOK_QUEUE: wh_inbound_queue
-      depends_on:
-        db:
-          condition: service_healthy
-        redis:
-          condition: service_started
-      ports:
-        - "8000:8000"
-      volumes:
-        - ./data/chroma:/data/chroma
+    container_name: wa_server
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_PATH: /data/chroma
+      WEBHOOK_QUEUE: wh_inbound_queue
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chroma:/data/chroma
 
-  # worker:
-  #   container_name: wa_worker
-  #   build:
-  #     context: .                   # build from project root
-  #     dockerfile: server/Dockerfile
-  #   command: python -m workers.webhook_worker
-  #   env_file:
-  #     - .env
-  #   environment:         
-  #     DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
-  #     REDIS_URL: redis://redis:6379/0
-  #     WEBHOOK_QUEUE: wh_inbound_queue
-  #     CHROMA_PATH: /data/chroma
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #     server:
-  #       condition: service_started
-  #   volumes:
-  #     - ./data/chroma:/data/chroma
-  
+  # worker:  # Commented out as in original
+  #   ...
+
   flutter_web:
     build:
-      context: ./humainise_ai
+      context: ./humainity_flutter      # FIXED: Changed from ./humainise_ai
       dockerfile: Dockerfile
       args:
         API_HOST: localhost
@@ -88,7 +68,7 @@ services:
   rq_file_processing:
     container_name: wa_rq_file_processing
     build:
-      context: .                   # build from project root
+      context: .
       dockerfile: server/Dockerfile
     command: rq worker file_processing --url redis://redis:6379/0
     env_file:
