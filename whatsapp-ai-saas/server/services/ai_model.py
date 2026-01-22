@@ -15,6 +15,7 @@ from services.exotel_api import send_reply_via_exotel_api
 from services.process_media import process_media_message
 #from utils.log import append_media_log, append_usage
 from routers.onboarding import get_tanant_id_from_receiver
+from utils.universal_validator import universal_validator
 
 
 async def process_message_background(sender, receiver, user_input, content):
@@ -140,7 +141,24 @@ async def intelligence_model(sender,tenant_id):
                         "tool_call_id": tc.id,
                         "name": name,
                         "content": json.dumps(result)
-                    })      
+                    })
+                elif name == "universal_validator":
+                    items = args.get("items", [])
+                    print(f"[UNIVERSAL VALIDATOR TOOL] Items: {items}")
+                    if not items:
+                        ai_reply = extract_gpt_reply(choice) or (
+                                "I can help you with your query. Could you tell me more?"
+                            )
+                        append_assistant(sender, ai_reply)
+                        return ai_reply
+
+                    result = universal_validator(json.dumps(items))
+                    tool_msgs.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "name": name,
+                        "content": result
+                    })     
                 else:
                     tool_msgs.append({
                         "role": "tool",

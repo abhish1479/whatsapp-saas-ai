@@ -7,7 +7,7 @@ from datetime import datetime
 from models import BusinessProfile, Campaign, Lead, CampaignRecipient, Template
 # Assuming you have a unified sender function
 from deps import SessionLocal
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from services.exotel_api import send_template_with_media
 from settings import settings 
 
@@ -66,8 +66,8 @@ class CampaignService:
                 # We process batches to avoid memory issues, though here we do all for simplicity
                 leads = db.query(Lead).filter(
                     Lead.campaign_id == campaign_id,
-                    Lead.status == "New"
-                ).limit(100).all() 
+                    or_(Lead.status == "New", Lead.status == "Pending")
+                ).limit(100).all()
 
                 # If no leads left, mark campaign complete
                 if not leads:
@@ -75,8 +75,9 @@ class CampaignService:
                     db.commit()
                     return
                 
-                sender_number = "919773743558" 
+                sender_number = "918448690360" 
                 bussiness_profile = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == campaign.tenant_id).first()
+                print(f"====== Bussiness Profile ===========: {bussiness_profile}")
                 if bussiness_profile:
                     sender_number = bussiness_profile.business_whatsapp
 

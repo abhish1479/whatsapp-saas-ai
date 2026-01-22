@@ -1,22 +1,27 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:humainise_ai/core/providers/auth_provider.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
 import 'package:humainise_ai/models/campaign.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CampaignsRepository {
   // Ensure your .env has the correct API_BASE_URL (e.g. http://127.0.0.1:8000)
   final String _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
-  final String _authToken;
-  final int _tenantId;
+  late final Future<String?> _authToken;
+  late final Future<int?> _tenantId;
+  final StoreUserData _storeUserData;
 
-  CampaignsRepository({required String token, required int tenantId})
-      : _authToken = token,
-        _tenantId = tenantId;
+  CampaignsRepository(this._storeUserData) {
+    _authToken = _storeUserData.getToken();
+   _tenantId = _storeUserData.getTenantId().then((val) => val != null ? int.tryParse(val) : null);
+  }
 
   Future<List<Campaign>> fetchCampaigns() async {
+    String? tenant_id = await _storeUserData.getTenantId();
     final response = await http.get(
-      Uri.parse('$_baseUrl/campaigns/list?tenant_id=$_tenantId'),
+      Uri.parse('$_baseUrl/campaigns/list?tenant_id=$tenant_id'),
       headers: {
         'Authorization': 'Bearer $_authToken',
         'Content-Type': 'application/json',
@@ -65,14 +70,14 @@ class CampaignsRepository {
 
     // Add Headers
     request.headers['Authorization'] = 'Bearer $_authToken';
-
+    int? tenant_id = await _tenantId;
     // Add Form Fields
     if (description != null) request.fields['description'] = description;
     request.fields['channel'] = channel;
     if (templateId != null)
       request.fields['template_id'] = templateId.toString();
     request.fields['run_immediate'] = runImmediate.toString();
-    request.fields['tenant_id'] = _tenantId.toString();
+    request.fields['tenant_id'] = tenant_id.toString();
 
     // Add CSV File
     if (file.bytes != null) {

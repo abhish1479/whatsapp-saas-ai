@@ -26,5 +26,37 @@ find_rag_info_tool = {
     }
 }
 
+universal_validator = {
+  "type": "function",
+  "function": {
+    "name": "universal_validator",
+    "description": "Validates a list of data items. Use this whenever the user provides specific data like emails, phones, dates, or pincodes. You can validate multiple items at once.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "description": "A list of data items to validate.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "The actual data string to validate (e.g., 'test@mail.com')."
+              },
+              "type": {
+                "type": "string",
+                "description": "The category of the data.",
+                "enum": ["EMAIL", "PHONE", "PINCODE", "URL", "DATE", "PAN_CARD"]
+              }
+            },
+            "required": ["value", "type"]
+          }
+        }
+      },
+      "required": ["items"]
+    }
+  }
+}
 
-TOOLS = [find_rag_info_tool]
+TOOLS = [find_rag_info_tool, universal_validator]

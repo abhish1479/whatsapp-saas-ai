@@ -46,7 +46,7 @@ app.*.map.json
 
 Miscellaneous
 
-*.lock
+
 *.pot
 *.rb
 *.strings

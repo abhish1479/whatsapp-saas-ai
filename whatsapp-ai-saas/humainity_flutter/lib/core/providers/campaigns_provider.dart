@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:humainise_ai/core/storage/store_user_data.dart';
 import 'package:humainise_ai/models/campaign.dart';
 import 'package:humainise_ai/repositories/campaigns_repository.dart';
 // Import your auth/profile providers to get the token/tenant_id
@@ -9,15 +10,8 @@ import 'package:humainise_ai/repositories/campaigns_repository.dart';
 
 // 1. Create the Repository Provider
 final campaignsRepositoryProvider = Provider<CampaignsRepository>((ref) {
-  // TODO: Retrieve the actual Token and Tenant ID from your Auth/Profile providers
-  // Example:
-  // final user = ref.watch(authNotifierProvider).user;
-  // final profile = ref.watch(businessProfileProvider).profile;
-
-  const String token = "YOUR_AUTH_TOKEN"; // Replace with ref.watch(...)
-  const int tenantId = 1; // Replace with ref.watch(...)
-
-  return CampaignsRepository(token: token, tenantId: tenantId);
+  final storeUserData = ref.watch(storeUserDataProvider);
+  return CampaignsRepository(storeUserData!);
 });
 
 // 2. Define the AsyncNotifier Provider
