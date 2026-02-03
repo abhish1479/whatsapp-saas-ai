@@ -25,7 +25,7 @@ import 'package:humainise_ai/screens/industries/industries_screen.dart';
 import 'package:humainise_ai/screens/industries/industry_detail_screen.dart';
 import 'package:humainise_ai/screens/not_found_screen.dart';
 import 'package:humainise_ai/screens/dashboard/mini_crm_screen.dart';
-
+import 'package:humainise_ai/screens/demo/demo_page.dart';
 import '../../screens/dashboard/widgets/iframe_view.dart.dart'; // NEW Import
 
 final GlobalKey<NavigatorState> rootNavigatorKey =
@@ -89,7 +89,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/experience-demo',
         builder: (context, state) => const ExperienceDemoScreen(),
       ),
-
+      GoRoute(
+        path: '/demo',
+        builder: (context, state) => const DemoPage(),
+      ),
       // ----- Dashboard Shell -----
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
