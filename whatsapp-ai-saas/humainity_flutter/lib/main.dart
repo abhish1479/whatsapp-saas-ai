@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:toastification/toastification.dart';
+import 'package:humainise_ai/screens/home/widgets/demo_section.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,9 @@ Future<void> main() async {
     debugPrint('✅ Firebase initialized');
   } catch (e) {
     debugPrint('⚠️ Firebase init failed: $e');
+  }
+  if (kIsWeb) {
+    DemoSection.registerIframe();
   }
   runApp(
     const ProviderScope(

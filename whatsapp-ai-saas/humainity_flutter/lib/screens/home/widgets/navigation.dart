@@ -7,6 +7,7 @@ import 'package:humainise_ai/widgets/ui/app_button.dart';
 import 'package:humainise_ai/core/utils/responsive.dart';
 
 class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
+  final VoidCallback? onDemoTap;
   final VoidCallback? onFeaturesTap;
   final VoidCallback? onSolutionsTap;
   final VoidCallback? onHowItWorksTap;
@@ -16,6 +17,7 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onExperienceTap;
   const HomeNavigation(
       {super.key,
+      this.onDemoTap,
       this.onFeaturesTap,
       this.onSolutionsTap,
       this.onHowItWorksTap,
@@ -85,6 +87,12 @@ class HomeNavigation extends StatelessWidget implements PreferredSizeWidget {
         TextButton(
           onPressed: () => context.go('/industries'),
           child: const Text("Industries"),
+        ),
+        const SizedBox(width: 10),
+        if (!AppConfig.isDemo)
+        AppButton(
+          text: "Demo",
+          onPressed: () => context.go('/demo'),
         ),
         const SizedBox(width: 10),
         if (!AppConfig.isDemo)
