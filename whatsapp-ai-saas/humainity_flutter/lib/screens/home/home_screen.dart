@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:humainise_ai/config.dart';
 import 'package:humainise_ai/screens/home/widgets/navigation.dart';
 import 'package:humainise_ai/screens/home/widgets/hero_section.dart';
 import 'package:humainise_ai/screens/home/widgets/why_humainity_section.dart';
@@ -122,6 +123,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         context.go('/industries');
                       },
                     ),
+                    if (!AppConfig.isDemo) const Divider(height: 32),
+                    if (!AppConfig.isDemo)
+                      ListTile(
+                        title: const Text("Demo"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.go('/demo');
+                        },
+                      ),
                     // const Divider(height: 32),
                     // ListTile(
                     //   title: const Text("Login"),
