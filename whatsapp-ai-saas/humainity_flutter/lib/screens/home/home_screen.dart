@@ -123,8 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         context.go('/industries');
                       },
                     ),
-                    if (!AppConfig.isDemo) const Divider(height: 32),
-                    if (!AppConfig.isDemo)
+                    if (AppConfig.isDemo) const Divider(height: 32),
+                    if (AppConfig.isDemo)
                       ListTile(
                         title: const Text("Demo"),
                         onTap: () {
