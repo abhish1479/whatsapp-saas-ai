@@ -17,11 +17,9 @@ class DemoSection extends StatelessWidget {
         final iframe = html.IFrameElement()
           ..src = 'https://humainise.lovable.app/godrej-presentation'
           ..style.border = 'none'
-          ..style.width = '100vw'
-          ..style.height = '100vh'
-          ..style.position = 'fixed'
-          ..style.top = '0'
-          ..style.left = '0';
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..setAttribute('allowfullscreen', 'true');
 
         return iframe;
       },
@@ -30,14 +28,14 @@ class DemoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!kIsWeb) {
-      return const Center(
-        child: Text("Demo available on web only"),
-      );
-    }
-
-    return const SizedBox.expand(
-      child: HtmlElementView(viewType: _viewType),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: const HtmlElementView(viewType: _viewType),
+        );
+      },
     );
   }
 }
