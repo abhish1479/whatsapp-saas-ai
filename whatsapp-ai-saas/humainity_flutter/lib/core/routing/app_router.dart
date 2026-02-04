@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,7 @@ import 'package:humainise_ai/screens/dashboard/knowledge_screen.dart';
 import 'package:humainise_ai/screens/dashboard/settings_screen.dart';
 import 'package:humainise_ai/screens/dashboard/templates_screen.dart';
 import 'package:humainise_ai/screens/dashboard/train_agent_screen.dart';
+import 'package:humainise_ai/screens/dashboard/widgets/iframe_view.dart.dart';
 import 'package:humainise_ai/screens/home/home_screen.dart';
 import 'package:humainise_ai/screens/home/widgets/experience_demo_screen.dart';
 import 'package:humainise_ai/screens/industries/industries_screen.dart';
@@ -26,7 +28,6 @@ import 'package:humainise_ai/screens/industries/industry_detail_screen.dart';
 import 'package:humainise_ai/screens/not_found_screen.dart';
 import 'package:humainise_ai/screens/dashboard/mini_crm_screen.dart';
 import 'package:humainise_ai/screens/demo/demo_page.dart';
-import '../../screens/dashboard/widgets/iframe_view.dart.dart'; // NEW Import
 
 final GlobalKey<NavigatorState> rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -37,9 +38,16 @@ final _shellNavigatorKey =
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authNotifierProvider);
 
+  String initialLoc;
+  if (kIsWeb) {
+    initialLoc = Uri.base.fragment.isEmpty ? '/' : Uri.base.fragment;
+  } else {
+    initialLoc = '/';
+  }
+
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/',
+    initialLocation: initialLoc,
     errorBuilder: (context, state) => const NotFoundScreen(),
 
     /// Refresh router whenever auth state changes
@@ -51,23 +59,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!authState.isInitialized) return null;
       final bool isLoggedIn = authState.isAuthenticated;
       final String location = state.matchedLocation;
-      // Define public routes that should be inaccessible when logged in
-      final bool isPublicRoute =
-          location == '/' || location == '/auth' || location == '/industries';
+
+      final bool isPublicRoute = location == '/' ||
+          location == '/auth' ||
+          location == '/industries';
       final bool isDashboardRoute = location.startsWith('/dashboard');
-      // 2. If NOT logged in, redirect dashboard routes to auth.
+
       if (!isLoggedIn && isDashboardRoute) {
         return '/auth';
       }
-      // 3. If IS logged in, redirect public routes ('/' and '/auth') to dashboard.
       if (isLoggedIn && isPublicRoute) {
         return '/dashboard/ai-agent';
       }
-
+  if (!isLoggedIn && location == '/demo') {
+        return '/demo';
+      }
       return null;
     },
 
     routes: [
+      GoRoute(
+        path: '/demo',
+        builder: (context, state) => const DemoPage(),
+      ),
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
@@ -89,10 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/experience-demo',
         builder: (context, state) => const ExperienceDemoScreen(),
       ),
-      GoRoute(
-        path: '/demo',
-        builder: (context, state) => const DemoPage(),
-      ),
+
       // ----- Dashboard Shell -----
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
