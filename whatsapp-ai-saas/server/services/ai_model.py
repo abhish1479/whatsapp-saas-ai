@@ -16,6 +16,7 @@ from services.process_media import process_media_message
 #from utils.log import append_media_log, append_usage
 from routers.onboarding import get_tanant_id_from_receiver
 from utils.universal_validator import universal_validator
+from services.salesforce import SalesforceService
 
 
 async def process_message_background(sender, receiver, user_input, content):
@@ -158,7 +159,56 @@ async def intelligence_model(sender,tenant_id):
                         "tool_call_id": tc.id,
                         "name": name,
                         "content": result
-                    })     
+                    })
+                # --- New PNR Handler ---
+                elif name == "get_pnr_details":
+                    pnr_no = args.get("pnr_no")
+                    passenger_name = args.get("passenger_name", "").strip()
+                    print(f"[PNR TOOL] Checking PNR: {pnr_no} for Name: {passenger_name}")
+                    
+                    if not pnr_no or not passenger_name:
+                        tool_msgs.append({
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "name": name,
+                            "content": json.dumps({"error": "Missing PNR or passenger name. Ask the user for their name before checking."})
+                        })
+                    else:
+                        try:
+                            # Fetch data using the Salesforce Service without hardcoded python name matching
+                            service = SalesforceService()
+                            pnr_data = await service.get_pnr_details(pnr=pnr_no)
+                            
+                            # Wrap the response with instructions for the LLM to do fuzzy name matching
+                            wrapped_response = {
+                                "system_instruction_to_llm": (
+                                    f"Here is the data for PNR {pnr_no}. "
+                                    f"SECURITY CHECK: Evaluate if the user's provided name '{passenger_name}' roughly matches "
+                                    "any of the passengers' first or last names in the data below. "
+                                    "You should ignore minor spelling mistakes or typos. "
+                                    "If it is a reasonable match, answer the user's question using this data. "
+                                    "If the name does NOT match at all, DO NOT reveal any booking details. "
+                                    "Instead, politely inform the user that the name does not match the PNR records."
+                                ),
+                                "pnr_data": pnr_data
+                            }
+                            
+                            tool_msgs.append({
+                                "role": "tool",
+                                "tool_call_id": tc.id,
+                                "name": name,
+                                "content": json.dumps(wrapped_response)
+                            })
+                            
+                        except Exception as e:
+                            # Catch API or 401/500 errors from Salesforce service
+                            tool_msgs.append({
+                                "role": "tool",
+                                "tool_call_id": tc.id,
+                                "name": name,
+                                "content": json.dumps({"error": f"Failed to retrieve PNR: {str(e)}"})
+                            })
+                                 
                 else:
                     tool_msgs.append({
                         "role": "tool",

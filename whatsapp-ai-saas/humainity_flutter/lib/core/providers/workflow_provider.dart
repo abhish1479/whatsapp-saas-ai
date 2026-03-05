@@ -70,18 +70,22 @@ class WorkflowNotifier extends StateNotifier<WorkflowState> {
       String name,
       String workflow,
       bool isDefault) async {
+    // Preserve the selected workflow before the state is updated.
+    final workflowToUpdate = state.selectedWorkflow;
+
     try {
       state = state.copyWith(isLoading: true, error: null);
 
       final tenantId = await _storeUserData.getTenantId();
       if (tenantId == null) return false;
 
-      if (state.selectedWorkflow == null) {
+      // Use the preserved workflow to decide between create and update.
+      if (workflowToUpdate == null) {
         await _repository.createWorkflow(
             tenantId.toString(), name, workflow);
       } else {
         await _repository.updateWorkflow(
-            state.selectedWorkflow!.id,
+            workflowToUpdate.id,
             name,
             workflow,
             isDefault);

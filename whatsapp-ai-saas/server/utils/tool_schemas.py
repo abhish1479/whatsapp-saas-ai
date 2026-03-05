@@ -59,4 +59,32 @@ universal_validator = {
   }
 }
 
-TOOLS = [find_rag_info_tool, universal_validator]
+# --- New PNR Tool ---
+get_pnr_details_tool = {
+    "type": "function",
+    "function": {
+        "name": "get_pnr_details",
+        "description": (
+            "Fetches flight booking, passenger, and baggage details for a given PNR number. "
+            "IMPORTANT SECURITY RULE: You MUST ask the user for their first name or last name before calling this tool. "
+            "IMPORTANT CONTEXT RULE: Do NOT call this tool if the PNR details are already present in the recent conversation history. "
+            "If the user asks a follow-up question about a PNR you already fetched, use the chat history instead of fetching it again."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "pnr_no": {
+                    "type": "string",
+                    "description": "The 6-character alphanumeric PNR number (e.g. GEDGRX)."
+                },
+                "passenger_name": {
+                    "type": "string",
+                    "description": "The first or last name of the passenger provided by the user for verification."
+                }
+            },
+            "required": ["pnr_no", "passenger_name"]
+        }
+    }
+}
+
+TOOLS = [find_rag_info_tool, universal_validator,get_pnr_details_tool]

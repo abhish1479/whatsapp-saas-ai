@@ -28,7 +28,7 @@ const List<String> _kAccents = [
   'Other'
 ];
 const List<String> _kTones = ['Professional', 'Friendly', 'Formal', 'Casual'];
-const List<String> _kLanguages = ['English', 'Spanish', 'French', 'Hindi'];
+const List<String> _kLanguages = ['English', 'Hindi', 'Hinglish', 'Spanish', 'French', 'Tamil', 'Telugu', 'Bengali', 'Gujarati', 'Marathi', 'Punjabi', 'Arabic', 'German'];
 const List<String> _kVoiceModels = [
   'eleven_turbo_v2_5',
   'eleven_multilingual_v2',

@@ -13,7 +13,7 @@ from deps import get_db_session
 from models import Lead, Template, BusinessProfile, AgentConfiguration, Workflow
 from sqlalchemy import func
 
-SESSION_EXPIRY_SECONDS = 600  # 30 minutes
+SESSION_EXPIRY_SECONDS = 600  # 5 minutes
 
 # In-memory session stores
 user_sessions = defaultdict(list)  # {sender: [messages]}
@@ -41,15 +41,15 @@ def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
     try:
         # Use the reusable context manager to acquire a database session
         # 1. Fetch Business Profile
-        # bp = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
-        # business_profile = safe_to_dict(bp)
+        bp = db.query(BusinessProfile).filter(BusinessProfile.tenant_id == tenant_id).first()
+        business_profile = bp.description if bp else ""
         # 2. Fetch Agent Configuration
         ac = db.query(AgentConfiguration).filter(AgentConfiguration.tenant_id == tenant_id).first()
         agent_config = safe_to_dict(ac)
         
-            # 3. Fetch Workflow
-        # wk = db.query(Workflow).filter(Workflow.tenant_id == tenant_id).first()
-        # workflow = safe_to_dict(wk)
+        # 3. Fetch Workflow
+        wk = db.query(Workflow).filter(Workflow.tenant_id == tenant_id and Workflow.is_default == True).first()
+        workflow = safe_to_dict(wk)
         
         if sender and len(sender) >= 10:
            phone_number = re.sub(r"\D", "", sender) if sender else ""
@@ -136,15 +136,15 @@ def get_history(sender: str,tenant_id: Optional[int] = None):
 
 async def append_user(sender: str, content , tenant_id: Optional[int] = None):
     get_history(sender,tenant_id).append({"role": "user", "content": content})
-    rag_context = ""
-    if content and tenant_id:
-        rag_results = await rag.search(tenant_id=tenant_id, query=content, k=4)
-        if rag_results:
-            snippets = [
-                    f"• {r['text']}" for r in rag_results[:3]
-                ]
-            rag_context = "\n".join(snippets)
-        get_history(sender,tenant_id).append({"role": "system", "content": rag_context})       
+    # rag_context = ""
+    # if content and tenant_id:
+    #     rag_results = await rag.search(tenant_id=tenant_id, query=content, k=4)
+    #     if rag_results:
+    #         snippets = [
+    #                 f"• {r['text']}" for r in rag_results[:3]
+    #             ]
+    #         rag_context = "\n".join(snippets)
+    #     get_history(sender,tenant_id).append({"role": "system", "content": rag_context})       
 
 
 def append_assistant(sender: str, content: str):

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -7,16 +9,28 @@ import '../core/storage/store_user_data.dart';
 
 class WorkflowRepository {
   final ApiClient _apiClient;
+  final StoreUserData _storeUserData;
 
-  WorkflowRepository(this._apiClient);
+  // TODO: The baseUrl should be ideally configurable.
+  final String _baseUrl = "http://127.0.0.1:8000";
+
+  WorkflowRepository(this._apiClient, this._storeUserData);
 
   Future<List<Workflow>> getWorkflows(String tenantId) async {
     final response =
         await _apiClient.get('/workflows/?tenant_id=$tenantId');
 
-    return (response as List)
-        .map((json) => Workflow.fromJson(json))
-        .toList();
+    if (response is List) {
+      return response
+          .map((json) => Workflow.fromJson(json))
+          .toList();
+    } else if (response is Map<String, dynamic>) {
+      // If the API returns a single object, wrap it in a list
+      return [Workflow.fromJson(response)];
+    } else {
+      // If the response is not a list or a map, return an empty list
+      return [];
+    }
   }
 
   Future<Workflow> createWorkflow(
@@ -59,20 +73,26 @@ class WorkflowRepository {
       String tenantId,
       String query) async {
     final encodedQuery = Uri.encodeComponent(query);
+    final token = await _storeUserData.getToken();
 
-    final response = await _apiClient.post(
-      '/workflows/workflow_optimizer?tenant_id=$tenantId&query=$encodedQuery',
+    if (token == null) {
+      throw Exception("Authentication token not found.");
+    }
+
+    final url = Uri.parse('$_baseUrl/workflows/workflow_optimizer?tenant_id=$tenantId&query=$encodedQuery');
+
+    final response = await http.post(
+      url,
+      headers: {
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+      },
     );
 
-     if (response is String) {
-        return response;
-     }
-
-     if (response is Map<String, dynamic> && response.containsKey('workflow')) {
-        return response['workflow'];
-     }
-
-     return response.toString();
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      throw Exception('Failed to optimize workflow. Status code: ${response.statusCode}, Body: ${response.body}');
+    }
   }
 
 }
@@ -80,6 +100,10 @@ class WorkflowRepository {
   final workflowRepositoryProvider =
     Provider<WorkflowRepository>((ref) {
   final storeUserData = ref.watch(storeUserDataProvider);
-  final apiClient = ApiClient(storeUserData!);
-  return WorkflowRepository(apiClient);
+  // We can't proceed if storeUserData is null, as it's essential for the repository.
+  if (storeUserData == null) {
+    throw Exception("StoreUserData is not available");
+  }
+  final apiClient = ApiClient(storeUserData);
+  return WorkflowRepository(apiClient, storeUserData);
 });

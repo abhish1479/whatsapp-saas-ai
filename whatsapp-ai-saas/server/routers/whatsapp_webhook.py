@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 router = APIRouter(tags=["webhooks"])
 
 @router.post("/whatsapp_webhook")
-async def whatsapp_webhook(request: Request):
+async def whatsapp_webhook(request: Request,db: Session = Depends(get_db)):
     print("=" * 60)
     print("[WEBHOOK] New request received from Exotel")
     
@@ -66,9 +66,72 @@ async def whatsapp_webhook(request: Request):
                     if sender and user_input:
                         # Schedule background processing
                         asyncio.create_task(process_message_background(sender, receiver, user_input, content))
+
+                # --- CASE 2: DELIVERY REPORT (DLR) ---
+                elif callback_type == 'dlr':
+                    recipient_phone = message.get('to', '') # e.g., +918377843261
+                    detailed_status = message.get('exo_detailed_status', '') # e.g., EX_MESSAGE_SENT or ..._ERROR
+                    description = message.get('description', '')
+                    
+                    # Safely handle empty phone numbers to avoid slicing errors
+                    search_phone = recipient_phone[-10:] if recipient_phone else ""
+                    
+                    template_category = message.get('template_category', '').lower()
+                    
+                    if template_category not in ['marketing', 'utility']:
+                        print(f"[DLR] Skipping status update. Category '{template_category}' is not marketing or utility.")
+                        return Response(content="", media_type="text/plain", status_code=200)
+
+                    if search_phone:
+                        # 1. Find the most recent Lead by Phone Number
+                        lead = db.query(Lead).filter(
+                            Lead.phone.like(f"%{search_phone}")
+                        ).order_by(desc(Lead.created_at)).first()
+
+                        if lead:
+                            print(f"[DB] Found Lead ID: {lead.id} for Phone: {recipient_phone}")
+                            
+                            # Initialize tags if not present
+                            # Copy to a new list to ensure SQLAlchemy detects the JSON mutation
+                            current_tags = list(lead.tags) if lead.tags else []
+
+                            # Get current UTC timestamp in ISO format
+                            now = datetime.now(timezone.utc).isoformat()
+
+                            # Track statuses of interest
+                            success_statuses = ['SENT', 'DELIVERED', 'READ', 'SEEN']
+                            existing_statuses = {item.get('status') for item in current_tags if isinstance(item, dict)}
+
+                            # Check for Success
+                            matched_success = [s for s in success_statuses if s in detailed_status]
+                            
+                            if matched_success:
+                                print(f"[STATUS] Marking as Success: {detailed_status}")
+                                lead.status = "Success"
+
+                                # Add new status entries to tags (avoid duplicates)
+                                for s in matched_success:
+                                    if s not in existing_statuses:
+                                        current_tags.append({"status": s, "timestamp": now})
+                            else:
+                                print(f"[STATUS] Marking as Failed: {description}")
+                                lead.status = "Failed"
+                                current_summary = lead.summary or ""
+                                new_summary = f"{current_summary} | Failed: {description}".strip(" |")
+                                lead.summary = new_summary
+
+                            # Re-assign tags to trigger SQLAlchemy update
+                            lead.tags = current_tags
+
+                            # Commit changes
+                            db.commit()
+                            db.refresh(lead)
+                        else:
+                            print(f"[DB] No lead found for phone number: {recipient_phone}")
+
                 else:
-                    print(f"[EXOTEL] Skipping callback type: {callback_type}")
-            
+                    print(f"[EXOTEL] Skipping/Unhandled callback type: {callback_type}")
+
         except Exception as e:
             print(f"[ERROR] Failed to parse JSON: {e}")
     else:

@@ -16,7 +16,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   lucide_icons: ^0.257.0
   intl: ^0.18.1
-  google_fonts: ^5.1.0
+  google_fonts: ^6.1.0
   flutter_colorpicker: ^1.0.3
   toggle_switch: ^2.3.0
   dotted_border: ^2.1.0 # <-- ADD THIS LINE

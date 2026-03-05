@@ -117,6 +117,7 @@ class _WorkflowScreenState
                                 index];
 
                         return _WorkflowCard(
+                          key: ValueKey(workflow.id),
                           workflow: workflow,
                         );
                       },
@@ -329,6 +330,7 @@ class _WorkflowCard
   final Workflow workflow;
 
   const _WorkflowCard({
+    super.key,
     required this.workflow,
   });
 

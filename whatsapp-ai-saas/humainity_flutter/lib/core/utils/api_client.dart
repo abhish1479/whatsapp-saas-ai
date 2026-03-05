@@ -82,37 +82,59 @@ class ApiClient {
   // --- Response Handler ---
 
   dynamic _handleResponse(http.Response response, {required bool silent}) {
-    Map<String, dynamic> json;
-    try {
-      json = jsonDecode(response.body);
-    } catch (_) {
-      throw _handleError("Server Error: ${response.statusCode}");
+    // Check for non-200/successful status codes first.
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // Try to parse error message from body, otherwise use a generic one.
+      String errorMessage = 'Request failed with status: ${response.statusCode}';
+      try {
+        final errorJson = jsonDecode(response.body);
+        if (errorJson is Map<String, dynamic>) {
+          // Look for common error message keys
+          if (errorJson.containsKey('detail')) {
+            errorMessage = errorJson['detail'];
+          } else if (errorJson.containsKey('message')) {
+            errorMessage = errorJson['message'];
+          }
+        }
+      } catch (e) {
+        // Not a JSON error body, or parsing failed. The default message is fine.
+      }
+      ToastService.showError(errorMessage);
+      throw ApiException(errorMessage, response.statusCode);
     }
 
-    final bool isSuccess = json['success'] == true;
-    final String? message = json['message'];
-
-    if (isSuccess) {
-      // Show toast only if NOT silent and message exists
-      if (!silent && message != null && message.isNotEmpty) {
-        ToastService.showSuccess(message);
+    // Handle successful responses (2xx)
+    try {
+      // If body is empty, return null (e.g. for a 204 No Content)
+      if (response.body.isEmpty) {
+        return null;
       }
-      return json['data'];
-    } else {
-      String errorMessage = message ?? 'Something went wrong';
 
-      if (json['error'] != null && json['error'] is Map) {
-        final errorObj = json['error'];
-        if (errorObj['details'] is List) {
-          final details = List<String>.from(errorObj['details']);
-          if (details.isNotEmpty) {
-            errorMessage = details.join('\n');
+      final json = jsonDecode(response.body);
+
+      // If it's an enveloped response, unpack it.
+      if (json is Map<String, dynamic> &&
+          json.containsKey('success') &&
+          json.containsKey('data')) {
+        if (json['success'] == true) {
+          final String? message = json['message'];
+          if (!silent && message != null && message.isNotEmpty) {
+            ToastService.showSuccess(message);
           }
+          return json['data'];
+        } else {
+          // The success flag is false in the envelope
+          final String errorMessage = json['message'] ?? 'An error occurred.';
+          ToastService.showError(errorMessage);
+          throw ApiException(errorMessage, response.statusCode);
         }
       }
 
-      ToastService.showError(errorMessage);
-      throw ApiException(errorMessage, response.statusCode);
+      // If it's not an enveloped response (raw list or map), return it directly.
+      return json;
+    } catch (e) {
+      // This catches JSON parsing errors on successful status codes
+      throw _handleError("Failed to process server response.");
     }
   }
 
