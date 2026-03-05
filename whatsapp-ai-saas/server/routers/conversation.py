@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from requests import Session
@@ -179,42 +181,30 @@ async def reply_via_exotel_api(
             content={"status": "error", "message": "Failed to send reply via Exotel"}
         )
     
-class AdmissionInquiryRequest(BaseModel):
+class TemplateMsgRequest(BaseModel):
     to_number: str
     tenant_id: int # To fetch correct config/sender if needed, or pass sender manually
     # Body variables matching your template: {{1}}, {{2}}, {{3}}, {{4}}
-    student_name: str       # {{1}} e.g. "Azim"
-    course_name: str        # {{2}} e.g. "NEET/JEE"
-    center_name: str        # {{3}} e.g. "ALLEN"
-    session_year: str       # {{4}} e.g. "2025-26"
+    body_params: List[str] = [] # {{4}} e.g. "2025-26"
     # Header media
     image_url: str          # URL for the banner image
+    template_name: str
+    from_number: str = "919773743558"  # Default sender number
 
-@router.post("/send_admission_inquiry")
-async def send_admission_inquiry(request: AdmissionInquiryRequest):
+@router.post("/template_msg_send")
+async def template_msg_send(request: TemplateMsgRequest):
     """
-    Sends the 'addmission_inquiry' template with an image header and 4 body variables.
+    Endpoint to send a templated message with media via Exotel API.
+    Expects a JSON body with the recipient's number, tenant ID, template name, body parameters, and media URL.
     """
-    # Hardcoded sender for now, or fetch from DB based on tenant_id
-    from_number = "919773743558" 
-    
-    # Template specific config
-    TEMPLATE_NAME = "addmission_inquiry"
-    
-    # Prepare body parameters in correct order: {{1}}, {{2}}, {{3}}, {{4}}
-    body_params = [
-        request.student_name,  
-        request.course_name,   
-        request.center_name,   
-        request.session_year   
-    ]
+   
 
     success = send_template_with_media(
         to_number=request.to_number,
-        from_number=from_number,
-        template_name=TEMPLATE_NAME,
+        from_number=request.from_number,
+        template_name=request.template_name,
         media_url=request.image_url,
-        body_params=body_params,
+        body_params=request.body_params,
         language="en"
     )
 

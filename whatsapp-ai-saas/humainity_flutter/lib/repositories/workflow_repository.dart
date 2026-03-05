@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import '../core/utils/api_client.dart';
 import '../models/workflow.dart';
 import '../core/storage/store_user_data.dart';
@@ -11,8 +11,7 @@ class WorkflowRepository {
   final ApiClient _apiClient;
   final StoreUserData _storeUserData;
 
-  // TODO: The baseUrl should be ideally configurable.
-  final String _baseUrl = "http://127.0.0.1:8000";
+ final String _baseUrl = dotenv.env['API_BASE_URL'] ?? '';
 
   WorkflowRepository(this._apiClient, this._storeUserData);
 
