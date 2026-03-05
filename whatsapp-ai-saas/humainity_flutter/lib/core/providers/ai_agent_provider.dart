@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humainise_ai/core/storage/store_user_data.dart';
 import 'package:humainise_ai/models/agent_config_model.dart';
@@ -10,7 +12,9 @@ class AgentState {
   final bool isSaving;
   final bool isEditing; // Controls Read-Only vs Edit mode
   final AgentConfiguration? agent;
-  final File? localImageFile; // For preview before upload
+  final File? localImageFile; // For preview on Mobile
+  final Uint8List? localImageBytes; // For preview on Web
+  final String? localImageName; // For web upload
 
   AgentState({
     this.isLoading = false,
@@ -18,6 +22,8 @@ class AgentState {
     this.isEditing = true, // Default to true (Create mode) until loaded
     this.agent,
     this.localImageFile,
+    this.localImageBytes,
+    this.localImageName,
   });
 
   AgentState copyWith({
@@ -26,13 +32,21 @@ class AgentState {
     bool? isEditing,
     AgentConfiguration? agent,
     File? localImageFile,
+    Uint8List? localImageBytes,
+    String? localImageName,
+    bool clearLocalImage = false,
   }) {
     return AgentState(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       isEditing: isEditing ?? this.isEditing,
       agent: agent ?? this.agent,
-      localImageFile: localImageFile ?? this.localImageFile,
+      localImageFile:
+          clearLocalImage ? null : localImageFile ?? this.localImageFile,
+      localImageBytes:
+          clearLocalImage ? null : localImageBytes ?? this.localImageBytes,
+      localImageName:
+          clearLocalImage ? null : localImageName ?? this.localImageName,
     );
   }
 }
@@ -77,13 +91,29 @@ class AgentConfigNotifier extends StateNotifier<AgentState> {
 
   /// Cancel editing (revert to last saved state)
   void cancelEditing() {
-    // Reload to reset fields
+    // Reload to reset fields and clear any staged image previews
+    state = state.copyWith(clearLocalImage: true);
     loadAgent();
   }
 
-  /// Stage a local image for preview
-  void setLocalImage(File file) {
-    state = state.copyWith(localImageFile: file);
+  /// Stage a local image for preview (Mobile)
+  void setLocalImageFile(File file) {
+    state = state.copyWith(
+      localImageFile: file,
+      localImageBytes: null,
+      localImageName: null,
+      clearLocalImage: false,
+    );
+  }
+
+  /// Stage a local image for preview (Web)
+  void setLocalImageBytes(Uint8List bytes, String name) {
+    state = state.copyWith(
+      localImageBytes: bytes,
+      localImageName: name,
+      localImageFile: null,
+      clearLocalImage: false,
+    );
   }
 
   /// Save (Create or Update)
@@ -94,7 +124,11 @@ class AgentConfigNotifier extends StateNotifier<AgentState> {
 
       // 1. Upload Image if a new local file was picked
       if (state.localImageFile != null) {
-        imageUrl = await _repo.uploadImage(state.localImageFile!);
+        imageUrl = await _repo.uploadImageFile(state.localImageFile!);
+      } else if (state.localImageBytes != null &&
+          state.localImageName != null) {
+        imageUrl =
+            await _repo.uploadImageBytes(state.localImageBytes!, state.localImageName!);
       }
 
       // 2. Prepare Final Config
@@ -105,18 +139,20 @@ class AgentConfigNotifier extends StateNotifier<AgentState> {
         // Update
         final updated = await _repo.updateAgent(finalConfig);
         state = state.copyWith(
-            isSaving: false,
-            agent: updated,
-            isEditing: false,
-            localImageFile: null);
+          isSaving: false,
+          agent: updated,
+          isEditing: false,
+          clearLocalImage: true,
+        );
       } else {
         // Create
         final created = await _repo.createAgent(finalConfig);
         state = state.copyWith(
-            isSaving: false,
-            agent: created,
-            isEditing: false,
-            localImageFile: null);
+          isSaving: false,
+          agent: created,
+          isEditing: false,
+          clearLocalImage: true,
+        );
       }
     } catch (e) {
       state = state.copyWith(isSaving: false);

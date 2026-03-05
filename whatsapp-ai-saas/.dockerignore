@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+
+# Python & Virtual Environments (CRITICAL)
+# If Docker sees your local .venv change, it breaks the cache and rebuilds!
+.venv/
+venv/
+env/
+myenv/
+server/myenv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment Variables
+# We ignore this so secrets don't get permanently baked into the image.
+# Docker Compose will safely inject it at runtime via `env_file`.
+.env
+.env.*
+
+# Local Database & State (CRITICAL)
+# You mapped this in docker-compose. If it gets copied into the build context, 
+# your build will take ages and break cache on every single database write.
+data/
+data/chroma/
+wa_db/
+db_data/
+
+# Flutter App - Exclude the entire app from the server build context
+humainity_flutter/
+
+# Playwright & Crawl4AI
+test-results/
+.playwright/
+
+# IDEs and OS files
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+
+# Scripts and local files
+cleanup.ps1
+install-setup.ps1
+repo_file_list.txt
+
+# Docker files
+Dockerfile
+server/Dockerfile
+docker-compose.yml
+compose-override.yml
+compose.monitoring.yml

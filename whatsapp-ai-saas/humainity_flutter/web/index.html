@@ -305,7 +305,7 @@
   </div>
 
   <a href="https://wa.me/919871777715?text=Hi, I am interested in HumAInise AI solutions." target="_blank"
-    class="wa-float">
+    id="wa-float-btn" class="wa-float">
     <div class="wa-btn">
       <div class="wa-pulse"></div>
       <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
@@ -329,5 +329,14 @@
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    function showWaButton(shouldShow) {
+      var waButton = document.getElementById('wa-float-btn');
+      if (waButton) {
+        waButton.style.display = shouldShow ? 'block' : 'none';
+      }
+    }
+  </script>
 </body>
 </html>

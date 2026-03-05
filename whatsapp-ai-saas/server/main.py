@@ -2,7 +2,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, kyc, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing, subscriptions_plans,leads,campaigns, monitoring, metrics,knowledge,whatsapp_webhook,business_profile
+from routers import auth, kyc, provisioning, leads, conversation, rag, social_auth, wallet, webhooks, templates, analytics, billing, subscriptions_plans,leads,campaigns, monitoring, metrics,knowledge,whatsapp_webhook,business_profile, workflow
 from middleware.logging import RequestLoggingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from services.metrics import inc_credits
@@ -72,6 +72,7 @@ app.include_router(whatsapp_webhook.router)
 app.include_router(knowledge.router)
 app.include_router(agent_config.router)
 app.include_router(business_profile.router)
+app.include_router(workflow.router)
 
 @app.get("/healthz")
 def healthz():

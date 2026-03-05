@@ -13,7 +13,7 @@ from deps import get_db_session
 from models import Lead, Template, BusinessProfile, AgentConfiguration, Workflow
 from sqlalchemy import func
 
-SESSION_EXPIRY_SECONDS = 1200  # 30 minutes
+SESSION_EXPIRY_SECONDS = 600  # 30 minutes
 
 # In-memory session stores
 user_sessions = defaultdict(list)  # {sender: [messages]}

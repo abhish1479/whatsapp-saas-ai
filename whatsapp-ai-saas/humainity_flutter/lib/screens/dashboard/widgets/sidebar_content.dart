@@ -79,6 +79,12 @@ class SidebarContent extends ConsumerWidget {
       'icon': LucideIcons.messageSquare,
       'showStepIndicator': false,
     },
+    {
+      'name': 'Workflows',
+      'href': '/dashboard/workflows',
+      'icon': LucideIcons.gitFork,
+      'showStepIndicator': false,
+    },
     // {
     //   'name': 'Test Agent',
     //   'href': '/dashboard/agent-preview',

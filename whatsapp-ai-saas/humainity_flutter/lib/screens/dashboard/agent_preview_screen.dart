@@ -3,6 +3,7 @@ import 'dart:math'; // ADDED: For random animation values
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:humainise_ai/core/providers/ai_agent_provider.dart';
 import 'package:humainise_ai/core/providers/auth_provider.dart';
 import 'package:humainise_ai/core/providers/chat_provider.dart';
 import 'package:humainise_ai/core/theme/app_colors.dart';
@@ -61,6 +62,12 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(agentConfigProvider).agent == null) {
+        ref.read(agentConfigProvider.notifier).loadAgent();
+      }
+    });
   }
 
   Future<void> _initSpeech() async {
@@ -373,6 +380,8 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
 
   Widget _buildChatInterface() {
     final chatState = ref.watch(agentPreviewChatProvider);
+    final agentState = ref.watch(agentConfigProvider);
+    final agentImageUrl = agentState.agent?.agentImage;
 
     ref.listen(agentPreviewChatProvider, (_, __) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -403,7 +412,7 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
                     message: msg.text,
                     isUser: msg.isUser,
                     timestamp: msg.timestamp,
-                    agentAvatar: 'assets/images/agent-sarah.jpg',
+                    agentAvatar: agentImageUrl,
                   ),
                 );
               },
@@ -492,6 +501,16 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
   }
 
   Widget _buildVoiceAgentVisual() {
+    final agentState = ref.watch(agentConfigProvider);
+    final agentConfig = agentState.agent;
+
+    ImageProvider imageProvider;
+    if (agentConfig?.agentImage != null && agentConfig!.agentImage!.isNotEmpty) {
+      imageProvider = NetworkImage(agentConfig.agentImage!);
+    } else {
+      imageProvider = const AssetImage('assets/images/agent-sarah.jpg');
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         double imageWidth = 300;
@@ -520,8 +539,8 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
                 height: imageHeight,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/agent-sarah.jpg'),
+                  image: DecorationImage(
+                    image: imageProvider,
                     fit: BoxFit.cover,
                   ),
                   boxShadow: [
@@ -533,10 +552,12 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('Ashley',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const Text('Customer Support Agent',
-                  style: TextStyle(color: AppColors.mutedForeground)),
+              Text(agentConfig?.agentName ?? 'Agent',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                  agentConfig?.agentPersona?.split('\n').first ??
+                      'Customer Support Agent',
+                  style: const TextStyle(color: AppColors.mutedForeground)),
               const SizedBox(height: 24),
               if (!_isListening)
                 GestureDetector(

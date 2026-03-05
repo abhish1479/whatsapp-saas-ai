@@ -85,11 +85,14 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
 
     if (pickedFile != null) {
       if (kIsWeb) {
-        // Web logic if needed later
+        final bytes = await pickedFile.readAsBytes();
+        ref
+            .read(agentConfigProvider.notifier)
+            .setLocalImageBytes(bytes, pickedFile.name);
       } else {
         ref
             .read(agentConfigProvider.notifier)
-            .setLocalImage(File(pickedFile.path));
+            .setLocalImageFile(File(pickedFile.path));
       }
     }
   }
@@ -299,7 +302,9 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   Widget _buildAvatarUploadCard(
       AgentState state, BuildContext context, bool isEditing) {
     ImageProvider imageProvider;
-    if (state.localImageFile != null) {
+    if (state.localImageBytes != null) {
+      imageProvider = MemoryImage(state.localImageBytes!);
+    } else if (state.localImageFile != null) {
       imageProvider = FileImage(state.localImageFile!);
     } else if (state.agent?.agentImage != null &&
         state.agent!.agentImage!.isNotEmpty) {
@@ -553,7 +558,9 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
   // --- 5. Live Preview ---
   Widget _buildLiveBrandingPreview(AgentState state) {
     ImageProvider? image;
-    if (state.localImageFile != null) {
+    if (state.localImageBytes != null) {
+      image = MemoryImage(state.localImageBytes!);
+    } else if (state.localImageFile != null) {
       image = FileImage(state.localImageFile!);
     } else if (state.agent?.agentImage != null &&
         state.agent!.agentImage!.isNotEmpty) {

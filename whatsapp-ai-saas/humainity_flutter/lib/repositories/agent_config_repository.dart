@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,9 +54,9 @@ class AgentConfigRepository {
     return AgentConfiguration.fromJson(data);
   }
 
-  /// 4. Upload Image (Multipart)
+  /// 4. Upload Image from File Path (Mobile)
   /// Returns the URL string of the uploaded image
-  Future<String> uploadImage(File file) async {
+  Future<String> uploadImageFile(File file) async {
     final uri = Uri.parse('$_baseUrl/catalog/image_upload');
     final token = await _store?.getToken();
 
@@ -80,6 +81,37 @@ class AgentConfigRepository {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final String imageUrl = jsonDecode(response.body)['image_url'];
       return imageUrl; // Simple cleanup if it's a raw string
+    } else {
+      throw Exception('Image upload failed: ${response.statusCode}');
+    }
+  }
+
+    /// 5. Upload Image (Multipart) from Bytes (Web)
+  /// Returns the URL string of the uploaded image
+  Future<String> uploadImageBytes(Uint8List bytes, String filename) async {
+    final uri = Uri.parse('$_baseUrl/catalog/image_upload');
+    final token = await _store?.getToken();
+
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      if (token != null) 'Authorization': 'Bearer $token',
+      'accept': 'application/json',
+    });
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'payload',
+      bytes,
+      filename: filename,
+    );
+    request.files.add(multipartFile);
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final String imageUrl = jsonDecode(response.body)['image_url'];
+      return imageUrl;
     } else {
       throw Exception('Image upload failed: ${response.statusCode}');
     }

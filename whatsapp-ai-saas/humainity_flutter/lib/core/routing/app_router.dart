@@ -28,9 +28,11 @@ import 'package:humainise_ai/screens/industries/industry_detail_screen.dart';
 import 'package:humainise_ai/screens/not_found_screen.dart';
 import 'package:humainise_ai/screens/dashboard/mini_crm_screen.dart';
 import 'package:humainise_ai/screens/demo/demo_page.dart';
+import 'package:humainise_ai/screens/dashboard/workflow_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
+
 
 final _shellNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'DashboardShell');
@@ -142,6 +144,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'templates',
                 builder: (context, state) => const TemplatesScreen(),
+              ),
+              GoRoute(
+                path: 'workflows',
+                builder: (context, state) => const WorkflowScreen(),
               ),
               GoRoute(
                 path: 'campaigns',

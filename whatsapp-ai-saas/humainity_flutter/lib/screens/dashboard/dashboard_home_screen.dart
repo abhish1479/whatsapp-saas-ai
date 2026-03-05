@@ -1,9 +1,11 @@
 // lib/screens/dashboard/dashboard_home_screen.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:humainise_ai/core/theme/app_colors.dart';
 import 'package:humainise_ai/widgets/ui/app_card.dart';
 import 'package:humainise_ai/widgets/ui/app_dropdown.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'dart:js' as js;
 
 class DashboardHomeScreen extends StatefulWidget {
   const DashboardHomeScreen({Key? key}) : super(key: key);
@@ -14,6 +16,24 @@ class DashboardHomeScreen extends StatefulWidget {
 
 class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   String _selectedPeriod = 'Last 30 days';
+
+  @override
+  void initState() {
+    super.initState();
+    // Hide the WhatsApp floating button when on the dashboard
+    if (kIsWeb) {
+      js.context.callMethod('showWaButton', [false]);
+    }
+  }
+
+  @override
+  void dispose() {
+    // Show the WhatsApp floating button when leaving the dashboard
+    if (kIsWeb) {
+      js.context.callMethod('showWaButton', [true]);
+    }
+    super.dispose();
+  }
 
   // FIX: Changed from const to final because Colors.blue.shade500 is not a constant.
   final List<Map<String, dynamic>> inboundStats = [
