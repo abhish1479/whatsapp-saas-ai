@@ -443,11 +443,16 @@ class _AgentPreviewScreenState extends ConsumerState<AgentPreviewScreen>
         children: [
           Expanded(
             child: AppTextField(
-              labelText: 'Your message',
-              controller: _messageController,
-              hintText: 'I would like to learn more...',
-              onChanged: (val) => setState(() {}),
-            ),
+                labelText: 'Your message',
+                controller: _messageController,
+                hintText: 'I would like to learn more...',
+                onChanged: (val) => setState(() {}),
+                onSubmitted: (val) {
+                  if (_messageController.text.trim().isNotEmpty &&
+                      !chatState.isLoading) {
+                    _sendMessage();
+                  }
+                }),
           ),
           const SizedBox(width: 8),
           AppButton(

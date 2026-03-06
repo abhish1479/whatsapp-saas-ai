@@ -57,6 +57,10 @@ def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
            lead = db.query(Lead).filter(Lead.tenant_id == tenant_id,  func.right(func.regexp_replace(Lead.phone, r'\D', '', 'g'), 10) == phone_number).first()
            if lead:
               lead = safe_to_dict(lead)
+              summary = lead.summary if lead else None
+              if summary:
+                append_assistant(sender, summary)
+
            else:
             tm = db.query(Template).filter(Template.tenant_id == tenant_id,Template.type == TemplateTypeEnum.INBOUND,Template.status == TemplateStatusEnum.SUBMITTED).first()
             template = safe_to_dict(tm)
@@ -151,3 +155,11 @@ def append_assistant(sender: str, content: str):
     get_history(sender).append({"role": "assistant", "content": content})
     last_message_time[sender] = time.time()
 
+
+async def clear_user_session(sender: str):
+    """
+    Clears the in-memory session history and timing for a specific sender.
+    Uses pop with None to safely remove keys without raising KeyErrors.
+    """
+    user_sessions.pop(sender, None)
+    last_message_time.pop(sender, None)

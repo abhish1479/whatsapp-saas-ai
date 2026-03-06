@@ -8,6 +8,7 @@ from services.rag import rag
 from deps import get_db
 from models import BusinessCatalog
 from utils.responses import StandardResponse
+from utils.sessions import clear_user_session
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 
@@ -103,3 +104,7 @@ async def add_catalog(
         "tenant_id": tenant_id,
         "catalog_ids": catalog_ids
     }
+
+@router.post("/clear_tenant_session")
+async def clear_tenant_session(tenant_id: str):
+    return await clear_user_session(tenant_id)
