@@ -57,8 +57,8 @@ def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
            lead = db.query(Lead).filter(Lead.tenant_id == tenant_id,  func.right(func.regexp_replace(Lead.phone, r'\D', '', 'g'), 10) == phone_number).first()
            if lead:
               summary = lead.summary if lead else None
-              if summary:
-                append_assistant(sender, summary)
+              if summary and isinstance(summary, str) and summary.strip():
+                  user_sessions[sender].append({"role": "user", "content": summary})
 
               lead = safe_to_dict(lead)
               
