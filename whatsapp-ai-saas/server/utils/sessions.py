@@ -56,11 +56,12 @@ def System_Prompt(tenant_id: int,sender: Optional[str] = None) -> str:
            phone_number = phone_number[-10:] if len(phone_number) >= 10 else phone_number
            lead = db.query(Lead).filter(Lead.tenant_id == tenant_id,  func.right(func.regexp_replace(Lead.phone, r'\D', '', 'g'), 10) == phone_number).first()
            if lead:
-              lead = safe_to_dict(lead)
               summary = lead.summary if lead else None
               if summary:
                 append_assistant(sender, summary)
 
+              lead = safe_to_dict(lead)
+              
            else:
             tm = db.query(Template).filter(Template.tenant_id == tenant_id,Template.type == TemplateTypeEnum.INBOUND,Template.status == TemplateStatusEnum.SUBMITTED).first()
             template = safe_to_dict(tm)
