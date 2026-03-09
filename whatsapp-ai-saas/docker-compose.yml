@@ -46,6 +46,7 @@ services:
       - "8000:8000"
     volumes:
       - ./data/chroma:/data/chroma
+      - ./server/media:/app/media
 
   # worker:  # Commented out as in original
   #   ...
@@ -87,6 +88,7 @@ services:
         condition: service_started
     volumes:
       - ./data/chroma:/data/chroma
+      - ./server/media:/app/media
     restart: unless-stopped
     
 volumes:
