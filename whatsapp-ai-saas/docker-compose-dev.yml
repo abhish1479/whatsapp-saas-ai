@@ -1,0 +1,95 @@
+# docker-compose.yml  (Fixed - humainise_ai -> humainity_flutter)
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: wa_db
+    environment:
+      POSTGRES_DB: whatsappdb
+      POSTGRES_USER: wa_saas_user
+      POSTGRES_PASSWORD: smileplz
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wa_saas_user -d whatsappdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    container_name: wa_redis
+    ports:
+      - "6379:6379"
+
+  server:
+    container_name: wa_server
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_PATH: /data/chroma
+      WEBHOOK_QUEUE: wh_inbound_queue
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chroma:/data/chroma
+      - ./server/media:/app/media
+
+  # worker:  # Commented out as in original
+  #   ...
+
+  flutter_web:
+    build:
+      context: ./humainity_flutter      # FIXED: Changed from ./humainise_ai
+      dockerfile: Dockerfile
+      args:
+        API_HOST: localhost
+        API_PORT: 8000
+        API_BASE: http://localhost:8000
+    container_name: flutter_web
+    ports:
+      - "8082:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  rq_file_processing:
+    container_name: wa_rq_file_processing
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: rq worker file_processing --url redis://redis:6379/0
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@db:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE: file_processing
+      CHROMA_PATH: /data/chroma
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      server:
+        condition: service_started
+    volumes:
+      - ./data/chroma:/data/chroma
+      - ./server/media:/app/media
+    restart: unless-stopped
+    
+volumes:
+  db_data:

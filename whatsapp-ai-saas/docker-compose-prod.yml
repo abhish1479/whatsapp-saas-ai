@@ -1,0 +1,95 @@
+services:
+  # --- NEW: Automated Setup for External Database ---
+  db_init:
+    image: postgres:15-alpine
+    container_name: wa_db_init
+    environment:
+      # Matches the password of your saas_user
+      PGPASSWORD: "saas_password"
+    command: >
+      sh -c "
+      echo 'Checking and setting up database...';
+      psql -h saas_voice_agents_app-postgres-1 -U saas_user -d saas_voice -tc \"SELECT 1 FROM pg_database WHERE datname = 'whatsappdb'\" | grep -q 1 || psql -h saas_voice_agents_app-postgres-1 -U saas_user -d saas_voice -c \"CREATE DATABASE whatsappdb;\";
+      psql -h saas_voice_agents_app-postgres-1 -U saas_user -d saas_voice -tc \"SELECT 1 FROM pg_roles WHERE rolname = 'wa_saas_user'\" | grep -q 1 || psql -h saas_voice_agents_app-postgres-1 -U saas_user -d saas_voice -c \"CREATE USER wa_saas_user WITH ENCRYPTED PASSWORD 'smileplz';\";
+      psql -h saas_voice_agents_app-postgres-1 -U saas_user -d saas_voice -c \"GRANT ALL PRIVILEGES ON DATABASE whatsappdb TO wa_saas_user;\";
+      echo 'Database ready!';
+      "
+  redis:
+    image: redis:7-alpine
+    container_name: wa_redis
+    ports:
+      - "6379:6379"
+
+  server:
+    container_name: wa_server
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
+    environment:
+      # UPDATED: Pointing to the voice agents container
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@saas_voice_agents_app-postgres-1:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_PATH: /data/chroma
+      WEBHOOK_QUEUE: wh_inbound_queue
+    depends_on:
+      db_init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    ports:
+      - "8083:8000" # UPDATED: Changed external port to 8083
+    volumes:
+      - ./data/chroma:/data/chroma
+      - ./server/media:/app/media
+
+  flutter_web:
+    build:
+      context: ./humainity_flutter
+      dockerfile: Dockerfile
+      args:
+        API_HOST: localhost
+        API_PORT: 8083 # UPDATED: Matches new server port
+        API_BASE: http://localhost:8083 # UPDATED
+    container_name: flutter_web
+    ports:
+      - "8082:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  rq_file_processing:
+    container_name: wa_rq_file_processing
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: rq worker file_processing --url redis://redis:6379/0
+    env_file:
+      - .env
+    environment:
+      # UPDATED: Pointing to the voice agents container
+      DATABASE_URL: postgresql+asyncpg://wa_saas_user:smileplz@saas_voice_agents_app-postgres-1:5432/whatsappdb
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE: file_processing
+      CHROMA_PATH: /data/chroma
+    depends_on:
+      db_init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      server:
+        condition: service_started
+    volumes:
+      - ./data/chroma:/data/chroma
+      - ./server/media:/app/media
+    restart: unless-stopped
+
+# Removed db_data volume since data lives in the other project now
+
+# NEW: Connect all services to the Voice Agents network
+networks:
+  default:
+    name: saas_voice_agents_app_default
+    external: true
